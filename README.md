@@ -66,7 +66,7 @@ bash setup.sh
 |---------|-------------|
 | `bash setup.sh` | First-time install (run from cloned repo) |
 | `tgd` | Install or update tGD (after first install) |
-| `tgd --version` (`-v`) | Show current version (CalVer: YYYY.M.D) |
+| `tgd --version` (`-v`) | Show current version (CalVer: YYYY.MM.DD) |
 | `tgd --upgrade` (`-u`) | Force refresh: clean broken symlinks and rebuild all links/hooks |
 | `tgd --uninstall` | Remove all tGD symlinks and hooks without touching your other files |
 
@@ -288,7 +288,7 @@ The `tgd` CLI manages installation, updates, and diagnostics:
 |---------|-------------|
 | `bash setup.sh` | First-time install (run from cloned repo) |
 | `tgd` | Install or update tGD (after first install) |
-| `tgd --version` (`-v`) | Show current version (CalVer: YYYY.M.D) |
+| `tgd --version` (`-v`) | Show current version (CalVer: YYYY.MM.DD) |
 | `tgd --upgrade` (`-u`) | Force refresh links and hooks |
 | `tgd --release` | Create a GitHub release (reads VERSION) |
 | `tgd --uninstall` | Remove all tGD installations |

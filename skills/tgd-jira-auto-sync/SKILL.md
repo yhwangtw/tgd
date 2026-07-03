@@ -87,7 +87,7 @@ Use the Jira REST API v2 (Jira 9.0+ DC compliant) to get all available issue typ
 ```bash
 curl -x "" -s \
   "$JIRA_URL/rest/api/2/issue/createmeta/$JIRA_PROJECT/issuetypes" \
-  -H "Authorization: Bearer $JIRA_TOKEN" \
+  -H "Authorization: Bearer ***" \
   -H "Content-Type: application/json" > /tmp/jira_issuetypes.json
 ```
 
@@ -114,7 +114,7 @@ Query the exact metadata for the chosen `ISSUE_TYPE_ID`. This returns **only** t
 ```bash
 curl -x "" -s \
   "$JIRA_URL/rest/api/2/issue/createmeta/$JIRA_PROJECT/issuetypes/$ISSUE_TYPE_ID" \
-  -H "Authorization: Bearer $JIRA_TOKEN" \
+  -H "Authorization: Bearer ***" \
   -H "Content-Type: application/json" > /tmp/jira_meta.json
 ```
 
@@ -275,7 +275,7 @@ EOF
 # 3. Execute the API call
 curl -x "" -s -X POST \
   "$JIRA_URL/rest/api/2/issue" \
-  -H "Authorization: Bearer $JIRA_TOKEN" \
+  -H "Authorization: Bearer ***" \
   -H "Content-Type: application/json" \
   -d @/tmp/jira_payload.json | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('key','ERROR: '+d.get('errorMessages',str(d))[0]))"
 ```
@@ -384,7 +384,7 @@ If the company Jira has **required custom fields** (e.g., Component, Fix Version
 "components": [{"name": "Backend"}]
 ```
 
-**How to discover:** Step 2 的 `createmeta` 已經包含所有 required fields 和 `allowedValues`。直接用那個結果。
+**How to discover:** Step 2's createmeta already includes all required fields and allowedValues. Use that result directly.
 
 ### SSL / Proxy Interception
 
@@ -418,7 +418,7 @@ Data Center may throttle bulk creation. If creating 20+ issues:
 - Jira issues missing acceptance criteria from TASKS.md
 - Sync run without user confirmation
 
-## Verification Gate
+## Verification
 
 After execution, verify:
 - [ ] All tasks from TASKS.md have corresponding Jira keys

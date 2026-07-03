@@ -25,4 +25,5 @@ vendor/understand-anything/understand-anything-plugin/skills/skills
 data/
 storage/
 tmp/
+# Self-referencing symlink created by Hermes plugin loader (runtime, not source)
 .hermes/plugins/tgd/tgd

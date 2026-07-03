@@ -25,7 +25,7 @@ jobs:
     needs: validate-skills
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
       - name: Install Claude Code
         run: npm install -g @anthropic-ai/claude-code
@@ -38,7 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: validate
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
       - name: Install Claude Code
         run: npm install -g @anthropic-ai/claude-code

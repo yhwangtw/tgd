@@ -178,7 +178,7 @@ tGD/
 | Skills | `~/.claude/skills/` symlinks | `~/.hermes/skills/` symlinks |
 | Commands | `.claude/commands/*.md` | Plugin `register_command()` |
 | Session hook | `hooks/hooks.json` (JSON) | Plugin `on_session_start` (Python) |
-| Hook format | `{priority, message}` JSON | `ctx.inject_message()` / context dict |
+| Hook format | `{priority, message}` JSON | `ctx.register_command()` + `ctx.register_hook()`; session hook returns a `{"context": ...}` dict |
 | Prompt source | `.claude/commands/*.md` | Same files, read by plugin |
 
 Both platforms share the exact same command prompt files and skill content — only the delivery mechanism differs.

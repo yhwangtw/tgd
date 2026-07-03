@@ -4,6 +4,8 @@ Use tGD's 7-stage PDLC pipeline in Claude Desktop — no terminal required.
 
 > **Not a coder?** This guide is for you. tGD normally runs inside coding agents (Claude Code, Codex, Gemini CLI), but Claude Desktop can run the full pipeline in **semi-automatic mode**: Claude produces the artifacts, you handle the terminal commands.
 
+> **Note:** tGD also supports OpenCode, Pi Coding Agent, and Hermes Agent. This guide covers the Claude Desktop workflow specifically.
+
 ---
 
 ## What You Get

@@ -363,12 +363,12 @@ if [[ "$MODE" == "upgrade" ]]; then
     echo "====================================="
     echo ""
 else
-    echo "🚀 tGD (tGD) Setup"
+    echo "🚀 tGD Setup"
     echo "===================================="
 fi
 
 # ─── Version marker ──────────────────────────────────────────────────────────
-# Version is derived from git tags (semver). To bump: git tag v1.4.0
+# Version is derived from git tags (CalVer). To bump: git tag v2026.07.04
 TGD_VERSION=$(cat "$TGD_DIR/VERSION" 2>/dev/null || echo "unknown")
 VERSION_FILE="$HOME/.tgd-installed-version"
 
@@ -416,7 +416,7 @@ purge_stale_skills() {
         for link in "$target_dir"/*/; do
             link="${link%/}"
             if [[ -L "$link" ]]; then
-                local resolved=$(readlink -f "$link" 2>/dev/null || echo "")
+                local resolved=$(readlink -f "$link" 2>/dev/null || python3 -c "import os,sys; print(os.path.realpath(sys.argv[1]))" "$link" 2>/dev/null || echo "")
                 if [[ -z "$resolved" ]] || [[ ! -e "$resolved" ]]; then
                     echo "      🗑️  Removing stale skill: $link → $resolved"
                     rm -f "$link"
@@ -835,7 +835,7 @@ install_ua_deps() {
         NPM_REGISTRY=$(npm config get registry 2>/dev/null || echo "")
         if [[ -z "$CI" ]] && { [[ "$NPM_REGISTRY" == *"registry.npmjs.org"* ]] || [[ -z "$NPM_REGISTRY" ]]; }; then
             echo "   ⚠️  npm registry is set to registry.npmjs.org (or not configured)."
-            echo "      Set your registry first: npm config set registry <公司 registry URL>"
+            echo "      Set your registry first: npm config set registry <your internal registry URL>"
             echo "      Then re-run setup.sh, or install pnpm manually."
             return 1
         fi
@@ -846,7 +846,7 @@ install_ua_deps() {
     PNPM_REGISTRY=$(pnpm config get registry 2>/dev/null || echo "")
     if [[ -z "$CI" ]] && { [[ "$PNPM_REGISTRY" == *"registry.npmjs.org"* ]] || [[ -z "$PNPM_REGISTRY" ]]; }; then
         echo "   ⚠️  pnpm registry is set to registry.npmjs.org (or not configured)."
-        echo "      Set your registry first: pnpm config set registry <公司 registry URL>"
+        echo "      Set your registry first: pnpm config set registry <your internal registry URL>"
         return 1
     fi
     # Subshell: cd won't affect the parent shell's cwd
@@ -905,7 +905,7 @@ if [ -d "$UA_SKILLS_DIR" ]; then
     if [ -d "$HOME/.claude" ] || [ -L "$HOME/.claude" ]; then
         for skill in "$UA_SKILLS_DIR"/*/; do
             skill_name=$(basename "$skill")
-            # Skip nested symlink traps (UA vendor may contain a self-loopping `skills` entry)
+            # Skip nested symlink traps (UA vendor may contain a self-looping `skills` entry)
             if [ "$skill_name" = "skills" ]; then
                 continue
             fi

@@ -41,9 +41,9 @@ For skills you want always loaded as persistent project context (rather than on-
 
 ```bash
 # Create GEMINI.md with core skills as persistent context
-cat /path/to/tGD/skills/incremental-implementation/SKILL.md > GEMINI.md
+cat /path/to/tGD/skills/tgd-incremental-implementation/SKILL.md > GEMINI.md
 echo -e "\n---\n" >> GEMINI.md
-cat /path/to/tGD/skills/code-review-and-quality/SKILL.md >> GEMINI.md
+cat /path/to/tGD/skills/tgd-code-review-and-quality/SKILL.md >> GEMINI.md
 ```
 
 You can also modularize by importing from separate files:
@@ -51,8 +51,8 @@ You can also modularize by importing from separate files:
 ```markdown
 # Project Instructions
 
-@skills/test-driven-development/SKILL.md
-@skills/incremental-implementation/SKILL.md
+@skills/tgd-test-driven-development/SKILL.md
+@skills/tgd-incremental-implementation/SKILL.md
 ```
 
 Use `/memory show` to verify loaded context, and `/memory reload` to refresh after changes.
@@ -115,10 +115,9 @@ ln -sf "$(pwd)/.gemini/settings.json" ~/.gemini/settings.json
 
 #### How It Works
 
+**session-start** — Injects the `tgd-router` meta-skill into the agent's context at session start so the router skill is always available.
 
-```
-
-The hooks replace these blocks with `BLOCK_<hash>` placeholders before the agent reads them, then restore the real content after edits. Protected files are fully restored on session end.
+**safe-edit** — Protects code regions marked with `@safe-edit begin/end` markers in long files.
 
 **sdd-cache** — Caches WebFetch responses with HTTP `ETag`/`Last-Modified` revalidation. Only serves from cache when the origin responds `304 Not Modified`.
 
@@ -127,7 +126,7 @@ The hooks replace these blocks with `BLOCK_<hash>` placeholders before the agent
 You can explicitly load any skill into your current session by referencing it with the `@` symbol in your prompt:
 
 ```markdown
-Use the @skills/test-driven-development/SKILL.md skill to implement this fix.
+Use the @skills/tgd-test-driven-development/SKILL.md skill to implement this fix.
 ```
 
 This is useful when you want to ensure a specific workflow is followed without waiting for auto-discovery.

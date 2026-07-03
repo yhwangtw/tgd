@@ -138,13 +138,11 @@ Optional dependencies:
 
 ## Version Pinning
 
-Docusaurus dependencies are pinned via `package.json` `^` ranges + a
-committed `package-lock.json` template (see `assets/package-lock.json`).
+Docusaurus dependencies are pinned via `package.json` `^` ranges.
 This gives corporate networks maximum flexibility (allows patch/minor
-upgrades) while keeping every fresh install byte-identical thanks to the
-lockfile.
+upgrades).
 
-Pinned versions (as of skill v0.2.0):
+Pinned versions (as of skill v0.3.0):
 
 | Package | Version |
 |---|---|

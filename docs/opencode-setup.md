@@ -178,10 +178,9 @@ ln -sf "$(pwd)/.opencode/plugins"/* ~/.config/opencode/plugins/
 
 ### How It Works
 
+**session-start** — Injects the `tgd-router` meta-skill into the agent's context at session start so the router skill is always available.
 
-```
-
-The plugin replaces these blocks with `BLOCK_<hash>` placeholders before the agent reads them, then restores the real content after edits. The agent never sees the protected code.
+**safe-edit** — Protects code regions marked with `@safe-edit begin/end` markers in long files.
 
 **sdd-cache** — Caches WebFetch responses with HTTP validator revalidation. Same behavior as the Claude Code hook: only serves from cache when the origin responds `304 Not Modified`.
 

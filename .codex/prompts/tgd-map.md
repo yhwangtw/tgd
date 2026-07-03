@@ -49,7 +49,7 @@ Before analyzing anything, ask the user:
 
 ## Step 2: Context Engineering
 
-Run the context-engineering skill. Analyze the current project: tech stack, architecture, dependencies, code organization, and existing patterns.
+Run the tgd-context-engineering skill. Analyze the current project: tech stack, architecture, dependencies, code organization, and existing patterns.
 
 **⚠️ This is only Step 2. You MUST continue to Step 3 (CodeGraph) and Step 4 (Understand-Anything) before producing CONTEXT.md.**
 

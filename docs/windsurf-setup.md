@@ -8,11 +8,11 @@ Windsurf uses `.windsurfrules` for project-specific agent instructions:
 
 ```bash
 # Create a combined rules file from your most important skills
-cat /path/to/tGD/skills/test-driven-development/SKILL.md > .windsurfrules
+cat /path/to/tGD/skills/tgd-test-driven-development/SKILL.md > .windsurfrules
 echo "\n---\n" >> .windsurfrules
-cat /path/to/tGD/skills/incremental-implementation/SKILL.md >> .windsurfrules
+cat /path/to/tGD/skills/tgd-incremental-implementation/SKILL.md >> .windsurfrules
 echo "\n---\n" >> .windsurfrules
-cat /path/to/tGD/skills/code-review-and-quality/SKILL.md >> .windsurfrules
+cat /path/to/tGD/skills/tgd-code-review-and-quality/SKILL.md >> .windsurfrules
 ```
 
 ### Global Rules

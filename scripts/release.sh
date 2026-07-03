@@ -84,12 +84,6 @@ SETUP_DATE=$(echo "$VERSION" | sed 's/^v//' | tr '.' '-')
 echo "$VERSION" > VERSION
 echo "📝 Updated VERSION → $VERSION"
 
-# Sync setup.sh TGD_VERSION
-if grep -q '^TGD_VERSION=' setup.sh; then
-    sed -i '' "s/^TGD_VERSION=\"[^\"]*\"/TGD_VERSION=\"$SETUP_DATE\"/" setup.sh
-    echo "📝 Updated setup.sh TGD_VERSION → $SETUP_DATE"
-fi
-
 echo "🚀 Creating release for $VERSION"
 echo ""
 
@@ -243,7 +237,7 @@ git tag -a "$VERSION" -m "Release $VERSION" || git tag "$VERSION"
 git push origin "$VERSION"
 
 # Commit CHANGELOG.md update
-git add CHANGELOG.md VERSION setup.sh
+git add CHANGELOG.md VERSION
 git commit -m "docs: update CHANGELOG.md for $VERSION" || echo "⚠️  No CHANGELOG changes to commit"
 git push origin main
 

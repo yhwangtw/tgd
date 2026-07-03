@@ -1,3 +1,6 @@
+---
+description: Verify — prove it works with test evidence
+---
 
 **🛑 Pre-flight: Environment Check**
 - [ ] `$TGD_DIR/CONTEXT.md` exists (or `.codegraph/` is present).

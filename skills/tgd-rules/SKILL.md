@@ -7,12 +7,12 @@ description: Core tGD rules that MUST be followed at all times. Loaded automatic
 
 ## Overview
 
-Core rules that MUST be followed at all times in every tGD session. These rules enforce evidence-based verification, prevent rationalization, and maintain workflow integrity across all 8 lifecycle phases.
+Core rules that MUST be followed at all times in every tGD session. These rules enforce evidence-based verification, prevent rationalization, and maintain workflow integrity across all 7 lifecycle phases.
 
 ## When to Use
 
 - Automatically loaded on every session via `tgd-rules`
-- Referenced by all 8 `/tgd-*` lifecycle commands
+- Referenced by all 7 `/tgd-*` lifecycle commands
 - Any time an agent is about to claim completion, skip a step, or rationalize an exception
 
 ## Repository Overview
@@ -122,8 +122,6 @@ When you need the user to pick an option (Feature Name, Design Variant, etc.), D
 
 This ensures the user can reply with a simple "1" or "B" instead of typing a paragraph.
 
-<!-- Moved to ## Common Rationalizations above to satisfy skill-anatomy.md -->
-
 ## Completion Checklist
 
 Before saying "done", "complete", or "fixed":
@@ -178,8 +176,6 @@ tGD has three human roles. Each artifact has a `## Sign-off` section at the bott
 - One person can hold multiple roles (common in small teams)
 
 **Async workflow:** Agent runs all phases but blocks at Release until sign-offs are complete. Humans review on their own schedule — no real-time blocking.
-
-See `skills/tgd-lifecycle-commands/references/human-roles.md` for full details.
 
 ## Orchestration: Personas, Skills, and Commands
 
