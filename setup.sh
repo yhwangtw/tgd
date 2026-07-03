@@ -31,9 +31,8 @@ cd "$TGD_DIR"
 # skills/plugins from ~/.hermes/profiles/<name>/, not from the default
 # ~/.hermes/ tree, so install tGD into default plus every existing profile.
 hermes_homes() {
-    if [[ -d "$HOME/.hermes" || -L "$HOME/.hermes" ]]; then
-        echo "$HOME/.hermes"
-    fi
+    # Always include the default home — link functions mkdir -p as needed.
+    echo "$HOME/.hermes"
     if [[ -d "$HOME/.hermes/profiles" ]]; then
         for profile_home in "$HOME/.hermes/profiles"/*; do
             [[ -d "$profile_home" ]] || continue
