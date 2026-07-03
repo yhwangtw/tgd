@@ -4,6 +4,14 @@ All notable changes to tGD will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/). Versions follow [CalVer](https://calver.org/) (YYYY.MM.DD).
 
+## v2026.07.04
+
+### 🐛 Bug Fixes
+- resolve 46 lint, parity, and staleness issues (`b1ec8c0`)
+- always create default ~/.hermes even if missing (`a54a30f`)
+- install tGD into all profiles (`f8f17ea`)
+
+
 ## v2026.07.02
 
 ### Added
