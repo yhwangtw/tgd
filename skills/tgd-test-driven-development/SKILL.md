@@ -398,7 +398,7 @@ Beyond "coverage hasn't decreased", enforce explicit floors before merging a fea
 
 **Why explicit floors**: "Coverage hasn't decreased" is relative — a feature can lower the floor by 5% every release and nobody notices. Absolute floors are visible, comparable across features, and catch slow erosion.
 
-**Enforcement**: `bash $TGD_DIR/scripts/coverage-check.sh` (run by `/tgd-verify`) auto-detects the project's coverage tool (`nyc`/`jest --coverage`/`vitest --coverage`/`coverage.py`/`go test -cover`/`cargo tarpaulin`) and exits 0 only when all floors pass. Exit 1 with the failing metric.
+**Enforcement**: `bash $TGD_REPO_ROOT/scripts/coverage-check.sh` (run by `/tgd-verify`; `$TGD_REPO_ROOT` is the cloned tGD repo, not the artifacts dir) auto-detects the project's coverage tool (`nyc`/`jest --coverage`/`vitest --coverage`/`coverage.py`/`go test -cover`/`cargo tarpaulin`) and exits 0 only when all floors pass. Exit 1 with the failing metric.
 
 **Exceptions**: If a floor cannot be met (e.g. glue code with no logic, generated files), the agent MUST document the exception in the TEST-REPORT.md "## Coverage Exceptions" section with: which metric, which files, why exempt. `/tgd-review` may reject undocumented exceptions.
 

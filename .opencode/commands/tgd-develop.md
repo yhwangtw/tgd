@@ -8,7 +8,7 @@ description: Develop — implement with fresh subagents per task and two-stage r
 - **$TGD_DIR:** Check env var `$TGD_DIR` first. If not set, check sibling `../<project-name>-tGD/`. If neither exists: STOP — run `/tgd-map` first.
 
 **🔑 Step 0: Feature Name Resolution**
-1. Scan `$TGD_DIR/` for subdirectories (e.g., `$TGD_DIR/user-login/`).
+1. Scan `$TGD_DIR/` for **feature directories**: subdirectories containing `SPEC.md` or `PRD.md` (e.g., `$TGD_DIR/user-login/`). Infrastructure dirs (`.scans/`, `wiki/`, and any dot-directories) are NOT features — always exclude them.
 2. If none found: 🛑 STOP. "No features defined. Run `/tgd-define` first."
 3. If exactly one found: Lock it as `<feature-name>`.
 4. If multiple found: List them and ask user to specify.
@@ -46,11 +46,11 @@ Check the number of tasks in `TASKS.md`:
 - Designing APIs? → `tgd-api-and-interface-design`
 - High-stakes decision? → `tgd-doubt-driven-development`
 
-**🧹 Step 3: Cleanup**
+**🧹 Step 3: Hand-off (do NOT merge)**
 After all tasks pass verification:
-1. Return to the main project directory.
-2. Merge `feature/<feature-name>` back to `main`.
-3. Remove the worktree: `git worktree remove ../project-<feature-name>`.
+1. Commit all work on `feature/<feature-name>` inside the worktree.
+2. **Keep the worktree** — `/tgd-verify` and `/tgd-review` run against it next.
+3. **Do NOT merge to `main` here.** Merging happens in `/tgd-release`, after verify and review pass. Merging now would put unverified, unreviewed code on `main` — the exact thing the Review phase exists to prevent.
 
 Use feature flags for incomplete features, safe defaults, and rollback-friendly changes.
 

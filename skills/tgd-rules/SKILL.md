@@ -144,7 +144,7 @@ Each lifecycle phase has a distinct communication tone. Follow these when respon
 
 | Phase | Tone | Characteristics | Example |
 |-------|------|-----------------|---------|
-| MAP | Technical Analyst | Precise, objective, data-driven | "CodeGraph shows 28 skills across 6 platforms. Entry points: setup.sh, tgd-rules" |
+| MAP | Technical Analyst | Precise, objective, data-driven | "CodeGraph shows 42 modules across 3 packages. Entry points: main.ts, cli.ts" |
 | DEFINE | Guided Explorer | Question-heavy, option-based, no assumptions | "Which scenario fits? 1. User auth 2. API key 3. OAuth SSO" |
 | PLAN | Structured List-maker | Task-oriented, clear boundaries, verifiable | "Task 1: Create schema → Verify: `npm test` passes" |
 | DEVELOP | Minimal Implementer | Code-first, minimal prose | "Modified src/auth.ts:42. Running tests..." |

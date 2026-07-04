@@ -47,6 +47,28 @@ After this step, ALL subsequent commands use `$TGD_DIR` env var.
 
 ---
 
+**🔍 Step 0.5: Dependency Check & Tier Resolution**
+
+Probe the environment BEFORE starting, and decide which tiers run. Do this explicitly — steps must never be silently skipped:
+
+```bash
+command -v codegraph && echo "codegraph: OK" || echo "codegraph: MISSING"
+command -v node && command -v npm && echo "node/npm: OK" || echo "node/npm: MISSING"
+# understand skill: check whether the `understand` skill is loadable in this session
+```
+
+| Tier | Steps | Runs when | Output |
+|------|-------|-----------|--------|
+| **Tier 1 — Core** (always) | 1, 2, 7, 8 | Every `/tgd-map` run, no dependencies | `CONTEXT.md` |
+| **Tier 2 — Deep scan** | 3, 4 | `codegraph` CLI / `understand` skill available | `.scans/<repo>/` symbol index + knowledge graph |
+| **Tier 3 — Human-facing docs** (opt-in) | 5, 6 | User passed `--wiki` (or explicitly asks) AND Tier 2 completed AND `node`/`npm` present | Dashboard + Docusaurus wiki |
+
+**Degradation rule:** If a tier cannot run, you MUST record it in `CONTEXT.md` under `## Degraded Mode` — which steps were skipped, why (missing tool), and how to enable them later. A skipped step that is not logged is a verification failure. Silent skipping is the failure mode this rule exists to prevent.
+
+**Do not** suggest installing missing tools unprompted beyond the one-line Degraded Mode note.
+
+---
+
 ## Step 1: Context Discovery
 
 Before analyzing anything, ask the user:
@@ -62,9 +84,11 @@ Before analyzing anything, ask the user:
 
 Run the `tgd-context-engineering` skill. Analyze the current project: tech stack, architecture, dependencies, code organization, and existing patterns.
 
-**⚠️ This is only Step 2. You MUST continue to Step 3 (CodeGraph) and Step 4 (Understand-Anything) before producing CONTEXT.md.**
+**⚠️ This is only Step 2. If Tier 2 is available (see Step 0.5), you MUST continue to Step 3 (CodeGraph) and Step 4 (Understand-Anything) before producing CONTEXT.md. If Tier 2 is unavailable, proceed to Step 7 and log the skips under `## Degraded Mode`.**
 
-## Step 3: CodeGraph Setup
+## Step 3: CodeGraph Setup (Tier 2 — requires `codegraph` CLI)
+
+**Skip condition:** `codegraph` not on PATH → skip, log in `## Degraded Mode`, continue.
 
 For each repo to map (primary + all additional repos from Step 1):
 
@@ -72,9 +96,11 @@ For each repo to map (primary + all additional repos from Step 1):
 2. Create symlink: `rm -rf <repo-path>/.codegraph && ln -s $TGD_DIR/.scans/<repo-name>/.codegraph <repo-path>/.codegraph`
 3. cd into the repo and run: `codegraph init -i`
 
-## Step 4: Understand-Anything (MANDATORY)
+## Step 4: Understand-Anything (Tier 2 — requires the `understand` skill)
 
-This step is **required**, not optional.
+**Skip condition:** `understand` skill not loadable in this session → skip, log in `## Degraded Mode`, continue.
+
+When the skill IS available, this step is **required**, not optional.
 
 **You MAY use subagent delegation to execute this step.** If context is getting long, spawn a fresh subagent to run the `understand` skill on each repo.
 
@@ -85,22 +111,22 @@ For each repo to map (primary + all additional repos from Step 1):
 3. This produces `$TGD_DIR/.scans/<repo-name>/.understand-anything/knowledge-graph.json`
 4. If unfamiliar with any repo, load the `understand-onboard` skill for a guided tour
 
-## Step 5: Launch Dashboard (MANDATORY)
+## Step 5: Launch Dashboard (Tier 3 — opt-in)
 
-After ALL repos are mapped (Step 4 complete), you MUST launch the interactive dashboard for EACH repo.
+**Run condition:** user passed `--wiki` or explicitly asked for the dashboard, AND Step 4 completed. Otherwise skip (no Degraded Mode entry needed — Tier 3 is opt-in, not degraded).
 
-**You MAY use subagent delegation to execute this step.**
+The dashboard and wiki serve **humans**, not the agent — `CONTEXT.md` and the knowledge graph are what downstream `/tgd-*` commands consume. Don't pay the cost (npm install, localhost server) unless a human asked for it.
 
-For each repo to map (primary + all additional repos from Step 1):
+When it runs, for each repo (primary + all additional repos from Step 1):
 
 1. cd into the repo
 2. Load the `understand-dashboard` skill to launch the dashboard
 3. Verify the dashboard is running (check for localhost URL in output)
 4. Report the dashboard URL to the user
 
-**⚠️ Do NOT skip this step. The dashboard is a required deliverable of tgd-map for EVERY repo.**
+## Step 6: Generate tGD Wiki (Tier 3 — opt-in)
 
-## Step 6: Generate tGD Wiki (MANDATORY)
+**Run condition:** same as Step 5, plus `node`/`npm` present.
 
 Load and execute the `tgd-wiki-generation` skill.
 
@@ -207,25 +233,33 @@ Synthesize data from the tools:
 ### Open Questions
 - <unresolved questions>
 
+## Degraded Mode
+(Only if Tier 2 steps were skipped. List each skipped step, the missing dependency, and how to enable it later. Delete this section if Tier 2 ran in full.)
+- Step 3 (CodeGraph): skipped — `codegraph` not installed. Enable: install codegraph, re-run `/tgd-map`.
+
 ## See Also
-- Interactive Dashboard: http://localhost:<port>
+- Interactive Dashboard: http://localhost:<port> (only if Tier 3 ran)
 ```
 
-## Step 8: Verification Gate
+## Step 8: Verification Gate (tier-conditional)
 
+**Tier 1 (always required):**
 - [ ] `$TGD_DIR/CONTEXT.md` exists and is non-empty
+- [ ] If any Tier 2 step was skipped: `## Degraded Mode` section in CONTEXT.md lists every skip with its reason
+- [ ] If additional repos were provided, their summaries appear in CONTEXT.md
+
+**Tier 2 (required if the tools were available — cross-check against Step 0.5 probe):**
 - [ ] `$TGD_DIR/.scans/<repo>/.codegraph` symlink exists
 - [ ] `$TGD_DIR/.scans/<repo>/.understand-anything` symlink exists
 - [ ] `$TGD_DIR/.scans/<repo>/.understand-anything/knowledge-graph.json` exists
+
+**Tier 3 (required only if the user opted in):**
 - [ ] **Dashboard is running** (localhost URL confirmed)
-- [ ] `$TGD_DIR/wiki/docs/index.mdx` exists (tGD Wiki generated)
-- [ ] `$TGD_DIR/wiki/docs/manifest.json` exists
-- [ ] `$TGD_DIR/wiki/docusaurus.config.ts` exists
-- [ ] `$TGD_DIR/wiki/sidebars.ts` exists
-- [ ] `$TGD_DIR/wiki/package.json` exists
-- [ ] `$TGD_DIR/wiki/src/components/ModuleCard.tsx` exists (copied from skill)
-- [ ] `$TGD_DIR/wiki/src/css/custom.css` exists (copied from skill)
+- [ ] `$TGD_DIR/wiki/docs/index.mdx` and `$TGD_DIR/wiki/docs/manifest.json` exist
+- [ ] `$TGD_DIR/wiki/docusaurus.config.ts`, `sidebars.ts`, `package.json` exist
+- [ ] `$TGD_DIR/wiki/src/components/ModuleCard.tsx` and `src/css/custom.css` exist (copied from skill)
 - [ ] If `npm` is installed: `$TGD_DIR/wiki/build/index.html` exists
-- [ ] If additional repos were provided, their summaries appear in CONTEXT.md
+
+**Gate integrity rule:** a Tier 2 checkbox may only be marked N/A if Step 0.5 proved the tool missing AND the skip is logged in Degraded Mode. "Tool probably missing" is not evidence — show the `command -v` output.
 
 If verification passes, suggest the next step: `/tgd-define` to start defining what to build.

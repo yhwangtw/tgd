@@ -30,30 +30,31 @@ const tgdPrompts: Record<string, string> = {
     "- If user says \"no\" or provides nothing, proceed with primary repo only\n\n" +
     "## Step 2: Context Engineering\n\n" +
     "Run the `tgd-context-engineering` skill. Analyze the current project: tech stack, architecture, dependencies, code organization, and existing patterns.\n\n" +
-    "⚠️ This is only Step 2. You MUST continue to Step 3 (CodeGraph) and Step 4 (Understand-Anything) before producing CONTEXT.md.\n\n" +
-    "## Step 3: CodeGraph Setup\n\n" +
+    "Tier rule: Steps 1, 2, 7, 8 are Tier 1 (always run). Steps 3-4 are Tier 2 (run if codegraph CLI / understand skill are available — probe with command -v first). Steps 5-6 are Tier 3 (opt-in: only when the user passed --wiki or explicitly asked, AND Tier 2 completed, AND node/npm present). Any skipped Tier 2 step MUST be logged in CONTEXT.md under ## Degraded Mode with the missing dependency — silent skipping is a verification failure.\n\n" +
+    "⚠️ This is only Step 2. If Tier 2 is available you MUST continue to Step 3 (CodeGraph) and Step 4 (Understand-Anything) before producing CONTEXT.md.\n\n" +
+    "## Step 3: CodeGraph Setup (Tier 2 — skip and log in Degraded Mode if codegraph is missing)\n\n" +
     "For each repo to map (primary + all additional repos from Step 1):\n\n" +
     "1. mkdir -p $TGD_DIR/.scans/<repo-name>\n" +
     "2. rm -rf <repo-path>/.codegraph && ln -s $TGD_DIR/.scans/<repo-name>/.codegraph <repo-path>/.codegraph\n" +
     "3. cd into the repo and run `codegraph init -i`\n\n" +
-    "## Step 4: Understand-Anything (MANDATORY)\n\n" +
-    "This step is required, not optional.\n\n" +
+    "## Step 4: Understand-Anything (Tier 2 — skip and log in Degraded Mode if the understand skill is unavailable)\n\n" +
+    "When the skill IS available, this step is required, not optional.\n\n" +
     "You MAY use subagent delegation to execute this step. If context is getting long, spawn a fresh subagent to run the `understand` skill on each repo.\n\n" +
     "For each repo to map (primary + all additional repos from Step 1):\n\n" +
     "1. rm -rf <repo-path>/.understand-anything && ln -s $TGD_DIR/.scans/<repo-name>/.understand-anything <repo-path>/.understand-anything\n" +
     "2. load and execute the `understand` skill to build a full knowledge graph\n" +
     "3. Produces $TGD_DIR/.scans/<repo-name>/.understand-anything/knowledge-graph.json\n" +
     "4. If unfamiliar with any repo, load the `understand-onboard` skill for a guided tour\n\n" +
-    "## Step 5: Launch Dashboard (MANDATORY)\n\n" +
-    "After ALL repos are mapped (Step 4 complete), you MUST launch the interactive dashboard for EACH repo.\n\n" +
+    "## Step 5: Launch Dashboard (Tier 3 — opt-in only)\n\n" +
+    "Run only if the user opted in (--wiki or explicit ask) and Step 4 completed. The dashboard serves humans, not the agent — do not pay its cost unprompted. When it runs, launch it for EACH repo.\n\n" +
     "You MAY use subagent delegation to execute this step.\n\n" +
     "For each repo to map (primary + all additional repos from Step 1):\n\n" +
     "1. cd into the repo\n" +
     "2. Load the `understand-dashboard` skill to launch the dashboard\n" +
     "3. Verify the dashboard is running (check for localhost URL in output)\n" +
     "4. Report the dashboard URL to the user\n\n" +
-    "⚠️ Do NOT skip the dashboard. It is a required deliverable of tgd-map for EVERY repo.\n\n" +
-    "## Step 6: Generate tGD Wiki (MANDATORY)\n\n" +
+     +
+    "## Step 6: Generate tGD Wiki (Tier 3 — opt-in only, same condition as Step 5, plus node/npm present)\n\n" +
     "Load and execute the `tgd-wiki-generation` skill.\n\n" +
     "This compiles CodeGraph + Understand-Anything into a browsable Docusaurus 3 documentation site with a uniform DeepWiki-style layout — same brand colors, Grid Cards, and React components across every project.\n\n" +
     "Command sequence (resolve $TGD_REPO_ROOT to the cloned tGD repo, typically ~/tGD/):\n" +
@@ -86,12 +87,15 @@ const tgdPrompts: Record<string, string> = {
     "1. Primary Repository — path, name, structure, key files, summary, code entry points\n" +
     "2. Additional Context Repositories — for each: source, resolved path, summary, key insights, relevance\n" +
     "3. Synthesis — integration points, architecture decisions, open questions\n" +
-    "4. See Also — dashboard URL\n\n" +
-    "## Step 8: Verification Gate\n\n" +
-    "- [ ] $TGD_DIR/CONTEXT.md exists and is non-empty\n" +
+    "4. Degraded Mode — only if Tier 2 steps were skipped: each skipped step, missing dependency, how to enable later\n" +
+    "5. See Also — dashboard URL (only if Tier 3 ran)\n\n" +
+    "## Step 8: Verification Gate (tier-conditional)\n\n" +
+    "Tier 1 (always): CONTEXT.md exists and is non-empty; Degraded Mode section lists every Tier 2 skip with its reason; additional repo summaries present if repos were provided.\n" +
+    "Tier 2 (required if tools were available per the Step 0.5-style probe):\n" +
     "- [ ] $TGD_DIR/.scans/<repo>/.codegraph symlink exists\n" +
     "- [ ] $TGD_DIR/.scans/<repo>/.understand-anything symlink exists\n" +
     "- [ ] $TGD_DIR/.scans/<repo>/.understand-anything/knowledge-graph.json exists\n" +
+    "Tier 3 (required only if user opted in):\n" +
     "- [ ] Dashboard is running for EVERY repo (localhost URLs confirmed)\n" +
     "- [ ] $TGD_DIR/wiki/docs/index.mdx exists (tGD Wiki generated)\n" +
     "- [ ] $TGD_DIR/wiki/docs/manifest.json exists\n" +
@@ -101,7 +105,7 @@ const tgdPrompts: Record<string, string> = {
     "- [ ] $TGD_DIR/wiki/src/components/ModuleCard.tsx exists (copied from skill)\n" +
     "- [ ] $TGD_DIR/wiki/src/css/custom.css exists (copied from skill)\n" +
     "- [ ] If npm is installed: $TGD_DIR/wiki/build/index.html exists\n" +
-    "- [ ] If additional repos were provided, their summaries appear in CONTEXT.md\n\n" +
+    "Gate integrity: a Tier 2 checkbox may be N/A only if the probe proved the tool missing AND the skip is logged in Degraded Mode — show the command -v output.\n\n" +
     "After completing, suggest: /tgd-define",
 
   "tgd-define":
@@ -132,7 +136,7 @@ const tgdPrompts: Record<string, string> = {
   "tgd-plan":
     "Run the `tgd-planning-and-task-breakdown` skill. PLAN phase.\n\n" +
     "Pre-flight: Check $TGD_DIR/<feature>/SPEC.md exists. If missing, suggest /tgd-define first. $TGD_DIR: Check env var $TGD_DIR first. If not set, check sibling ../<project-name>-tGD/\n\n" +
-    "Feature Name Resolution: Scan $TGD_DIR/ for subdirectories. If none: STOP, run /tgd-define. If one: lock as <feature-name>. If multiple: ask user to pick.\n\n" +
+    "Feature Name Resolution: Scan $TGD_DIR/ for feature directories — subdirectories containing SPEC.md or PRD.md (exclude .scans/, wiki/, and dot-directories). If none: STOP, run /tgd-define. If one: lock as <feature-name>. If multiple: ask user to pick.\n\n" +
     "Pipeline:\n" +
     "1. Read the existing SPEC.md (and DESIGN.md if UI)\n" +
     "2. If .codegraph/ exists, run `codegraph impact` on core symbols to assess blast radius\n" +
@@ -142,8 +146,8 @@ const tgdPrompts: Record<string, string> = {
     "5. 🔗 Jira Integration Gate (IMMEDIATELY after TASKS.md, do NOT skip):\n" +
     "   - Check JIRA_URL, JIRA_PROJECT, JIRA_TOKEN.\n" +
     "   - If ALL set → run `tgd-jira-auto-sync` automatically. Report keys, add to TASKS.md.\n" +
-    "   - If NOT set → ask: \"📋 TASKS.md 已完成。🔗 要同步到 Jira 嗡？(y/n)\"\n" +
-    "     - Yes → ask for JIRA_URL, JIRA_PROJECT, JIRA_TOKEN one at a time. Save to $TGD_DIR/.env. Then run `tgd-jira-auto-sync`.\n" +
+    "   - If NOT set → ask: \"📋 TASKS.md 已完成。🔗 要同步到 Jira 嗎？(y/n)\"\n" +
+    "     - Yes → ask for JIRA_URL, JIRA_PROJECT, JIRA_TOKEN one at a time. Save JIRA_URL and JIRA_PROJECT to $TGD_DIR/.env; for JIRA_TOKEN warn that .env is plaintext and recommend a shell-profile export — only write it to .env if the user explicitly agrees. Then run `tgd-jira-auto-sync`.\n" +
     "     - No → skip.\n\n" +
     "Verification: TASKS.md exists with acceptance criteria per task.\n" +
     "After completing, suggest: /tgd-develop",
@@ -151,27 +155,28 @@ const tgdPrompts: Record<string, string> = {
   "tgd-develop":
     "Run the `tgd-subagent-driven-development` or `tgd-incremental-implementation` skill. BUILD phase.\n\n" +
     "Pre-flight: Check TASKS.md, PRD.md, SPEC.md exist. If missing, suggest /tgd-define or /tgd-plan first. $TGD_DIR: Check env var $TGD_DIR first. If not set, check sibling ../<project-name>-tGD/\n\n" +
-    "Feature Name Resolution: Scan $TGD_DIR/ for subdirectories. If none: STOP, run /tgd-define. If one: lock as <feature-name>. If multiple: ask user to pick.\n\n" +
+    "Feature Name Resolution: Scan $TGD_DIR/ for feature directories — subdirectories containing SPEC.md or PRD.md (exclude .scans/, wiki/, and dot-directories). If none: STOP, run /tgd-define. If one: lock as <feature-name>. If multiple: ask user to pick.\n\n" +
     "Pipeline:\n" +
     "1. `tgd-context-engineering` — before modifying, run `codegraph callers` <symbol> to ensure backward compatibility\n" +
     "2. `tgd-source-driven-development`\n" +
     "3. Execute tasks in worktree (`tgd-subagent-driven-development` if >= 3 tasks, `tgd-incremental-implementation` if < 3)\n" +
     "4. `tgd-test-driven-development` — Red-Green-Refactor\n" +
-    "5. `tgd-verification-before-completion`\n\n" +
+    "5. `tgd-verification-before-completion`\n" +
+    "6. Hand-off: commit on feature/<feature-name>, KEEP the worktree. Do NOT merge to main here — merging happens in /tgd-release after verify and review pass.\n\n" +
     "Conditional: If unfamiliar code → the `understand` skill for architectural guidance.\n" +
     "Conditional: Touching UI? → `tgd-frontend-ui-engineering`\n" +
     "Conditional: Designing APIs? → `tgd-api-and-interface-design`\n" +
     "Conditional: High-stakes decision? → `tgd-doubt-driven-development`\n\n" +
     "Verification Gate:\n" +
-    "- [ ] Source code files created/modified in src/\n" +
-    "- [ ] Tests written AND passing for new logic in tests/\n" +
+    "- [ ] Feature branch has source changes (git diff main...feature/<feature-name> non-empty)\n" +
+    "- [ ] Tests written AND passing for new logic (per the project's test layout in CONTEXT.md)\n" +
     "- [ ] Verification commands run and output confirmed\n" +
     "After completing, suggest: /tgd-verify",
 
   "tgd-verify":
     "Run the `tgd-debugging-and-error-recovery` skill. VERIFY phase.\n\n" +
-    "Pre-flight: Check $TGD_DIR/CONTEXT.md exists (or .codegraph/ is present). If missing, STOP and tell user to run /tgd-map first. Source code files must exist in src/ and test files in tests/. If missing, suggest /tgd-develop first. $TGD_DIR: Check env var $TGD_DIR first. If not set, check sibling ../<project-name>-tGD/\n\n" +
-    "Feature Name Resolution: Scan $TGD_DIR/ for subdirectories. If none: STOP, run /tgd-define. If one: lock as <feature-name>. If multiple: ask user to pick.\n\n" +
+    "Pre-flight: Check $TGD_DIR/CONTEXT.md exists (or .codegraph/ is present). If missing, STOP and tell user to run /tgd-map first. The feature branch must have source changes (git diff main...feature/<feature-name> non-empty) and tests per the project's layout in CONTEXT.md — do NOT assume src/ + tests/. If missing, suggest /tgd-develop first. $TGD_DIR: Check env var $TGD_DIR first. If not set, check sibling ../<project-name>-tGD/\n\n" +
+    "Feature Name Resolution: Scan $TGD_DIR/ for feature directories — subdirectories containing SPEC.md or PRD.md (exclude .scans/, wiki/, and dot-directories). If none: STOP, run /tgd-define. If one: lock as <feature-name>. If multiple: ask user to pick.\n\n" +
     "Pipeline:\n" +
     "1. `tgd-debugging-and-error-recovery` — reproduce → localize → reduce → fix → guard\n" +
     "2. `tgd-test-driven-development` — verify with the test pyramid (80% unit, 15% integration, 5% E2E)\n" +
@@ -181,8 +186,8 @@ const tgdPrompts: Record<string, string> = {
     "4. Conditional: want visual impact? → the `understand-diff` skill\n\n" +
     "Verify that the feature works correctly before proceeding to review. Tests are proof — 'seems right' is never sufficient.\n" +
     "Verification: ALL tests pass, build succeeds.\n" +
-    "Run the test-output capture first — raw evidence that backs the report:\n" +
-    "Run from client repo root: bash \"$TGD_DIR/scripts/capture-test-output.sh\" \"$TGD_DIR/<feature-name>/TEST-REPORT.md\"\n" +
+    "Run the test-output capture first — raw evidence that backs the report. Gate scripts live in the tGD repo ($TGD_REPO_ROOT/scripts/), NOT in $TGD_DIR:\n" +
+    "Run from client repo root: bash \"$TGD_REPO_ROOT/scripts/capture-test-output.sh\" \"$TGD_DIR/<feature-name>/TEST-REPORT.md\"\n" +
     "Exit 0 = tests passed, raw output captured. Use real numbers from the meta-comment in the Summary table — do NOT invent counts.\n" +
     "Exit 1 = tests failed, raw output still captured. Fix and re-run.\n" +
     "After capturing raw output, create $TGD_DIR/<feature-name>/TEST-REPORT.md using this template:\n" +
@@ -190,13 +195,13 @@ const tgdPrompts: Record<string, string> = {
     "> Date: YYYY-MM-DD\n" +
     "## 1. Test Summary — table: Suite/Passed/Failed/Skipped, exit code\n" +
     "## 2. Coverage — table: Lines/Branches/Functions\n" +
-    "Run coverage gate before filling: bash \"$TGD_DIR/scripts/coverage-check.sh\". Exit 0 = floors met, use numbers. Exit 1 = gate failed. Document exceptions in '## Coverage Exceptions'.\n" +
+    "Run coverage gate before filling: bash \"$TGD_REPO_ROOT/scripts/coverage-check.sh\". Exit 0 = floors met, use numbers. Exit 1 = gate failed. Document exceptions in '## Coverage Exceptions'.\n" +
     "## 3. Failures & Root Causes — table: Test/Error/Root Cause/Fix Applied\n" +
     "## 4. Regression Status — checkboxes: regression-gate.sh exits 0, no regressions\n" +
     "## Sign-off — QA (pending)\n" +
     "Cross-Feature Regression Gate (MANDATORY if $TGD_DIR/REGRESSION-CATALOG.md exists):\n" +
     "Run the machine gate — do NOT manually walk the catalog.\n" +
-    "Run from client repo root: bash \"$TGD_DIR/scripts/regression-gate.sh\"\n" +
+    "Run from client repo root: bash \"$TGD_REPO_ROOT/scripts/regression-gate.sh\"\n" +
     "Exit 0 = all catalog entries verified, proceed.\n" +
     "Exit 1 = test suite failed OR catalog entry test file missing. STOP. Report which prior feature's regression test broke.\n" +
     "Exit 2 = no catalog yet (first release) OR no test runner detected.\n" +
@@ -207,8 +212,8 @@ const tgdPrompts: Record<string, string> = {
 
   "tgd-review":
     "Run the `tgd-code-review-and-quality` skill. REVIEW phase.\n\n" +
-    "Pre-flight: Check $TGD_DIR/CONTEXT.md exists (or .codegraph/ is present). If missing, STOP and tell user to run /tgd-map first. Test files must exist in tests/. If missing, suggest /tgd-verify first. $TGD_DIR: Check env var $TGD_DIR first. If not set, check sibling ../<project-name>-tGD/\n\n" +
-    "Feature Name Resolution: Scan $TGD_DIR/ for subdirectories. If none: STOP, run /tgd-define. If one: lock as <feature-name>. If multiple: ask user to pick.\n\n" +
+    "Pre-flight: Check $TGD_DIR/CONTEXT.md exists (or .codegraph/ is present). If missing, STOP and tell user to run /tgd-map first. Tests must exist per the project's layout in CONTEXT.md, and $TGD_DIR/<feature-name>/TEST-REPORT.md must exist. If missing, suggest /tgd-verify first. $TGD_DIR: Check env var $TGD_DIR first. If not set, check sibling ../<project-name>-tGD/\n\n" +
+    "Feature Name Resolution: Scan $TGD_DIR/ for feature directories — subdirectories containing SPEC.md or PRD.md (exclude .scans/, wiki/, and dot-directories). If none: STOP, run /tgd-define. If one: lock as <feature-name>. If multiple: ask user to pick.\n\n" +
     "Pipeline:\n" +
     "1. `tgd-code-review-and-quality` (5-axis review) — run `codegraph callers` + `codegraph affected` to verify impact coverage\n" +
     "2. `tgd-code-simplification` — apply Chesterton's Fence, reduce complexity while preserving exact behavior\n" +
@@ -231,12 +236,13 @@ const tgdPrompts: Record<string, string> = {
   "tgd-release":
     "Run the `tgd-shipping-and-launch` skill. SHIP phase.\n\n" +
     "Pre-flight: Check $TGD_DIR/CONTEXT.md exists (or .codegraph/ is present). If missing, STOP and tell user to run /tgd-map first. Review passed (no critical issues) and $TGD_DIR/<feature>/REVIEW.md exists. If missing, suggest /tgd-review first. $TGD_DIR: Check env var $TGD_DIR first. If not set, check sibling ../<project-name>-tGD/\n\n" +
-    "Feature Name Resolution: Scan $TGD_DIR/ for subdirectories. If none: STOP, run /tgd-define. If one: lock as <feature-name>. If multiple: ask user to pick.\n\n" +
+    "Feature Name Resolution: Scan $TGD_DIR/ for feature directories — subdirectories containing SPEC.md or PRD.md (exclude .scans/, wiki/, and dot-directories). If none: STOP, run /tgd-define. If one: lock as <feature-name>. If multiple: ask user to pick.\n\n" +
     "Pipeline:\n" +
     "1. `tgd-git-workflow-and-versioning`\n" +
-    "2. `tgd-shipping-and-launch`\n" +
-    "3. If CI/CD exists: `tgd-ci-cd-and-automation`\n" +
-    "4. If writing docs: `tgd-documentation-and-adrs`\n\n" +
+    "2. Merge feature/<feature-name> into main (or open a PR, per team policy) and remove the worktree (git worktree remove ../project-<feature-name>) — this is where the branch lands on main, NOT in /tgd-develop\n" +
+    "3. `tgd-shipping-and-launch`\n" +
+    "4. If CI/CD exists: `tgd-ci-cd-and-automation`\n" +
+    "5. If writing docs: `tgd-documentation-and-adrs`\n\n" +
     "Verification: Changes committed, tests pass, deployment successful.\n" +
     "After shipping, update $TGD_DIR/CHANGELOG.md (create if it doesn't exist) with: version (CalVer), feature name, date shipped, key changes.\n" +
     "Regression Catalog Update: After shipping, scan $TGD_DIR/<feature-name>/TASKS.md for [R] marked Acceptance Criteria.\n" +

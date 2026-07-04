@@ -8,7 +8,7 @@ Release to production — faster is safer
 - **$TGD_DIR:** Check env var `$TGD_DIR` first. If not set, check sibling `../<project-name>-tGD/`. If neither exists: STOP — run `/tgd-map` first.
 
 **🔑 Step 0: Feature Name Resolution**
-1. Scan `$TGD_DIR/` for subdirectories (e.g., `$TGD_DIR/user-login/`).
+1. Scan `$TGD_DIR/` for **feature directories**: subdirectories containing `SPEC.md` or `PRD.md` (e.g., `$TGD_DIR/user-login/`). Infrastructure dirs (`.scans/`, `wiki/`, and any dot-directories) are NOT features — always exclude them.
 2. If none found: 🛑 STOP. "No features defined. Run `/tgd-define` first."
 3. If exactly one found: Lock it as `<feature-name>`.
 4. If multiple found: List them and ask user to specify.
@@ -17,14 +17,17 @@ Release to production — faster is safer
 **🔒 Pre-flight: Artifact Check**
 - [ ] Review passed (no critical issues).
 - [ ] `$TGD_DIR/<feature>/REVIEW.md` exists.
-- [ ] `tests/` exists and passes.
+- [ ] The feature's tests exist (per the project's layout in `CONTEXT.md`) and pass.
 - **If missing:** STOP. Tell user: "Review or tests incomplete. Please run `/tgd-review` first."
 
 Run the `tgd-shipping-and-launch` skill. This is the Release phase. The full pipeline is:
 
 **Core flow:**
 1. `tgd-git-workflow-and-versioning` — clean commit history, trunk-based development
-2. `tgd-shipping-and-launch` — pre-launch checklist, staged rollouts, monitoring setup
+2. **🌳 Merge & worktree cleanup** — this is where the feature branch lands on `main` (NOT in `/tgd-develop`):
+   1. Merge `feature/<feature-name>` into `main` (or open a PR, per team policy).
+   2. Remove the worktree: `git worktree remove ../project-<feature-name>`.
+3. `tgd-shipping-and-launch` — pre-launch checklist, staged rollouts, monitoring setup
 
 **Conditional (apply when relevant):**
 - CI/CD pipeline work? → `tgd-ci-cd-and-automation`
@@ -76,6 +79,7 @@ This prevents the catalog from becoming a zombie file full of dead references. E
 
 **Verification Gate:**
 - [ ] Git commit created with clean history
+- [ ] `feature/<feature-name>` merged to `main` (or PR opened) and worktree removed
 - [ ] `$TGD_DIR/CHANGELOG.md` exists and is updated
 - [ ] `$TGD_DIR/REGRESSION-CATALOG.md` updated with new `[R]` entries (if any)
 - [ ] Regression Catalog Audit completed — all entries point to existing, passing test files

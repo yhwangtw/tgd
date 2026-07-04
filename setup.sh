@@ -15,17 +15,17 @@ if [[ "$1" == "--upgrade" || "$1" == "-u" ]]; then
 elif [[ "$1" == "--uninstall" || "$1" == "--remove" ]]; then
     MODE="uninstall"
 elif [[ "$1" == "--version" || "$1" == "-v" ]]; then
-    TGD_DIR="$(cd "$(dirname "$0")" && pwd)"
-    if [[ -f "$TGD_DIR/VERSION" ]]; then
-        echo "tGD $(cat "$TGD_DIR/VERSION")"
+    TGD_REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
+    if [[ -f "$TGD_REPO_ROOT/VERSION" ]]; then
+        echo "tGD $(cat "$TGD_REPO_ROOT/VERSION")"
     else
         echo "tGD (unknown — VERSION not found)"
     fi
     exit 0
 fi
 
-TGD_DIR="$(cd "$(dirname "$0")" && pwd)"
-cd "$TGD_DIR"
+TGD_REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
+cd "$TGD_REPO_ROOT"
 
 # Hermes profiles are isolated homes.  A profile-scoped Hermes session resolves
 # skills/plugins from ~/.hermes/profiles/<name>/, not from the default
@@ -50,7 +50,7 @@ link_tgd_skills_to_hermes_home() {
     local hermes_home="$1"
     mkdir -p "$hermes_home/skills"
     local count=0
-    for skill in "$TGD_DIR"/skills/*/; do
+    for skill in "$TGD_REPO_ROOT"/skills/*/; do
         local skill_name
         skill_name=$(basename "$skill")
         # Skip nested symlink traps
@@ -68,20 +68,20 @@ link_tgd_skills_to_hermes_home() {
 
 link_hermes_plugin_to_home() {
     local hermes_home="$1"
-    if [[ -d "$TGD_DIR/.hermes/plugins/tgd" ]]; then
+    if [[ -d "$TGD_REPO_ROOT/.hermes/plugins/tgd" ]]; then
         mkdir -p "$hermes_home/plugins"
         if [[ -d "$hermes_home/plugins/tgd" && ! -L "$hermes_home/plugins/tgd" ]]; then
             rm -rf "$hermes_home/plugins/tgd"
         fi
-        ln -sf "$TGD_DIR/.hermes/plugins/tgd" "$hermes_home/plugins/tgd" 2>/dev/null || true
+        ln -sf "$TGD_REPO_ROOT/.hermes/plugins/tgd" "$hermes_home/plugins/tgd" 2>/dev/null || true
         echo "   ✅ Hermes plugin linked: $(display_home_path "$hermes_home")/plugins/tgd."
     fi
 }
 
 link_hermes_agents_to_home() {
     local hermes_home="$1"
-    if [[ -f "$TGD_DIR/.hermes/AGENTS.md" ]]; then
-        ln -sf "$TGD_DIR/.hermes/AGENTS.md" "$hermes_home/AGENTS.md" 2>/dev/null || true
+    if [[ -f "$TGD_REPO_ROOT/.hermes/AGENTS.md" ]]; then
+        ln -sf "$TGD_REPO_ROOT/.hermes/AGENTS.md" "$hermes_home/AGENTS.md" 2>/dev/null || true
     fi
 }
 
@@ -103,7 +103,14 @@ link_skill_folder_to_hermes_homes() {
 # ─── Prerequisite checks ─────────────────────────────────────────────────────
 missing_deps=()
 command -v git &> /dev/null || missing_deps+=("git")
-command -v node &> /dev/null || missing_deps+=("node (Node.js >= 22)")
+if command -v node &> /dev/null; then
+    node_major=$(node -v 2>/dev/null | sed -E 's/^v([0-9]+).*/\1/')
+    if ! [[ "$node_major" =~ ^[0-9]+$ ]] || [ "$node_major" -lt 22 ]; then
+        missing_deps+=("node >= 22 (found $(node -v 2>/dev/null || echo 'unknown'))")
+    fi
+else
+    missing_deps+=("node (Node.js >= 22)")
+fi
 command -v python3 &> /dev/null || missing_deps+=("python3")
 if [ ${#missing_deps[@]} -gt 0 ]; then
     echo "❌ Missing required dependencies:"
@@ -113,6 +120,12 @@ if [ ${#missing_deps[@]} -gt 0 ]; then
     echo ""
     echo "Install them and re-run: bash setup.sh"
     exit 1
+fi
+# jq is optional: the session-start hook needs it to inject the tgd-router
+# meta-skill, but degrades gracefully without it. Warn, don't abort.
+if ! command -v jq &> /dev/null; then
+    echo "⚠️  jq not found — session-start hooks will skip meta-skill injection."
+    echo "   Install for full functionality: apt-get install jq / brew install jq"
 fi
 
 # ─── Uninstall mode ──────────────────────────────────────────────────────────
@@ -329,9 +342,9 @@ PYEOF
     done
 
     # 5. Remove version marker
-    if [[ -f "$TGD_DIR/VERSION" ]]; then
-        echo "   🗑️  Removing version marker: $TGD_DIR/VERSION"
-        rm -f "$TGD_DIR/VERSION"
+    if [[ -f "$TGD_REPO_ROOT/VERSION" ]]; then
+        echo "   🗑️  Removing version marker: $TGD_REPO_ROOT/VERSION"
+        rm -f "$TGD_REPO_ROOT/VERSION"
     fi
     if [[ -f "$HOME/.tgd-installed-version" ]]; then
         echo "   🗑️  Removing installed version marker: $HOME/.tgd-installed-version"
@@ -339,9 +352,9 @@ PYEOF
     fi
 
     # 6. Clean UA build artifacts (node_modules)
-    if [[ -d "$TGD_DIR/vendor/understand-anything/node_modules" ]]; then
+    if [[ -d "$TGD_REPO_ROOT/vendor/understand-anything/node_modules" ]]; then
         echo "   🗑️  Removing UA build artifacts (vendor/understand-anything/node_modules)..."
-        rm -rf "$TGD_DIR/vendor/understand-anything/node_modules"
+        rm -rf "$TGD_REPO_ROOT/vendor/understand-anything/node_modules"
     fi
 
     echo ""
@@ -369,15 +382,15 @@ fi
 
 # ─── Version marker ──────────────────────────────────────────────────────────
 # Version is derived from git tags (CalVer). To bump: git tag v2026.07.04
-TGD_VERSION=$(cat "$TGD_DIR/VERSION" 2>/dev/null || echo "unknown")
+TGD_VERSION=$(cat "$TGD_REPO_ROOT/VERSION" 2>/dev/null || echo "unknown")
 VERSION_FILE="$HOME/.tgd-installed-version"
 
-# Guard: remove any pre-existing self-loop symlink at $TGD_DIR/skills/skills
+# Guard: remove any pre-existing self-loop symlink at $TGD_REPO_ROOT/skills/skills
 # (historical artifact — was never created by setup.sh, but recurs somehow).
 # Self-loops break Claude's individual symlink scan if a future setup.sh change
 # ever iterates skills/*/ without filtering.
-if [[ -L "$TGD_DIR/skills/skills" ]]; then
-    rm -f "$TGD_DIR/skills/skills"
+if [[ -L "$TGD_REPO_ROOT/skills/skills" ]]; then
+    rm -f "$TGD_REPO_ROOT/skills/skills"
 fi
 
 if [[ "$MODE" == "install" ]] && [[ -f "$VERSION_FILE" ]]; then
@@ -493,24 +506,24 @@ if command -v opencode &> /dev/null; then
     echo "   📂 OpenCode detected."
     # Create global commands link (individual files, not subdirectory)
     mkdir -p ~/.config/opencode/commands
-    for cmd in "$TGD_DIR"/.opencode/commands/*.md; do
+    for cmd in "$TGD_REPO_ROOT"/.opencode/commands/*.md; do
         cmd_name=$(basename "$cmd")
         ln -sf "$cmd" ~/.config/opencode/commands/$cmd_name 2>/dev/null || true
     done
     echo "   ✅ Commands linked (7 tgd-* commands)."
     # Link skills for auto-detection (agent can find skills by name)
-    if [ -d "$TGD_DIR/skills" ]; then
+    if [ -d "$TGD_REPO_ROOT/skills" ]; then
         mkdir -p ~/.config/opencode/skills
         if [ -d "$HOME/.config/opencode/skills/tGD" ] && [ ! -L "$HOME/.config/opencode/skills/tGD" ]; then
             rm -rf "$HOME/.config/opencode/skills/tGD"
         fi
-        ln -sf "$TGD_DIR/skills" ~/.config/opencode/skills/tGD 2>/dev/null || true
+        ln -sf "$TGD_REPO_ROOT/skills" ~/.config/opencode/skills/tGD 2>/dev/null || true
         echo "   ✅ Skills linked for auto-detection."
     fi
     # Install plugins (hooks)
-    if [ -d "$TGD_DIR/.opencode/plugins" ]; then
+    if [ -d "$TGD_REPO_ROOT/.opencode/plugins" ]; then
         mkdir -p ~/.config/opencode/plugins
-        ln -sf "$TGD_DIR/.opencode/plugins"/* ~/.config/opencode/plugins/ 2>/dev/null || true
+        ln -sf "$TGD_REPO_ROOT/.opencode/plugins"/* ~/.config/opencode/plugins/ 2>/dev/null || true
         echo "   ✅ Plugins installed (session-start)."
     fi
 fi
@@ -518,10 +531,10 @@ fi
 # Claude Code
 if command -v claude &> /dev/null; then
     echo "   📂 Claude Code detected."
-    if [ -d "$TGD_DIR/.claude" ]; then
+    if [ -d "$TGD_REPO_ROOT/.claude" ]; then
         # Link skills
         mkdir -p ~/.claude/skills
-        for skill in "$TGD_DIR"/skills/*/; do
+        for skill in "$TGD_REPO_ROOT"/skills/*/; do
             skill_name=$(basename "$skill")
             # Skip nested symlink traps (e.g. skills/skills -> skills) — would create self-loop
             if [ "$skill_name" = "skills" ]; then
@@ -536,16 +549,16 @@ if command -v claude &> /dev/null; then
         echo "   ✅ Skills linked."
 
         # Link commands (slash commands: /tgd-map, /tgd-develop, etc.)
-        if [ -d "$TGD_DIR/.claude/commands" ]; then
+        if [ -d "$TGD_REPO_ROOT/.claude/commands" ]; then
             mkdir -p ~/.claude/commands
-            ln -sf "$TGD_DIR/.claude/commands"/* ~/.claude/commands/ 2>/dev/null || true
+            ln -sf "$TGD_REPO_ROOT/.claude/commands"/* ~/.claude/commands/ 2>/dev/null || true
             echo "   ✅ Commands linked (7 tgd-* slash commands)."
         fi
 
         # Install hooks into settings.json (resolve paths to absolute)
-        if [ -d "$TGD_DIR/hooks" ] && [ -f "$TGD_DIR/hooks/hooks.json" ]; then
+        if [ -d "$TGD_REPO_ROOT/hooks" ] && [ -f "$TGD_REPO_ROOT/hooks/hooks.json" ]; then
             mkdir -p ~/.claude
-            TGD_ABS="$TGD_DIR"
+            TGD_ABS="$TGD_REPO_ROOT"
             SETTINGS="$HOME/.claude/settings.json"
             # Create default settings.json if it doesn't exist
             if [ ! -f "$SETTINGS" ]; then
@@ -598,24 +611,24 @@ fi
 # Gemini CLI
 if command -v gemini &> /dev/null; then
     echo "   📂 Gemini CLI detected."
-    if [ -d "$TGD_DIR/.gemini" ]; then
+    if [ -d "$TGD_REPO_ROOT/.gemini" ]; then
         mkdir -p ~/.gemini/commands
-        ln -sf "$TGD_DIR/.gemini/commands"/* ~/.gemini/commands/ 2>/dev/null || true
+        ln -sf "$TGD_REPO_ROOT/.gemini/commands"/* ~/.gemini/commands/ 2>/dev/null || true
         echo "   ✅ Commands linked."
     fi
     # Link skills for auto-detection
-    if [ -d "$TGD_DIR/skills" ]; then
+    if [ -d "$TGD_REPO_ROOT/skills" ]; then
         mkdir -p ~/.gemini/skills
         if [ -d "$HOME/.gemini/skills/tGD" ] && [ ! -L "$HOME/.gemini/skills/tGD" ]; then
             rm -rf "$HOME/.gemini/skills/tGD"
         fi
-        ln -sf "$TGD_DIR/skills" ~/.gemini/skills/tGD 2>/dev/null || true
+        ln -sf "$TGD_REPO_ROOT/skills" ~/.gemini/skills/tGD 2>/dev/null || true
         echo "   ✅ Skills linked for auto-detection."
     fi
     # Install hooks (Gemini uses flat format, different from Claude Code/Codex nested format)
-    if [ -f "$TGD_DIR/.gemini/settings.json" ]; then
+    if [ -f "$TGD_REPO_ROOT/.gemini/settings.json" ]; then
         mkdir -p ~/.gemini
-        TGD_ABS="$TGD_DIR"
+        TGD_ABS="$TGD_REPO_ROOT"
         # Resolve relative paths in .gemini/settings.json to absolute
         if [ -f ~/.gemini/settings.json ]; then
             echo "   ⚠️  ~/.gemini/settings.json exists. Merging tGD hooks..."
@@ -717,28 +730,28 @@ fi
 if command -v codex &> /dev/null; then
     echo "   📂 Codex CLI detected."
     mkdir -p ~/.codex
-    if [ -d "$TGD_DIR/skills" ]; then
+    if [ -d "$TGD_REPO_ROOT/skills" ]; then
         # Remove real directory (from old copy-installs) before re-linking
         if [ -d "$HOME/.codex/skills/tGD" ] && [ ! -L "$HOME/.codex/skills/tGD" ]; then
             rm -rf "$HOME/.codex/skills/tGD"
         fi
-        ln -sf "$TGD_DIR/skills" ~/.codex/skills/tGD 2>/dev/null || true
+        ln -sf "$TGD_REPO_ROOT/skills" ~/.codex/skills/tGD 2>/dev/null || true
         echo "   ✅ Skills linked for auto-detection."
     fi
-    if [ -d "$TGD_DIR/.codex/prompts" ]; then
+    if [ -d "$TGD_REPO_ROOT/.codex/prompts" ]; then
         mkdir -p ~/.codex/prompts
-        ln -sf "$TGD_DIR/.codex/prompts"/* ~/.codex/prompts/ 2>/dev/null || true
+        ln -sf "$TGD_REPO_ROOT/.codex/prompts"/* ~/.codex/prompts/ 2>/dev/null || true
         echo "   ✅ Prompts linked (7 tgd-* commands)."
     fi
     # Install hooks (Codex only reads ~/.codex/hooks.json — plugin-local hooks don't work)
     # We merge TWO sources: hooks/hooks.json (Claude-style) and hooks/codex/hooks.json
     # (Codex-style). The merge is idempotent and dedups by command string.
     # See scripts/merge-codex-hooks.py for details and the Codex contract ref.
-    if [ -f "$TGD_DIR/hooks/hooks.json" ] || [ -f "$TGD_DIR/hooks/codex/hooks.json" ]; then
+    if [ -f "$TGD_REPO_ROOT/hooks/hooks.json" ] || [ -f "$TGD_REPO_ROOT/hooks/codex/hooks.json" ]; then
         HOOKS_DST="$HOME/.codex/hooks.json"
-        TGD_ABS="$TGD_DIR"
+        TGD_ABS="$TGD_REPO_ROOT"
         export TGD_ABS HOOKS_DST
-        python3 "$TGD_DIR/scripts/merge-codex-hooks.py" 2>/dev/null || echo "   ⚠️  Hooks install/merge failed. Check scripts/merge-codex-hooks.py."
+        python3 "$TGD_REPO_ROOT/scripts/merge-codex-hooks.py" 2>/dev/null || echo "   ⚠️  Hooks install/merge failed. Check scripts/merge-codex-hooks.py."
     fi
 fi
 
@@ -747,21 +760,21 @@ if command -v pi &> /dev/null; then
     echo "   📂 Pi Coding Agent detected."
     # Install extension and instructions to ~/.pi/agent/
     mkdir -p "$HOME/.pi/agent/extensions"
-    if [ -f "$TGD_DIR/.pi/extensions/tgd-commands.ts" ]; then
-        ln -sf "$TGD_DIR/.pi/extensions/tgd-commands.ts" "$HOME/.pi/agent/extensions/tgd-commands.ts" 2>/dev/null || true
+    if [ -f "$TGD_REPO_ROOT/.pi/extensions/tgd-commands.ts" ]; then
+        ln -sf "$TGD_REPO_ROOT/.pi/extensions/tgd-commands.ts" "$HOME/.pi/agent/extensions/tgd-commands.ts" 2>/dev/null || true
         echo "   ✅ Extension installed to ~/.pi/agent/extensions/tgd-commands.ts"
     fi
-    if [ -f "$TGD_DIR/.pi/instructions.md" ]; then
-        ln -sf "$TGD_DIR/.pi/instructions.md" "$HOME/.pi/agent/instructions.md" 2>/dev/null || true
+    if [ -f "$TGD_REPO_ROOT/.pi/instructions.md" ]; then
+        ln -sf "$TGD_REPO_ROOT/.pi/instructions.md" "$HOME/.pi/agent/instructions.md" 2>/dev/null || true
         echo "   ✅ Instructions installed to ~/.pi/agent/instructions.md"
     fi
     # Link skills for auto-detection
-    if [ -d "$TGD_DIR/skills" ]; then
+    if [ -d "$TGD_REPO_ROOT/skills" ]; then
         mkdir -p "$HOME/.pi/agent/skills"
         if [ -d "$HOME/.pi/agent/skills/tGD" ] && [ ! -L "$HOME/.pi/agent/skills/tGD" ]; then
             rm -rf "$HOME/.pi/agent/skills/tGD"
         fi
-        ln -sf "$TGD_DIR/skills" "$HOME/.pi/agent/skills/tGD" 2>/dev/null || true
+        ln -sf "$TGD_REPO_ROOT/skills" "$HOME/.pi/agent/skills/tGD" 2>/dev/null || true
         echo "   ✅ Skills linked for auto-detection."
     fi
 else
@@ -771,21 +784,21 @@ fi
 # Hermes Agent
 if command -v hermes &> /dev/null; then
     echo "   📂 Hermes Agent detected."
-    if [ -d "$TGD_DIR/skills" ]; then
+    if [ -d "$TGD_REPO_ROOT/skills" ]; then
         while IFS= read -r hermes_home; do
             [[ -n "$hermes_home" ]] || continue
             link_tgd_skills_to_hermes_home "$hermes_home"
         done < <(hermes_homes)
     fi
 
-    if [ -d "$TGD_DIR/.hermes/plugins/tgd" ]; then
+    if [ -d "$TGD_REPO_ROOT/.hermes/plugins/tgd" ]; then
         while IFS= read -r hermes_home; do
             [[ -n "$hermes_home" ]] || continue
             link_hermes_plugin_to_home "$hermes_home"
         done < <(hermes_homes)
     fi
 
-    if [ -f "$TGD_DIR/.hermes/AGENTS.md" ]; then
+    if [ -f "$TGD_REPO_ROOT/.hermes/AGENTS.md" ]; then
         while IFS= read -r hermes_home; do
             [[ -n "$hermes_home" ]] || continue
             link_hermes_agents_to_home "$hermes_home"
@@ -811,7 +824,7 @@ else
 fi
 
 # tGD Wiki (Docusaurus 3) — powered by the tgd-wiki-generation skill
-# No install needed here: /tgd-map Step 6 will run `npm install` inside $TGD_DIR
+# No install needed here: /tgd-map Step 6 will run `npm install` inside $TGD_REPO_ROOT
 # on first use. Node.js 22+ is already required above (see prerequisite checks).
 echo "📖 tGD Wiki: Docusaurus 3 site is generated by /tgd-map Step 6."
 echo "   Node.js 22+ is already required for tGD. Nothing to install here."
@@ -867,7 +880,7 @@ install_ua_deps() {
 
 # Understand-Anything (bundled in vendor/)
 echo "🧠 Checking Understand-Anything..."
-UA_DIR="$TGD_DIR/vendor/understand-anything"
+UA_DIR="$TGD_REPO_ROOT/vendor/understand-anything"
 UA_SKILLS_DIR="$UA_DIR/understand-anything-plugin/skills"
 if [ -d "$UA_SKILLS_DIR" ]; then
     echo "   ✅ Understand-Anything skills ready."
@@ -1028,7 +1041,7 @@ if command -v codex &> /dev/null || [ -n "$CI" ]; then
     if [ -d "$HOME/.codex/skills/tgd-rules" ] && [ ! -L "$HOME/.codex/skills/tgd-rules" ]; then
         rm -rf "$HOME/.codex/skills/tgd-rules"
     fi
-    ln -sf "$TGD_DIR/skills/tgd-rules" "$HOME/.codex/skills/tgd-rules" 2>/dev/null && echo "   ✅ Codex CLI: ~/.codex/skills/tgd-rules → symlink"
+    ln -sf "$TGD_REPO_ROOT/skills/tgd-rules" "$HOME/.codex/skills/tgd-rules" 2>/dev/null && echo "   ✅ Codex CLI: ~/.codex/skills/tgd-rules → symlink"
 fi
 
 # OpenCode: ~/.config/opencode/skills/tgd-rules
@@ -1037,7 +1050,7 @@ if command -v opencode &> /dev/null || [ -n "$CI" ]; then
     if [ -d "$HOME/.config/opencode/skills/tgd-rules" ] && [ ! -L "$HOME/.config/opencode/skills/tgd-rules" ]; then
         rm -rf "$HOME/.config/opencode/skills/tgd-rules"
     fi
-    ln -sf "$TGD_DIR/skills/tgd-rules" "$HOME/.config/opencode/skills/tgd-rules" 2>/dev/null && echo "   ✅ OpenCode: ~/.config/opencode/skills/tgd-rules → symlink"
+    ln -sf "$TGD_REPO_ROOT/skills/tgd-rules" "$HOME/.config/opencode/skills/tgd-rules" 2>/dev/null && echo "   ✅ OpenCode: ~/.config/opencode/skills/tgd-rules → symlink"
 fi
 
 # Gemini CLI: ~/.gemini/skills/tgd-rules
@@ -1046,7 +1059,7 @@ if command -v gemini &> /dev/null || [ -n "$CI" ]; then
     if [ -d "$HOME/.gemini/skills/tgd-rules" ] && [ ! -L "$HOME/.gemini/skills/tgd-rules" ]; then
         rm -rf "$HOME/.gemini/skills/tgd-rules"
     fi
-    ln -sf "$TGD_DIR/skills/tgd-rules" "$HOME/.gemini/skills/tgd-rules" 2>/dev/null && echo "   ✅ Gemini CLI: ~/.gemini/skills/tgd-rules → symlink"
+    ln -sf "$TGD_REPO_ROOT/skills/tgd-rules" "$HOME/.gemini/skills/tgd-rules" 2>/dev/null && echo "   ✅ Gemini CLI: ~/.gemini/skills/tgd-rules → symlink"
 fi
 
 # Pi: ~/.pi/agent/skills/tgd-rules
@@ -1055,19 +1068,19 @@ if command -v pi &> /dev/null || [ -n "$CI" ]; then
     if [ -d "$HOME/.pi/agent/skills/tgd-rules" ] && [ ! -L "$HOME/.pi/agent/skills/tgd-rules" ]; then
         rm -rf "$HOME/.pi/agent/skills/tgd-rules"
     fi
-    ln -sf "$TGD_DIR/skills/tgd-rules" "$HOME/.pi/agent/skills/tgd-rules" 2>/dev/null && echo "   ✅ Pi: ~/.pi/agent/skills/tgd-rules → symlink"
+    ln -sf "$TGD_REPO_ROOT/skills/tgd-rules" "$HOME/.pi/agent/skills/tgd-rules" 2>/dev/null && echo "   ✅ Pi: ~/.pi/agent/skills/tgd-rules → symlink"
 fi
 
 # Hermes Agent: ~/.hermes/skills/tgd-rules plus every existing profile.
 if command -v hermes &> /dev/null || [ -n "$CI" ]; then
-    link_skill_folder_to_hermes_homes "$TGD_DIR/skills/tgd-rules" "tgd-rules" "tgd-rules"
+    link_skill_folder_to_hermes_homes "$TGD_REPO_ROOT/skills/tgd-rules" "tgd-rules" "tgd-rules"
 fi
 
 echo ""
 echo "===================================="
 
 # ─── Install tgd CLI ────────────────────────────────────────────────────────
-TGD_BIN="$TGD_DIR/bin/tgd"
+TGD_BIN="$TGD_REPO_ROOT/bin/tgd"
 chmod +x "$TGD_BIN"
 
 # Try /usr/local/bin first, fall back to ~/.local/bin
@@ -1087,7 +1100,7 @@ fi
 # own path (e.g. skills/skills → skills). These confuse `find -L` and some
 # platform skill discovery scanners. We detect by realpath comparison: if the
 # symlink's realpath equals its own parent dir, it's a self-loop.
-for dir in "$TGD_DIR/skills" "$TGD_DIR/vendor/understand-anything/understand-anything-plugin/skills"; do
+for dir in "$TGD_REPO_ROOT/skills" "$TGD_REPO_ROOT/vendor/understand-anything/understand-anything-plugin/skills"; do
     if [[ -d "$dir" ]]; then
         for entry in "$dir"/*; do
             [[ -L "$entry" ]] || continue

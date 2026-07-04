@@ -37,7 +37,7 @@ jobs:
 
       - name: Create commitlint config
         run: |
-          cat > .commitlint.config.js << 'EOF'
+          cat > commitlint.config.js << 'EOF'
           module.exports = {
             extends: ['@commitlint/config-conventional'],
             rules: {

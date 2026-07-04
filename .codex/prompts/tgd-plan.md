@@ -8,7 +8,7 @@ Plan — decompose specs into small, verifiable tasks with acceptance criteria
 - **$TGD_DIR:** Check env var `$TGD_DIR` first. If not set, check sibling `../<project-name>-tGD/`. If neither exists: STOP — run `/tgd-map` first.
 
 **🔑 Step 0: Feature Name Resolution**
-1. Scan `$TGD_DIR/` for subdirectories (e.g., `$TGD_DIR/user-login/`).
+1. Scan `$TGD_DIR/` for **feature directories**: subdirectories containing `SPEC.md` or `PRD.md` (e.g., `$TGD_DIR/user-login/`). Infrastructure dirs (`.scans/`, `wiki/`, and any dot-directories) are NOT features — always exclude them.
 2. If none found: 🛑 STOP. "No features defined. Run `/tgd-define` first."
 3. If exactly one found: Lock it as `<feature-name>`.
 4. If multiple found: List them and ask user to specify.
@@ -55,16 +55,15 @@ This ensures each task is assigned to the correct repo and can be executed in th
 3. **If NOT configured:** Ask the user conversationally:
    ```
    📋 TASKS.md 已完成（N 個任務）。
-   🔗 要同步到 Jira 嗡？(y/n)
+   🔗 要同步到 Jira 嗎？(y/n)
    ```
    - **If yes:** Ask for each missing value one at a time:
      - `JIRA_URL`（例：https://jira.company.com）
      - `JIRA_PROJECT`（例：ENG）
      - `JIRA_TOKEN`（Personal Access Token）
-     Save to `$TGD_DIR/.env` for future runs. Then run `tgd-jira-auto-sync` skill.
+     Save `JIRA_URL` and `JIRA_PROJECT` to `$TGD_DIR/.env` for future runs. For `JIRA_TOKEN`, warn the user that `.env` is plaintext and recommend exporting it in their shell profile instead; only write it to `.env` if they explicitly agree. Then run the `tgd-jira-auto-sync` skill.
    - **If no:** Skip Jira, proceed to verification.
-
-**Verification Gate:**
+4. **Verification Gate:**
 - [ ] `$TGD_DIR/<feature-name>/TASKS.md` exists and is non-empty
 - [ ] TASKS.md contains at least one task with Acceptance Criteria
 - [ ] If UI feature: TASKS.md references DESIGN.md components
