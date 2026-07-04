@@ -1,5 +1,5 @@
 ---
-description: Verify — prove it works with test evidence
+description: Verify — prove it works with debugging and test pyramid
 ---
 
 **🛑 Pre-flight: Environment Check**
