@@ -680,6 +680,7 @@ The commands above are entry points. The pack includes 29 skills total — 27 li
 ### 🗺️ Map
 | Skill | Purpose |
 |---|---|
+| [tgd-context-engineering](skills/tgd-context-engineering/SKILL.md) | Feed agents the right info |
 | [tgd-wiki-generation](skills/tgd-wiki-generation/SKILL.md) | DeepWiki-style multi-repo docs site |
 
 ### 📋 Define
@@ -688,6 +689,7 @@ The commands above are entry points. The pack includes 29 skills total — 27 li
 | [tgd-interview-me](skills/tgd-interview-me/SKILL.md) | Extract user intent via Q&A |
 | [tgd-idea-refine](skills/tgd-idea-refine/SKILL.md) | Divergent/convergent thinking |
 | [tgd-spec-driven-development](skills/tgd-spec-driven-development/SKILL.md) | Write PRD + SPEC + DESIGN.md before code (UI: 3 variants via claude-design, user confirmation gate) |
+| [tgd-sketch](skills/tgd-sketch/SKILL.md) | Throwaway HTML mockups: 2-3 design variants |
 
 ### 📐 Plan
 | Skill | Purpose |
@@ -702,7 +704,6 @@ The commands above are entry points. The pack includes 29 skills total — 27 li
 | [tgd-incremental-implementation](skills/tgd-incremental-implementation/SKILL.md) | Thin vertical slices |
 | [tgd-test-driven-development](skills/tgd-test-driven-development/SKILL.md) | Red-Green-Refactor |
 | [tgd-verification-before-completion](skills/tgd-verification-before-completion/SKILL.md) | Evidence before claims |
-| [tgd-context-engineering](skills/tgd-context-engineering/SKILL.md) | Feed agents the right info |
 | [tgd-source-driven-development](skills/tgd-source-driven-development/SKILL.md) | Ground decisions in official docs |
 | [tgd-doubt-driven-development](skills/tgd-doubt-driven-development/SKILL.md) | Adversarial review |
 | [tgd-frontend-ui-engineering](skills/tgd-frontend-ui-engineering/SKILL.md) | UI architecture & design systems |
