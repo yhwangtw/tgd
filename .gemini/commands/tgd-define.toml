@@ -1,12 +1,15 @@
 description = "Start spec-driven development — write a structured specification before writing code"
 
 prompt = """
+
 **🛑 Pre-flight: Environment Check**
 - [ ] `$TGD_DIR/CONTEXT.md` exists (or `.codegraph/` is present).
 - **If missing:** STOP. Tell user: "Project context not mapped. Please run `/tgd-map` first."
 - **$TGD_DIR:** Check env var `$TGD_DIR` first. If not set, check sibling `../<project-name>-tGD/`. If neither exists: STOP — run `/tgd-map` first.
 
-Run the `tgd-spec-driven-development` skill.
+Run the `tgd-spec-driven-development` skill. Write a PRD (product requirements document) covering objectives, commands, structure, code style, testing strategy, and boundaries before any code is written.
+
+This is the DEFINE phase. The full pipeline is:
 1. `tgd-interview-me` — if the ask is underspecified, extract what the user actually wants
 2. `tgd-idea-refine` — if the concept is vague, stress-test and expand options
 3. **Feature Name Resolution** (Selection Protocol) — After the feature is discussed and the direction is clear, analyze the request and extract the core action + object (e.g., "user login" → action: login, object: user). Then propose 3 distinct kebab-case `<feature-name>` options that **directly reflect the user's intent**:
@@ -16,7 +19,7 @@ Run the `tgd-spec-driven-development` skill.
    
    **Wait for the user to select one by number or provide their own before proceeding.** Once locked, create `$TGD_DIR/<feature-name>/`.
 4. **🌿 Git Branch Setup** — If on `main`/`master`, create and switch to `feature/<feature-name>` (`git checkout -b feature/user-login`).
-5. spec-driven-development — write the structured spec (PRD + SPEC)
+5. `tgd-spec-driven-development` — write the structured spec (PRD + SPEC)
 
 **Multi-Repo Tagging:** If CONTEXT.md lists multiple repos, SPEC.md MUST be tagged by repo:
 ```markdown
@@ -38,12 +41,14 @@ After writing SPEC.md, you MUST ask the user: "Does this feature have a UI compo
   2. Present comparison table → user picks one by letter (or requests iteration)
   3. Write DESIGN.md documenting the chosen design decisions and component tree
   4. Wait for user confirmation before proceeding.
-- If NO: skip DESIGN.md and prototype. You cannot skip this step without explicit user approval.
+- If NO: skip DESIGN.md and prototype. **You cannot skip this step without explicit user approval.**
+
+Use `tgd-interview-me` first if the ask is underspecified. Use `tgd-idea-refine` if you have a rough concept but it's not concrete yet.
 
 After completing the spec, verify the outputs.
 
 **Verification Gate:**
-- [ ] `$TGD_DIR/<feature-name>/` directory exists
+- [ ] `$TGD_DIR/` directory exists
 - [ ] `$TGD_DIR/<feature-name>/PRD.md` exists and is non-empty
 - [ ] `$TGD_DIR/<feature-name>/SPEC.md` exists and is non-empty
 - [ ] Working branch is `feature/<feature-name>`

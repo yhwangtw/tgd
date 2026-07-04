@@ -1,22 +1,25 @@
 description = "Verify — prove it works with debugging and test pyramid"
 
 prompt = """
+
 **🛑 Pre-flight: Environment Check**
 - [ ] `$TGD_DIR/CONTEXT.md` exists (or `.codegraph/` is present).
 - **If missing:** STOP. Tell user: "Project context not mapped. Please run `/tgd-map` first."
 - **$TGD_DIR:** Check env var `$TGD_DIR` first. If not set, check sibling `../<project-name>-tGD/`. If neither exists: STOP — run `/tgd-map` first.
 
 **🔑 Step 0: Feature Name Resolution**
-1. Scan `$TGD_DIR/` for subdirectories (e.g., `$TGD_DIR/user-login/`).
+1. Scan `$TGD_DIR/` for **feature directories**: subdirectories containing `SPEC.md` or `PRD.md` (e.g., `$TGD_DIR/user-login/`). Infrastructure dirs (`.scans/`, `wiki/`, and any dot-directories) are NOT features — always exclude them.
 2. If none found: 🛑 STOP. "No features defined. Run `/tgd-define` first."
 3. If exactly one found: Lock it as `<feature-name>`.
 4. If multiple found: List them and ask user to specify.
 5. **Verify**: `$TGD_DIR/<feature-name>/SPEC.md` exists (defines scope).
 
 **🔒 Pre-flight: Artifact Check**
-- [ ] Source code files exist in `src/`.
-- [ ] Test files exist in `tests/`.
+- [ ] The feature branch has source changes: `git diff main...feature/<feature-name> --stat` is non-empty.
+- [ ] Test files exist for the feature — use the project's actual test layout from `CONTEXT.md` (`tests/`, `spec/`, `*_test.go`, `__tests__/`, …). Do NOT assume a `src/`+`tests/` layout.
 - **If missing:** STOP. Tell user: "No source code or tests found. Please run `/tgd-develop` first."
+
+**🌳 Worktree:** If `../project-<feature-name>` exists (created by `/tgd-develop`), run all commands in this phase inside that worktree — the feature branch is not on `main` yet.
 
 Run the `tgd-debugging-and-error-recovery` skill. This is the VERIFY phase. The full pipeline is:
 
@@ -32,12 +35,14 @@ Run the `tgd-debugging-and-error-recovery` skill. This is the VERIFY phase. The 
 
 Verify that the feature works correctly before proceeding to review. Tests are proof — "seems right" is never sufficient.
 
-Run the test-output capture first — this is the raw evidence that backs the report:
+Run the test-output capture first — this is the raw evidence that backs the report.
+
+The gate scripts live in the **tGD repo itself** (`$TGD_REPO_ROOT/scripts/`), NOT in `$TGD_DIR` (the artifacts directory contains no scripts). Resolve `$TGD_REPO_ROOT` to the cloned tGD repo (typically `~/tGD/`), same as `/tgd-map` does for wiki generation.
 
 ```bash
 # From the client repo root. Creates the report file if needed, runs the suite,
 # appends a "## Raw Test Output" section + meta-comment with real pass/fail counts.
-bash "$TGD_DIR/scripts/capture-test-output.sh" "$TGD_DIR/<feature-name>/TEST-REPORT.md"
+bash "$TGD_REPO_ROOT/scripts/capture-test-output.sh" "$TGD_DIR/<feature-name>/TEST-REPORT.md"
 ```
 
 - **Exit 0** = tests passed, raw output captured. Use the real numbers from the meta-comment in the Summary table below — do NOT invent counts.
@@ -68,7 +73,7 @@ Exit code: `0` (PASS) / `1` (FAIL)
 
 > Run the coverage gate before filling this table:
 > ```bash
-> bash "$TGD_DIR/scripts/coverage-check.sh"
+> bash "$TGD_REPO_ROOT/scripts/coverage-check.sh"
 > ```
 > Exit 0 = all floors met, use the printed numbers. Exit 1 = gate failed, do not proceed.
 > Document any floor exception in "## Coverage Exceptions" below.
@@ -78,7 +83,7 @@ Exit code: `0` (PASS) / `1` (FAIL)
 |------|-------|------------|-------------|
  
 ## 4. Regression Status
-- [ ] `bash $TGD_DIR/scripts/regression-gate.sh` exits 0 (or catalog doesn't exist yet)
+- [ ] `bash $TGD_REPO_ROOT/scripts/regression-gate.sh` exits 0 (or catalog doesn't exist yet)
 - [ ] No cross-feature regressions introduced
  
 ## Sign-off
@@ -93,7 +98,7 @@ Run the machine gate — do NOT manually walk the catalog:
 # Run from the client repo root (where the test runner lives).
 # This script auto-detects npm/pytest/go/cargo and runs the full suite,
 # then cross-references REGRESSION-CATALOG.md for stale entries.
-bash "$TGD_DIR/scripts/regression-gate.sh"
+bash "$TGD_REPO_ROOT/scripts/regression-gate.sh"
 ```
 
 - **Exit 0** = all catalog entries verified, proceed.

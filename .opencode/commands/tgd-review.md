@@ -8,15 +8,18 @@ description: Review before merge — improve code health
 - **$TGD_DIR:** Check env var `$TGD_DIR` first. If not set, check sibling `../<project-name>-tGD/`. If neither exists: STOP — run `/tgd-map` first.
 
 **🔑 Step 0: Feature Name Resolution**
-1. Scan `$TGD_DIR/` for subdirectories (e.g., `$TGD_DIR/user-login/`).
+1. Scan `$TGD_DIR/` for **feature directories**: subdirectories containing `SPEC.md` or `PRD.md` (e.g., `$TGD_DIR/user-login/`). Infrastructure dirs (`.scans/`, `wiki/`, and any dot-directories) are NOT features — always exclude them.
 2. If none found: 🛑 STOP. "No features defined. Run `/tgd-define` first."
 3. If exactly one found: Lock it as `<feature-name>`.
 4. If multiple found: List them and ask user to specify.
 5. **Verify**: `$TGD_DIR/<feature-name>/SPEC.md` exists (defines scope).
 
 **🔒 Pre-flight: Artifact Check**
-- [ ] Test files exist in `tests/`.
+- [ ] Test files exist for the feature — use the project's actual test layout from `CONTEXT.md` (`tests/`, `spec/`, `*_test.go`, `__tests__/`, …). Do NOT assume a `tests/` directory.
+- [ ] `$TGD_DIR/<feature-name>/TEST-REPORT.md` exists (produced by `/tgd-verify`).
 - **If missing:** STOP. Tell user: "Tests are missing. Please run `/tgd-verify` first."
+
+**🌳 Worktree:** If `../project-<feature-name>` exists (created by `/tgd-develop`), review the code inside that worktree — the feature branch is not on `main` yet. Review the diff against `main` (`git diff main...feature/<feature-name>`).
 
 Run the `tgd-code-review-and-quality` skill. This is the REVIEW phase. The full pipeline is:
 

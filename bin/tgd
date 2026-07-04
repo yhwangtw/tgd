@@ -14,9 +14,9 @@ done
 SCRIPT_DIR="$(cd "$(dirname "$REAL_SCRIPT")" && pwd)"
 
 # tGD repo is one level up from bin/
-TGD_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+TGD_REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-if [[ ! -f "$TGD_DIR/setup.sh" ]]; then
+if [[ ! -f "$TGD_REPO_ROOT/setup.sh" ]]; then
     echo "❌ Cannot find tGD installation. Run setup.sh first."
     exit 1
 fi
@@ -25,17 +25,17 @@ fi
 case "${1:-}" in
     --version|-v)
         # Read from VERSION (single source of truth)
-        if [[ -f "$TGD_DIR/VERSION" ]]; then
-            echo "tGD $(cat "$TGD_DIR/VERSION")"
+        if [[ -f "$TGD_REPO_ROOT/VERSION" ]]; then
+            echo "tGD $(cat "$TGD_REPO_ROOT/VERSION")"
         else
             echo "tGD (unknown — VERSION not found)"
         fi
         ;;
     --upgrade|-u)
-        exec bash "$TGD_DIR/setup.sh" --upgrade
+        exec bash "$TGD_REPO_ROOT/setup.sh" --upgrade
         ;;
     --uninstall|--remove)
-        exec bash "$TGD_DIR/setup.sh" --uninstall
+        exec bash "$TGD_REPO_ROOT/setup.sh" --uninstall
         ;;
     --release)
         if ! command -v gh &> /dev/null; then
@@ -43,7 +43,7 @@ case "${1:-}" in
             echo "   Install: https://cli.github.com/"
             exit 1
         fi
-        exec bash "$TGD_DIR/scripts/release.sh" "${2:-}"
+        exec bash "$TGD_REPO_ROOT/scripts/release.sh" "${2:-}"
         ;;
     --help|-h)
         echo "tGD — Make your agent great again."
@@ -59,7 +59,7 @@ case "${1:-}" in
         echo "  --help, -h     Show this help"
         ;;
     "")
-        exec bash "$TGD_DIR/setup.sh"
+        exec bash "$TGD_REPO_ROOT/setup.sh"
         ;;
     *)
         echo "Unknown command: $1"
