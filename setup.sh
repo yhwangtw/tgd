@@ -103,7 +103,14 @@ link_skill_folder_to_hermes_homes() {
 # ─── Prerequisite checks ─────────────────────────────────────────────────────
 missing_deps=()
 command -v git &> /dev/null || missing_deps+=("git")
-command -v node &> /dev/null || missing_deps+=("node (Node.js >= 22)")
+if command -v node &> /dev/null; then
+    node_major=$(node -v 2>/dev/null | sed -E 's/^v([0-9]+).*/\1/')
+    if ! [[ "$node_major" =~ ^[0-9]+$ ]] || [ "$node_major" -lt 22 ]; then
+        missing_deps+=("node >= 22 (found $(node -v 2>/dev/null || echo 'unknown'))")
+    fi
+else
+    missing_deps+=("node (Node.js >= 22)")
+fi
 command -v python3 &> /dev/null || missing_deps+=("python3")
 if [ ${#missing_deps[@]} -gt 0 ]; then
     echo "❌ Missing required dependencies:"
@@ -113,6 +120,12 @@ if [ ${#missing_deps[@]} -gt 0 ]; then
     echo ""
     echo "Install them and re-run: bash setup.sh"
     exit 1
+fi
+# jq is optional: the session-start hook needs it to inject the tgd-router
+# meta-skill, but degrades gracefully without it. Warn, don't abort.
+if ! command -v jq &> /dev/null; then
+    echo "⚠️  jq not found — session-start hooks will skip meta-skill injection."
+    echo "   Install for full functionality: apt-get install jq / brew install jq"
 fi
 
 # ─── Uninstall mode ──────────────────────────────────────────────────────────
