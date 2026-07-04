@@ -63,9 +63,11 @@ This ensures each task is assigned to the correct repo and can be executed in th
      - `JIRA_TOKEN`（Personal Access Token）
      Save `JIRA_URL` and `JIRA_PROJECT` to `$TGD_DIR/.env` for future runs. For `JIRA_TOKEN`, warn the user that `.env` is plaintext and recommend exporting it in their shell profile instead; only write it to `.env` if they explicitly agree. Then run the `tgd-jira-auto-sync` skill.
    - **If no:** Skip Jira, proceed to verification.
-4. **Verification Gate:**
+
+**Verification Gate** (runs regardless of whether Jira sync happened):
 - [ ] `$TGD_DIR/<feature-name>/TASKS.md` exists and is non-empty
-- [ ] TASKS.md contains at least one task with Acceptance Criteria
+- [ ] Every acceptance criterion carries a stable `AC-<task>.<n>` id in BDD format — check: `grep -qE 'AC-[0-9]+[.][0-9]+' TASKS.md`. Without ids, `/tgd-verify`'s `ac-trace.py` gate fails closed.
+- [ ] Every criterion has an explicit `[R]` Yes/No regression decision
 - [ ] If UI feature: TASKS.md references DESIGN.md components
 
 If verification passes, suggest the next step: `/tgd-develop` to start implementing the first slice.

@@ -23,7 +23,7 @@ JIRA_PROJECT   = Project key (e.g. ENG, FE, BE) — 必填
 **Setup (one-time):**
 ```bash
 # Test connection (Bearer auth)
-curl -x "" -s -H "Authorization: Bearer $JIRA_TOKEN "$JIRA_URL/rest/api/2/myself" | python3 -m json.tool
+curl -x "" -s -H "Authorization: Bearer $JIRA_TOKEN" "$JIRA_URL/rest/api/2/myself" | python3 -m json.tool
 ```
 If it returns user info, auth works. If 401/403, check credentials or proxy settings.
 
@@ -45,27 +45,41 @@ export HTTPS_PROXY=http://proxy.company.com:8080
 # Use curl -x "" to bypass the proxy
 curl -x "" -s -H "Authorization: Bearer $JIRA_TOKEN" ...
 
-# Option 3: Skip cert verification (last resort, NOT recommended for production)
-# Add -k flag to curl calls
+# Option 3: MITM proxy re-signs TLS — point curl at the company CA bundle
+curl --cacert /path/to/company-ca-bundle.crt ...
+# or: export CURL_CA_BUNDLE=/path/to/company-ca-bundle.crt
 ```
+
+**Never disable certificate verification** (`curl -k`, `NODE_TLS_REJECT_UNAUTHORIZED=0`).
+The request carries your Jira PAT — sending it over an unverified connection hands
+the token to whoever can intercept. Ask IT for the CA bundle path instead.
 
 ## TASKS.md Format
 
-The skill expects `TASKS.md` in the standard tGD format:
+The skill parses the **canonical TASKS.md format** defined in
+`tgd-planning-and-task-breakdown` (the only TASKS.md format). Per task section:
 
 ```markdown
-# TASKS: [Feature Name]
+## Task 1: [User Story Title] (Story ID: US-01)
 
-## Task 1: [Task Title]
-- **Description**: [What to do]
-- **Acceptance Criteria**:
-  - Given [context], When [action], Then [expected result]
-- **Files Likely Touched**: `src/foo.py`, `tests/test_foo.py`
-- **Estimate**: 3
+### 1. Context & Goal
+[Goal + **Priority**: High/Medium/Low + **Dependencies**]
 
-## Task 2: [Task Title]
-...
+### 2. Technical Design
+[Schema / API contract]
+
+### 3. Acceptance Criteria (BDD)
+- **AC-1.1** — **Given** [context] **When** [action] **Then** [result]
+  - **Regression**: Yes [R] / No
+  - **Test**: `tests/path` (present once /tgd-develop has run)
+
+### 4. Files Likely Touched
+- `src/foo.py`
 ```
+
+Extract per task: number, title (summary), Context & Goal (description),
+Priority, the `AC-<task>.<n>` criteria, and Files Likely Touched. Keep the
+original AC ids — they are the traceability link back to TASKS.md.
 
 ## Execution Steps
 
@@ -87,19 +101,20 @@ Use the Jira REST API v2 (Jira 9.0+ DC compliant) to get all available issue typ
 ```bash
 curl -x "" -s \
   "$JIRA_URL/rest/api/2/issue/createmeta/$JIRA_PROJECT/issuetypes" \
-  -H "Authorization: Bearer ***" \
+  -H "Authorization: Bearer $JIRA_TOKEN" \
   -H "Content-Type: application/json" > /tmp/jira_issuetypes.json
 ```
 
 **Parse and present issue types:**
 ```bash
+# JIRA_PROJECT must be exported to the environment for the heredoc to see it
 python3 << 'PYEOF'
-import json
+import json, os
 
 data = json.load(open("/tmp/jira_issuetypes.json"))
 issuetypes = data.get("values", [])
 
-print(f"📌 Project: {JIRA_PROJECT}")
+print(f"📌 Project: {os.environ['JIRA_PROJECT']}")
 print("Available Issue Types:")
 for i, it in enumerate(issuetypes, 1):
     print(f"  [{i}] {it['name']} (ID: {it['id']})")
@@ -114,7 +129,7 @@ Query the exact metadata for the chosen `ISSUE_TYPE_ID`. This returns **only** t
 ```bash
 curl -x "" -s \
   "$JIRA_URL/rest/api/2/issue/createmeta/$JIRA_PROJECT/issuetypes/$ISSUE_TYPE_ID" \
-  -H "Authorization: Bearer ***" \
+  -H "Authorization: Bearer $JIRA_TOKEN" \
   -H "Content-Type: application/json" > /tmp/jira_meta.json
 ```
 
@@ -229,7 +244,7 @@ h3. Goal
 
 h3. Acceptance Criteria
 {noformat}
-AC-1:
+AC-<task>.<n> (copy the exact id from TASKS.md — it is the traceability link):
 Given <initial context>
 When <action occurs>
 Then <expected result>
@@ -275,7 +290,7 @@ EOF
 # 3. Execute the API call
 curl -x "" -s -X POST \
   "$JIRA_URL/rest/api/2/issue" \
-  -H "Authorization: Bearer ***" \
+  -H "Authorization: Bearer $JIRA_TOKEN" \
   -H "Content-Type: application/json" \
   -d @/tmp/jira_payload.json | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('key','ERROR: '+d.get('errorMessages',str(d))[0]))"
 ```
@@ -323,7 +338,7 @@ Mandatory fields vary by company and project. When a field is required, inject i
     "issuetype": { "id": "10000" },
     "priority": { "name": "High" },
     "labels": ["tgd", "jwt-auth"],
-    "description": "h3. Background\n{noformat}\nCurrently, the system has no authentication. All endpoints are public, causing data leakage risks.\n{noformat}\n\nh3. Goal\n{noformat}\nImplement a secure POST /login endpoint that validates credentials and returns a JWT token valid for 24 hours.\n{noformat}\n\nh3. Acceptance Criteria\n{noformat}\nAC-1:\nGiven a registered user with valid credentials\nWhen they POST to /api/login\nThen they receive a 200 OK with a JWT token in the body\n\nAC-2:\nGiven an unregistered user or wrong password\nWhen they POST to /api/login\nThen they receive 401 Unauthorized and no token\n{noformat}\n\nh3. Technical Notes\n{noformat}\nFiles:\n- src/auth/login.py\n- tests/test_login.py\n- config/settings.py (JWT_SECRET)\n{noformat}"
+    "description": "h3. Background\n{noformat}\nCurrently, the system has no authentication. All endpoints are public, causing data leakage risks.\n{noformat}\n\nh3. Goal\n{noformat}\nImplement a secure POST /login endpoint that validates credentials and returns a JWT token valid for 24 hours.\n{noformat}\n\nh3. Acceptance Criteria\n{noformat}\nAC-1.1:\nGiven a registered user with valid credentials\nWhen they POST to /api/login\nThen they receive a 200 OK with a JWT token in the body\n\nAC-1.2:\nGiven an unregistered user or wrong password\nWhen they POST to /api/login\nThen they receive 401 Unauthorized and no token\n{noformat}\n\nh3. Technical Notes\n{noformat}\nFiles:\n- src/auth/login.py\n- tests/test_login.py\n- config/settings.py (JWT_SECRET)\n{noformat}"
   }
 }
 ```
@@ -389,9 +404,8 @@ If the company Jira has **required custom fields** (e.g., Component, Fix Version
 ### SSL / Proxy Interception
 
 Company MITM proxies cause `SSL certificate problem`. Solutions:
-1. Set `REQUESTS_CA_BUNDLE` or `CURL_CA_BUNDLE` to company CA cert path
-2. Use `export NODE_TLS_REJECT_UNAUTHORIZED=0` (not recommended)
-3. Add `-k` to curl as last resort
+1. Set `REQUESTS_CA_BUNDLE` or `CURL_CA_BUNDLE` to the company CA cert path — this is the only acceptable fix.
+2. Never disable verification (`curl -k`, `NODE_TLS_REJECT_UNAUTHORIZED=0`): the request carries your Jira PAT.
 
 ### Rate Limiting
 
