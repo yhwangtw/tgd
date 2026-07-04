@@ -48,64 +48,46 @@ bash "$TGD_REPO_ROOT/scripts/capture-test-output.sh" "$TGD_DIR/<feature-name>/TE
 - **Exit 0** = tests passed, raw output captured. Use the real numbers from the meta-comment in the Summary table below — do NOT invent counts.
 - **Exit 1** = tests failed, raw output still captured. Fix the failures, re-run, only then proceed.
 
-After capturing raw output, fill in `$TGD_DIR/<feature-name>/TEST-REPORT.md` using this template:
+The script **creates the TEST-REPORT.md skeleton if it doesn't exist** (sections: Test Summary, Coverage, Failures & Root Causes, Flaky Tests, Regression Status, Sign-off — the skeleton in the script is the single source of the template). Fill in the tables using ONLY the numbers from the appended meta-comment.
 
-```markdown
-# TEST-REPORT: [Feature Name]
+For the Coverage table, run the coverage gate first:
 
-> **Date**: YYYY-MM-DD
- 
-## 1. Test Summary
-| Suite | Passed | Failed | Skipped |
-|-------|--------|--------|---------|
-| Unit | | | |
-| Integration | | | |
-| E2E | | | |
- 
-Exit code: `0` (PASS) / `1` (FAIL)
- 
-## 2. Coverage
-| Metric | Value |
-|--------|-------|
-| Lines | |
-| Branches | |
-| Functions | |
-
-> Run the coverage gate before filling this table:
-> ```bash
-> bash "$TGD_REPO_ROOT/scripts/coverage-check.sh"
-> ```
-> Exit 0 = all floors met, use the printed numbers. Exit 1 = gate failed, do not proceed.
-> Document any floor exception in "## Coverage Exceptions" below.
- 
-## 3. Failures & Root Causes
-| Test | Error | Root Cause | Fix Applied |
-|------|-------|------------|-------------|
- 
-## 4. Regression Status
-- [ ] `bash $TGD_REPO_ROOT/scripts/regression-gate.sh` exits 0 (or catalog doesn't exist yet)
-- [ ] No cross-feature regressions introduced
- 
-## Sign-off
-- [ ] **QA**: (pending)
+```bash
+bash "$TGD_REPO_ROOT/scripts/coverage-check.sh"
 ```
 
-**🛡️ Cross-Feature Regression Gate (MANDATORY if `$TGD_DIR/REGRESSION-CATALOG.md` exists)**
+Exit 0 = all floors met, use the printed numbers. Exit 1 = gate failed, do not proceed. Floors default to 80/60/90 (lines/branches/functions); overrides via `COVERAGE_*_FLOOR` env vars MUST be documented in a "## Coverage Exceptions" section with a ramp-up plan.
+
+**🎯 AC Traceability Gate (MANDATORY)**
+
+Line coverage is not requirement coverage — verify every acceptance criterion has a test:
+
+```bash
+python3 "$TGD_REPO_ROOT/scripts/ac-trace.py" "$TGD_DIR/<feature-name>/" .
+```
+
+- **Exit 0** = every `AC-<task>.<n>` id in TASKS.md is referenced by at least one test, and every `[R]` criterion names an existing test file. Proceed.
+- **Exit 1** = untraced criteria or `[R]` entries without valid `Test:` files — the output lists exactly which. 🛑 Write the missing tests (or tag the existing ones with the AC id), re-run, only then proceed.
+- **Exit 2** = TASKS.md missing or carries no AC ids. A plan without AC ids fails closed — fix TASKS.md (see `tgd-planning-and-task-breakdown`).
+
+**🛡️ Cross-Feature Regression Gate (MANDATORY)**
 
 Run the machine gate — do NOT manually walk the catalog:
 
 ```bash
-# Run from the client repo root (where the test runner lives).
-# This script auto-detects npm/pytest/go/cargo and runs the full suite,
-# then cross-references REGRESSION-CATALOG.md for stale entries.
-bash "$TGD_REPO_ROOT/scripts/regression-gate.sh"
+# args: <client-repo> <artifacts-dir>. The catalog lives in the ARTIFACTS dir
+# (../<project>-tGD/REGRESSION-CATALOG.md), not in the tGD repo.
+bash "$TGD_REPO_ROOT/scripts/regression-gate.sh" . "$TGD_DIR"
 ```
 
-- **Exit 0** = all catalog entries verified, proceed.
-- **Exit 1** = test suite failed OR a catalog entry's test file is missing. 🛑 STOP. Do NOT proceed to review. Report which prior feature's regression test broke.
-- **Exit 2** = no catalog yet (first release) OR no test runner detected. If catalog exists and you got exit 2 for "no test runner", fix the detection or wire up the runner before proceeding.
+The gate executes **every catalog entry individually** (jest/vitest/npm/pytest/go per-file) — full-suite green is not accepted as proof, because a file can exist yet be excluded by runner config. Flaky policy: a failing entry is retried once; pass-on-retry counts as a pass but is reported as FLAKY and MUST be recorded in TEST-REPORT.md "## Flaky Tests" with a follow-up.
 
-**Why machine-gated**: Manually walking the catalog is exactly the failure mode this gate prevents — agents skip entries, run the wrong file, or trust stale references. The script enforces "all entries run" and "no stale references" without exception.
+- **Exit 0** = all catalog entries executed and passed. Record any FLAKY entries, then proceed.
+- **Exit 1** = an entry failed twice, is stale, or lacks a `Test:` reference. 🛑 STOP. Do NOT proceed to review. Report which prior feature's regression broke.
+- **Exit 2** = configuration failure (artifacts dir unresolvable, no test runner). Fix the configuration — this is NOT a pass.
+- **Exit 3** = no catalog file yet. Legitimate only before the first `/tgd-release`.
+
+**Why machine-gated**: Manually walking the catalog is exactly the failure mode this gate prevents — agents skip entries, run the wrong file, or trust stale references. The script enforces "every entry runs" without exception.
 
 **Verification Gate Failure**: A broken regression test means your feature broke a previously shipped critical path. This is a hard fail — no exceptions.
 
@@ -114,6 +96,7 @@ bash "$TGD_REPO_ROOT/scripts/regression-gate.sh"
 - [ ] `capture-test-output.sh` ran and appended raw output + meta-comment to TEST-REPORT.md
 - [ ] Summary table counts match the meta-comment (no fabrication)
 - [ ] `coverage-check.sh` exits 0 (or exceptions documented in "## Coverage Exceptions")
-- [ ] All regression tests in `$TGD_DIR/REGRESSION-CATALOG.md` still pass (`regression-gate.sh` exit 0)
+- [ ] `ac-trace.py` exits 0 — every acceptance criterion traced to a test
+- [ ] `regression-gate.sh` exits 0 (or 3 = no catalog yet); FLAKY entries recorded in "## Flaky Tests"
 
 If verification passes, suggest the next step: `/tgd-review` to review the code quality.

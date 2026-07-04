@@ -400,6 +400,52 @@ Beyond "coverage hasn't decreased", enforce explicit floors before merging a fea
 
 **Enforcement**: `bash $TGD_REPO_ROOT/scripts/coverage-check.sh` (run by `/tgd-verify`; `$TGD_REPO_ROOT` is the cloned tGD repo, not the artifacts dir) auto-detects the project's coverage tool (`nyc`/`jest --coverage`/`vitest --coverage`/`coverage.py`/`go test -cover`/`cargo tarpaulin`) and exits 0 only when all floors pass. Exit 1 with the failing metric.
 
+The script is the source of truth for the floor values; the table above documents its defaults. Projects can override per run via `COVERAGE_LINE_FLOOR` / `COVERAGE_BRANCH_FLOOR` / `COVERAGE_FUNC_FLOOR` env vars (e.g. a legacy codebase ramping up from 60), but any override below the defaults MUST be documented in TEST-REPORT.md "## Coverage Exceptions" with a ramp-up plan.
+
 **Exceptions**: If a floor cannot be met (e.g. glue code with no logic, generated files), the agent MUST document the exception in the TEST-REPORT.md "## Coverage Exceptions" section with: which metric, which files, why exempt. `/tgd-review` may reject undocumented exceptions.
 
 **Why not 100% everywhere**: Pure-function business logic should hit 100%; plumbing, type re-exports, and framework boilerplate legitimately have lower coverage. The 80/60/90 floors are calibrated for typical application code, not libraries.
+
+### Requirement Coverage (AC-Tagged Tests)
+
+Line coverage is not requirement coverage — 100% lines can still miss half the
+acceptance criteria, and an agent writing its own tests tends to write the easy
+ones. Every test that verifies a TASKS.md criterion MUST mention its AC id
+(`AC-<task>.<n>`) in the test name, docstring, or a comment:
+
+```ts
+test("AC-1.2: rejects login with empty password", () => { ... });
+```
+
+```python
+def test_ac_1_2_rejects_empty_password():
+    """AC-1.2: Given empty password, When login, Then 400."""
+```
+
+`/tgd-verify` runs `ac-trace.py`, which fails when any AC id has no referencing
+test. Tagging is not optional bookkeeping — it is what makes requirement
+coverage machine-checkable.
+
+### Flaky Test Policy
+
+A test that fails then passes unmodified is FLAKY, and flakiness is a bug —
+in the test or in the code. The rule:
+
+1. `regression-gate.sh` retries a failing catalog entry exactly ONCE.
+2. Pass-on-retry counts as a pass **for that run**, but the entry MUST be
+   recorded in TEST-REPORT.md "## Flaky Tests" with a follow-up owner/action.
+3. A test recorded flaky in two consecutive features' TEST-REPORTs must be
+   fixed before the next `/tgd-release` — recurring flakiness does not get a
+   third free pass.
+4. NEVER delete or skip a flaky test to make the gate green. That is the
+   rationalization this policy exists to block.
+
+### Mutation Spot-Check (opt-in, critical paths only)
+
+When the same agent writes both the code and its tests, the tests inherit the
+implementation's blind spots — all green can mean nothing. For `[R]` criteria
+on critical paths (auth, payment, data loss, security boundary), OPTIONALLY
+run a mutation tool (`mutmut` for Python, Stryker for JS/TS) against just the
+files those tests cover. Surviving mutants = assertions that check nothing —
+strengthen them. Do NOT run mutation testing across the whole codebase; it is
+slow and the signal-to-cost ratio is only favorable on critical paths.

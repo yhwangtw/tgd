@@ -27,9 +27,47 @@ REPORT_PATH="${1:?Usage: bash $0 <test-report-path> [test-cmd]}"
 TEST_CMD="${2:-}"
 
 if [ ! -f "$REPORT_PATH" ]; then
-    echo "❌ TEST-REPORT not found: $REPORT_PATH"
-    echo "   Create it from \$TGD_DIR/template/TEST-REPORT.md first."
-    exit 2
+    # Create the skeleton so /tgd-verify's "creates the report if needed"
+    # is literally true. The agent fills the tables from the meta-comment
+    # this script appends — numbers come from the machine, not memory.
+    mkdir -p "$(dirname "$REPORT_PATH")"
+    cat > "$REPORT_PATH" <<'SKELETON'
+# TEST-REPORT: [Feature Name]
+
+> **Date**: YYYY-MM-DD
+
+## 1. Test Summary
+| Suite | Passed | Failed | Skipped |
+|-------|--------|--------|---------|
+| Unit | | | |
+| Integration | | | |
+| E2E | | | |
+
+Exit code: `0` (PASS) / `1` (FAIL)
+
+## 2. Coverage
+| Metric | Value |
+|--------|-------|
+| Lines | |
+| Branches | |
+| Functions | |
+
+## 3. Failures & Root Causes
+| Test | Error | Root Cause | Fix Applied |
+|------|-------|------------|-------------|
+
+## 4. Flaky Tests
+| Test | Behavior | Follow-up |
+|------|----------|-----------|
+
+## 5. Regression Status
+- [ ] regression-gate.sh exits 0 (or 3 = no catalog yet)
+- [ ] No cross-feature regressions introduced
+
+## Sign-off
+- [ ] **QA**: (pending)
+SKELETON
+    echo "📝 Created TEST-REPORT skeleton: $REPORT_PATH"
 fi
 
 # Resolve test runner

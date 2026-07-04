@@ -44,8 +44,8 @@ After releasing, update `$TGD_DIR/CHANGELOG.md` (create if it doesn't exist) wit
 
 **📦 Regression Catalog Update**
 After releasing, scan `$TGD_DIR/<feature-name>/TASKS.md` for Acceptance Criteria marked `[R]` (Regression). For EACH `[R]` criterion:
-1. Extract the BDD criterion (Given/When/Then).
-2. Identify the actual test file that verifies this criterion (from `tests/` in the shipped code).
+1. Extract the BDD criterion (Given/When/Then) and its AC id.
+2. Take the test file from the criterion's `Test:` field in TASKS.md — recorded during `/tgd-develop` and already validated by `ac-trace.py` during `/tgd-verify`. Do NOT guess the file from directory listings.
 3. Append entries to `$TGD_DIR/REGRESSION-CATALOG.md` (create if it doesn't exist):
    If creating for the first time, start with this header:
    ```markdown
