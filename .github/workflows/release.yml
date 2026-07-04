@@ -1,11 +1,24 @@
 name: Release
 
+# Publisher half of the release flow. scripts/release.sh PREPARES a release
+# (computes the version, writes VERSION + the categorized CHANGELOG entry,
+# commits); this workflow PUBLISHES it when that commit reaches main: it
+# creates the tag and the GitHub release, taking the notes from the
+# CHANGELOG entry rather than re-deriving them — the categorization logic
+# exists only in release.sh, so the two halves cannot drift.
+#
+# Because the tag is created here, on the commit that already contains the
+# VERSION/CHANGELOG bump, the tagged tree always matches its version —
+# the old flow tagged before committing and every tag carried the previous
+# release's VERSION file.
+
 on:
   push:
     paths:
       - 'VERSION'
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -33,7 +46,7 @@ jobs:
       - name: Check if tag exists
         id: check_tag
         run: |
-          if git rev-parse "${{ steps.version.outputs.version }}" &>/dev/null; then
+          if git rev-parse -q --verify "refs/tags/${{ steps.version.outputs.version }}" >/dev/null; then
             echo "exists=true" >> $GITHUB_OUTPUT
             echo "Tag ${{ steps.version.outputs.version }} already exists, skipping release"
           else
@@ -41,95 +54,42 @@ jobs:
             echo "Tag ${{ steps.version.outputs.version }} does not exist, will create release"
           fi
 
-      - name: Generate categorized changelog
+      - name: Extract release notes from CHANGELOG
         if: steps.check_tag.outputs.exists == 'false'
-        id: changelog
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-
-          # Get previous tag
           PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
 
-          if [ -n "$PREV_TAG" ]; then
-            COMMITS=$(git log --pretty=format:"%s|||%h" "$PREV_TAG"..HEAD)
-            echo "prev_tag=$PREV_TAG" >> $GITHUB_OUTPUT
-          else
-            COMMITS=$(git log --pretty=format:"%s|||%h" -30)
-            echo "prev_tag=" >> $GITHUB_OUTPUT
-          fi
-
-          # Categorize commits
-          FEATS=""
-          FIXES=""
-          DOCS=""
-          REFACTORS=""
-          TESTS=""
-          CHORES=""
-          OTHERS=""
-
-          while IFS= read -r line; do
-            [ -z "$line" ] && continue
-            MSG="${line%%|||*}"
-            HASH="${line##*|||}"
-            DISPLAY_MSG="$MSG"
-
-            case "$MSG" in
-              feat*:*|feat*)
-                FEATS="${FEATS}- ${DISPLAY_MSG#*: } (\`$HASH\`)\n"
-                ;;
-              fix*:*|fix*)
-                FIXES="${FIXES}- ${DISPLAY_MSG#*: } (\`$HASH\`)\n"
-                ;;
-              docs*:*|docs*)
-                DOCS="${DOCS}- ${DISPLAY_MSG#*: } (\`$HASH\`)\n"
-                ;;
-              refactor*:*|refactor*)
-                REFACTORS="${REFACTORS}- ${DISPLAY_MSG#*: } (\`$HASH\`)\n"
-                ;;
-              test*:*|test*)
-                TESTS="${TESTS}- ${DISPLAY_MSG#*: } (\`$HASH\`)\n"
-                ;;
-              chore*:*|chore*)
-                CHORES="${CHORES}- ${DISPLAY_MSG#*: } (\`$HASH\`)\n"
-                ;;
-              ci*:*|ci*)
-                CHORES="${CHORES}- ${DISPLAY_MSG#*: } (\`$HASH\`)\n"
-                ;;
-              *)
-                OTHERS="${OTHERS}- ${DISPLAY_MSG} (\`$HASH\`)\n"
-                ;;
-            esac
-          done <<< "$COMMITS"
-
-          # Build release notes
-          build_section() {
-            local title="$1"
-            local content="$2"
-            if [ -n "$content" ]; then
-              echo "### $title"
-              echo -e "$content"
-            fi
-          }
-
-          RELEASE_NOTES="## tGD $VERSION\n\n"
-          [ -n "$FEATS" ]     && RELEASE_NOTES+=$(build_section "✨ Features" "$FEATS")"\n"
-          [ -n "$FIXES" ]     && RELEASE_NOTES+=$(build_section "🐛 Bug Fixes" "$FIXES")"\n"
-          [ -n "$DOCS" ]      && RELEASE_NOTES+=$(build_section "📝 Documentation" "$DOCS")"\n"
-          [ -n "$REFACTORS" ] && RELEASE_NOTES+=$(build_section "♻️ Refactoring" "$REFACTORS")"\n"
-          [ -n "$TESTS" ]     && RELEASE_NOTES+=$(build_section "✅ Tests" "$TESTS")"\n"
-          [ -n "$CHORES" ]    && RELEASE_NOTES+=$(build_section "🔧 Chores" "$CHORES")"\n"
-          [ -n "$OTHERS" ]    && RELEASE_NOTES+=$(build_section "📦 Other Changes" "$OTHERS")"\n"
+          # Take the first "## <version>" entry from CHANGELOG.md. Fail the
+          # release when it doesn't match VERSION — that means release.sh was
+          # not run (or someone bumped VERSION by hand), and publishing
+          # unreviewed auto-notes would hide the mistake.
+          python3 - "$VERSION" > /tmp/release-notes.md <<'PYEOF'
+          import re, sys, pathlib
+          version = sys.argv[1]
+          text = pathlib.Path("CHANGELOG.md").read_text(encoding="utf-8")
+          m = re.search(r"(?ms)^## (\S+)\n(.*?)(?=^## |\Z)", text)
+          if not m:
+              sys.stderr.write("::error::CHANGELOG.md has no release entries\n")
+              raise SystemExit(1)
+          entry_version, body = m.group(1), m.group(2).strip()
+          if entry_version != version:
+              sys.stderr.write(
+                  f"::error::CHANGELOG's latest entry is {entry_version} but VERSION is "
+                  f"{version}. Run scripts/release.sh instead of editing VERSION by hand.\n")
+              raise SystemExit(1)
+          print(f"## tGD {version}\n")
+          print(body)
+          PYEOF
 
           if [ -n "$PREV_TAG" ]; then
-            COMPARE_URL="https://github.com/openclawyhwang-hub/tGD/compare/${PREV_TAG}...${VERSION}"
-          else
-            COMPARE_URL="https://github.com/openclawyhwang-hub/tGD/commits/${VERSION}"
+            echo "" >> /tmp/release-notes.md
+            echo "---" >> /tmp/release-notes.md
+            echo "**Full Changelog**: https://github.com/openclawyhwang-hub/tGD/compare/${PREV_TAG}...${VERSION}" >> /tmp/release-notes.md
           fi
 
-          RELEASE_NOTES+="---\n**Full Changelog**: $COMPARE_URL"
-
-          # Save to file for multi-line output
-          echo -e "$RELEASE_NOTES" > /tmp/release-notes.md
+          echo "Release notes:"
+          cat /tmp/release-notes.md
 
       - name: Create Release
         if: steps.check_tag.outputs.exists == 'false'

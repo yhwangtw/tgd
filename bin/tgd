@@ -38,12 +38,9 @@ case "${1:-}" in
         exec bash "$TGD_REPO_ROOT/setup.sh" --uninstall
         ;;
     --release)
-        if ! command -v gh &> /dev/null; then
-            echo "❌ GitHub CLI (gh) is required for releases."
-            echo "   Install: https://cli.github.com/"
-            exit 1
-        fi
-        exec bash "$TGD_REPO_ROOT/scripts/release.sh" "${2:-}"
+        # Prepare-only: writes VERSION + CHANGELOG and pushes; CI publishes.
+        # No gh CLI needed locally.
+        exec bash "$TGD_REPO_ROOT/scripts/release.sh" "${@:2}"
         ;;
     --help|-h)
         echo "tGD — Make your agent great again."
@@ -55,7 +52,7 @@ case "${1:-}" in
         echo "  --upgrade, -u  Force refresh symlinks and hooks"
         echo "  --uninstall    Remove all tGD deployments"
         echo "  --version, -v  Show current version"
-        echo "  --release      Create a GitHub release (CalVer, or pass version)"
+        echo "  --release      Prepare a release: VERSION + CHANGELOG, commit, push (CI publishes)"
         echo "  --help, -h     Show this help"
         ;;
     "")
