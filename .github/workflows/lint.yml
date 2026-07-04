@@ -53,6 +53,24 @@ jobs:
       - name: Lint PR commits
         run: npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }} --verbose
 
+  mirror-sync:
+    name: Mirror sync
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Regenerate platform mirrors from .claude/commands
+        run: python3 scripts/generate-mirrors.py
+
+      - name: Fail if mirrors drifted
+        run: |
+          if ! git diff --exit-code -- .codex .opencode .gemini .pi; then
+            echo "::error::Platform mirrors are out of sync with .claude/commands/."
+            echo "Edit .claude/commands/*.md only, then run: python3 scripts/generate-mirrors.py"
+            echo "and commit the regenerated mirrors together with the source change."
+            exit 1
+          fi
+
   links:
     name: Link check
     runs-on: ubuntu-latest

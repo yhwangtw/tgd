@@ -1,6 +1,6 @@
----
-description: Start spec-driven development — write a structured specification before writing code
----
+# /tgd-define
+
+Start spec-driven development — write a structured specification before writing code
 
 **🛑 Pre-flight: Environment Check**
 - [ ] `$TGD_DIR/CONTEXT.md` exists (or `.codegraph/` is present).

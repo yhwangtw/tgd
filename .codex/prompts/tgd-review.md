@@ -1,6 +1,6 @@
 # /tgd-review
 
-Review — improve code health before merge
+Review before merge — improve code health
 
 **🛑 Pre-flight: Environment Check**
 - [ ] `$TGD_DIR/CONTEXT.md` exists (or `.codegraph/` is present).

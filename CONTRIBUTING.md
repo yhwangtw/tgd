@@ -1,5 +1,34 @@
 # Contributing to tGD
 
+## Editing Lifecycle Commands (`/tgd-*`)
+
+The 7 lifecycle commands exist on 5 platforms, but there is only ONE source
+of truth: **`.claude/commands/*.md`**. The other four are generated mirrors:
+
+| Path | Role |
+|---|---|
+| `.claude/commands/*.md` | ✏️ Source — edit here |
+| `.codex/prompts/*.md` | 🤖 Generated — do not edit |
+| `.opencode/commands/*.md` | 🤖 Generated — do not edit |
+| `.gemini/commands/*.toml` | 🤖 Generated — do not edit |
+| `.pi/extensions/tgd-commands.ts` | 🤖 Generated — do not edit |
+
+Workflow:
+
+```bash
+# 1. Edit the source command(s)
+vim .claude/commands/tgd-verify.md
+
+# 2. Regenerate all mirrors (deterministic, python3 stdlib only)
+python3 scripts/generate-mirrors.py
+
+# 3. Commit source + mirrors together
+git add .claude .codex .opencode .gemini .pi && git commit
+```
+
+CI (`lint.yml` → "Mirror sync") regenerates and fails the build on any
+diff, so hand-edited mirrors or forgotten regeneration cannot land on main.
+
 ## Creating a New Skill
 
 ### Directory Structure

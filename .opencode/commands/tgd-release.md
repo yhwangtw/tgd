@@ -1,5 +1,5 @@
 ---
-description: Release to production
+description: Release to production — faster is safer
 ---
 
 **🛑 Pre-flight: Environment Check**
