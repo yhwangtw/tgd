@@ -91,18 +91,20 @@ Before writing any code, operate in read-only mode to gather context from all av
 
 ### 3. Acceptance Criteria (BDD)
 - Every task must use **BDD** (Given/When/Then) format — this ensures all criteria are behavior-level, testable, and consistent with REGRESSION-CATALOG entries.
-- **Given** [initial context]
-- **When** [event happens]
-- **Then** [expected outcome]
-- **Regression**: [Yes `[R]` / No] — must mark `[R]` if criterion matches any of these MUST-marks:
-  - **MUST mark `[R]`** if criterion matches ANY of:
-    - (a) Verifies a PRD acceptance criterion (any `### AC-` in the PRD)
-    - (b) Covers a critical user path (auth, payment, data loss, security boundary)
-    - (c) Catches a previously-fixed bug from `REGRESSION-CATALOG.md`
+- Every criterion carries a **stable ID**: `AC-<task>.<n>` (AC-1.1, AC-1.2, …). The verifying test MUST mention this ID in its name, docstring, or a comment — `ac-trace.py` cross-references them during `/tgd-verify`.
+
+- **AC-1.1** — **Given** [initial context] **When** [event happens] **Then** [expected outcome]
+  - **Regression**: [Yes `[R]` / No]
+  - **Test**: [`tests/path/to/test.ts` — filled during `/tgd-develop`; MANDATORY for `[R]` criteria]
+
+- **`[R]` marking rules** — must mark `[R]` if the criterion matches ANY of:
+  - (a) Verifies a PRD acceptance criterion (any `### AC-` in the PRD)
+  - (b) Covers a critical user path (auth, payment, data loss, security boundary)
+  - (c) Catches a previously-fixed bug from `REGRESSION-CATALOG.md`
   - **SHOULD NOT mark `[R]`** if criterion is: cosmetic, internal refactor, dev-only tooling, single-use migration
   - **When in doubt**: mark `[R]`. The cost of an extra catalog entry is low; the cost of missing a regression is high.
-  - **If `[R]`**: Ensure a corresponding test is created during `/tgd-develop` (TDD) that verifies this criterion. This test will be added to `$TGD_DIR/REGRESSION-CATALOG.md` during `/tgd-release`.
-  - **Enforcement**: `/tgd-verify` reads `$TGD_DIR/REGRESSION-CATALOG.md` and `TASKS.md`, then cross-references: every `[R]` decision must (i) point to a test reference, (ii) that test must be in the catalog. Missing decisions default to `[R]` (fail-closed).
+  - **If `[R]`**: a corresponding test MUST be created during `/tgd-develop` (TDD) and its path recorded in the criterion's `Test:` field. It will be added to `$TGD_DIR/REGRESSION-CATALOG.md` during `/tgd-release`.
+  - **Enforcement (machine-gated)**: `/tgd-verify` runs `python3 $TGD_REPO_ROOT/scripts/ac-trace.py $TGD_DIR/<feature>/ <client-repo>` — it fails when any AC id is unreferenced by tests, when any `[R]` criterion lacks a `Test:` file, or when that file is missing on disk. A TASKS.md without AC ids fails closed.
 
 ### 4. Files Likely Touched
 - `path/to/file.ts`
