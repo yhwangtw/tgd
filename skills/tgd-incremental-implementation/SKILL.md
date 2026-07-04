@@ -147,7 +147,7 @@ After each increment, the project must build and existing tests must pass. Don't
 
 ### Rule 3: Feature Flags for Incomplete Features
 
-If a feature isn't ready for users but you need to merge increments:
+If a feature isn't ready for users but its increments will land on the feature branch (and eventually `main` at `/tgd-release`):
 
 ```typescript
 // Feature flag for work-in-progress
@@ -158,7 +158,7 @@ if (ENABLE_TASK_SHARING) {
 }
 ```
 
-This lets you merge small increments to the main branch without exposing incomplete work.
+This keeps incomplete work invisible to users when the branch merges at release time. (In the tGD flow, increments are committed to `feature/<name>` in the worktree — merging to `main` happens only in `/tgd-release`, after verify and review.)
 
 ### Rule 4: Safe Defaults
 
@@ -199,13 +199,13 @@ Be explicit about what's in scope and what's NOT in scope for each increment.
 
 ## Increment Checklist
 
-After each increment, verify:
+After each increment, verify (commands below are npm examples — use the project's actual commands from CONTEXT.md / the rules file):
 
 - [ ] The change does one thing and does it completely
-- [ ] All existing tests still pass (`npm test`)
-- [ ] The build succeeds (`npm run build`)
-- [ ] Type checking passes (`npx tsc --noEmit`)
-- [ ] Linting passes (`npm run lint`)
+- [ ] All existing tests still pass (e.g. `npm test`)
+- [ ] The build succeeds (e.g. `npm run build`)
+- [ ] Type checking passes (e.g. `npx tsc --noEmit`)
+- [ ] Linting passes (e.g. `npm run lint`)
 - [ ] The new functionality works as expected
 - [ ] The change is committed with a descriptive message
 

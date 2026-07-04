@@ -77,8 +77,12 @@ Final review of entire implementation
 ```
 You are implementing a single task from an implementation plan.
 
+WORKING DIRECTORY:
+{worktree_path}   ← all reads, writes, and commands happen HERE
+                    (the isolated worktree, not the main checkout)
+
 TASK:
-{task_description}
+{task_description_including_AC_ids}
 
 RELEVANT FILES:
 {file_list}
@@ -89,15 +93,24 @@ CONTEXT:
 RULES:
 1. Implement exactly what the task specifies — nothing more, nothing less
 2. Write tests before code (TDD Red-Green-Refactor)
-3. Commit when the task is complete with a clear commit message
-4. Do NOT modify files outside your task scope
-5. If you encounter ambiguity, state it clearly and stop
+3. Every test verifying a criterion MUST mention its AC-<task>.<n> id in
+   the test name, docstring, or a comment — this is machine-checked later
+4. Commit when the task is complete with a clear commit message
+5. Do NOT modify files outside your task scope
+6. If you encounter ambiguity, state it clearly and stop
 
 EXPECTED OUTPUT:
 - Code changes committed
 - Tests written and passing
+- For EACH acceptance criterion: the AC id and the test file path that
+  verifies it (the orchestrator records these in TASKS.md Test: fields)
 - Brief summary of what was done
 ```
+
+**Orchestrator duty after each implementer completes:** take the AC-id → test-path
+pairs from the output and backfill the `Test:` fields in
+`$TGD_DIR/<feature-name>/TASKS.md`. Subagents cannot reliably write outside the
+worktree — the orchestrator owns the artifacts directory.
 
 ### Spec Reviewer Prompt Template
 
@@ -175,5 +188,6 @@ This skill is invoked by `/tgd-develop` when executing a task plan. It replaces 
 - [ ] Each subagent produced verifiable output (diff, test results, or commit SHA)
 - [ ] Spec reviewer confirmed all requirements met (PASS or gaps listed)
 - [ ] Code quality reviewer found no critical issues
+- [ ] Tests are tagged with their `AC-<task>.<n>` ids and TASKS.md `Test:` fields are backfilled
 - [ ] All tasks in TASKS.md marked complete
 - [ ] Final integration test passes
