@@ -290,7 +290,10 @@ Error messages, stack traces, log output, and exception details from external so
 
 ## Embedded Bug Filing (Jira Integration)
 
-When a bug cannot be immediately fixed during the Verify stage, automatically create a Jira issue instead of leaving it undocumented.
+When a bug cannot be immediately fixed during the Verify stage, document it instead of leaving it untracked:
+
+- **Jira configured** (`JIRA_URL`/`JIRA_PROJECT`/`JIRA_TOKEN` set): create a Jira issue automatically via `tgd-jira-auto-sync`'s API pattern.
+- **Jira NOT configured**: do NOT stall asking for credentials mid-verify. Record the bug in TEST-REPORT.md under a `## Known Issues` section using the same template below, and mark the blocked task in TASKS.md. The record is what matters; the tracker is optional.
 
 ### Bug Filing Rules
 
@@ -359,9 +362,9 @@ When filing a Jira bug, include:
 
 When a bug blocks the current task:
 
-1. Mark the task in `TASKS.md` as `[!] BLOCKED: <jira-issue-key>`
+1. Mark the task in `TASKS.md` as `[!] BLOCKED: <jira-issue-key>` (or `[!] BLOCKED: see TEST-REPORT.md ## Known Issues` when Jira isn't configured)
 2. Continue with non-blocked tasks
-3. Add a note in the task: "Blocked by [JIRA-123]"
+3. Add a note in the task: "Blocked by [JIRA-123]" (or the Known Issues entry title)
 
 ---
 

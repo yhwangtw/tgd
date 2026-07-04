@@ -40,8 +40,10 @@ Run the test-output capture first — this is the raw evidence that backs the re
 The gate scripts live in the **tGD repo itself** (`$TGD_REPO_ROOT/scripts/`), NOT in `$TGD_DIR` (the artifacts directory contains no scripts). Resolve `$TGD_REPO_ROOT` to the cloned tGD repo (typically `~/tGD/`), same as `/tgd-map` does for wiki generation.
 
 ```bash
-# From the client repo root. Creates the report file if needed, runs the suite,
-# appends a "## Raw Test Output" section + meta-comment with real pass/fail counts.
+# Run from the WORKTREE (../project-<feature-name>/ — that's where the feature
+# branch's code and tests live; fall back to the repo root only if no worktree
+# exists). Creates the report file if needed, runs the suite, appends a
+# "## Raw Test Output" section + meta-comment with real pass/fail counts.
 bash "$TGD_REPO_ROOT/scripts/capture-test-output.sh" "$TGD_DIR/<feature-name>/TEST-REPORT.md"
 ```
 
@@ -75,9 +77,10 @@ python3 "$TGD_REPO_ROOT/scripts/ac-trace.py" "$TGD_DIR/<feature-name>/" .
 Run the machine gate — do NOT manually walk the catalog:
 
 ```bash
-# args: <client-repo> <artifacts-dir>. The catalog lives in the ARTIFACTS dir
-# (../<project>-tGD/REGRESSION-CATALOG.md), not in the tGD repo.
-bash "$TGD_REPO_ROOT/scripts/regression-gate.sh" . "$TGD_DIR"
+# args: <client-repo> <artifacts-dir>. Pass the WORKTREE as the client repo —
+# the catalog's tests must run against the feature branch. The catalog lives in
+# the ARTIFACTS dir (../<project>-tGD/REGRESSION-CATALOG.md), not in the tGD repo.
+bash "$TGD_REPO_ROOT/scripts/regression-gate.sh" ../project-<feature-name> "$TGD_DIR"
 ```
 
 The gate executes **every catalog entry individually** (jest/vitest/npm/pytest/go per-file) — full-suite green is not accepted as proof, because a file can exist yet be excluded by runner config. Flaky policy: a failing entry is retried once; pass-on-retry counts as a pass but is reported as FLAKY and MUST be recorded in TEST-REPORT.md "## Flaky Tests" with a follow-up.

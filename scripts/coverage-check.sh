@@ -61,13 +61,12 @@ if [ -f "package.json" ]; then
         exit 2
     fi
 elif [ -f "pyproject.toml" ] || [ -f "pytest.ini" ] || [ -f "setup.py" ]; then
-    if command -v pytest &> /dev/null && (python3 -c "import pytest_cov" 2>/dev/null || python3 -c "import coverage" 2>/dev/null); then
-        RUNNER="pytest"
-        if [ -n "$TEST_CMD" ]; then
-            COV_CMD="$TEST_CMD --cov --cov-report=term"
-        else
-            COV_CMD="pytest --cov --cov-report=term -q"
-        fi
+    RUNNER="pytest"
+    if [ -n "$TEST_CMD" ]; then
+        # Explicit command — trust it verbatim (the caller knows their tooling)
+        COV_CMD="$TEST_CMD"
+    elif command -v pytest &> /dev/null && (python3 -c "import pytest_cov" 2>/dev/null || python3 -c "import coverage" 2>/dev/null); then
+        COV_CMD="pytest --cov --cov-report=term -q"
     else
         echo "❌ Python project but no coverage tool found"
         echo "   Install one: pip install coverage pytest-cov"
@@ -75,10 +74,12 @@ elif [ -f "pyproject.toml" ] || [ -f "pytest.ini" ] || [ -f "setup.py" ]; then
     fi
 elif [ -f "go.mod" ]; then
     RUNNER="go"
-    COV_CMD="go test -cover ./..."
+    COV_CMD="${TEST_CMD:-go test -cover ./...}"
 elif [ -f "Cargo.toml" ]; then
-    if command -v cargo-tarpaulin &> /dev/null; then
-        RUNNER="cargo"
+    RUNNER="cargo"
+    if [ -n "$TEST_CMD" ]; then
+        COV_CMD="$TEST_CMD"
+    elif command -v cargo-tarpaulin &> /dev/null; then
         COV_CMD="cargo tarpaulin --skip-clean --out Stdout"
     else
         echo "⚠️  Cargo project but cargo-tarpaulin not installed"
@@ -112,44 +113,60 @@ fi
 
 # === Parse results ===
 
-# Default to 0; only assigned if regex matches
-LINES=0
-BRANCHES=0
-FUNCS=0
+# "N/A" means the coverage tool does not report that metric. An N/A metric's
+# floor is NOT enforced (announced instead) — scoring missing data as 0 would
+# make the gate fail on every runner regardless of real coverage, which is
+# exactly what the previous version of this parser did.
+LINES="N/A"
+BRANCHES="N/A"
+FUNCS="N/A"
+
+num_or_na() {
+    # Echo $1 if it is a number, else "N/A"
+    case "$1" in
+        ''|*[!0-9.]*) echo "N/A" ;;
+        *) echo "$1" ;;
+    esac
+}
 
 if [ "$RUNNER" = "npm" ]; then
-    # jest/vitest: "All files | 85.7  | 72.3  | 90.5  | ..."
-    # nyc:        "All files | 85.7  | 72.3  | 90.5  | ..."
+    # istanbul-style table (jest/vitest/nyc), column order:
+    # "All files | % Stmts | % Branch | % Funcs | % Lines | Uncovered ..."
     SUMMARY=$(grep -E "All files" "$RAW" | tail -1 || echo "")
     if [ -n "$SUMMARY" ]; then
-        # Try to read 3 numbers: line, branch, func
-        # Columns vary: nyc may have only 2-3
-        read -r _ L B F <<< $(echo "$SUMMARY" | awk -F'|' '{print $2, $3, $4, $5}' | tr -d ' ' | tr '|' ' ')
-        LINES=${L:-0}
-        BRANCHES=${B:-0}
-        FUNCS=${F:-0}
+        STMTS=$(echo "$SUMMARY"   | awk -F'|' '{gsub(/ /,"",$2); print $2}')
+        BRANCHES=$(num_or_na "$(echo "$SUMMARY" | awk -F'|' '{gsub(/ /,"",$3); print $3}')")
+        FUNCS=$(num_or_na "$(echo "$SUMMARY"    | awk -F'|' '{gsub(/ /,"",$4); print $4}')")
+        LINES=$(num_or_na "$(echo "$SUMMARY"    | awk -F'|' '{gsub(/ /,"",$5); print $5}')")
+        # nyc text-summary variants can have fewer columns — fall back to Stmts
+        [ "$LINES" = "N/A" ] && LINES=$(num_or_na "$STMTS")
     fi
 elif [ "$RUNNER" = "pytest" ]; then
-    # coverage.py: "TOTAL    1234    567    54%"  (statements, missing, percent)
-    # OR with branch: "TOTAL    1234    567    234    65%   70%"
+    # coverage.py: "TOTAL    1234    567    54%" — last field is line coverage.
+    # Its terminal report has no separate branch/function percentages, so
+    # those stay N/A (honest) rather than being scored as 0.
     LINE_LINE=$(grep -E "^TOTAL" "$RAW" | tail -1 || echo "")
     if [ -n "$LINE_LINE" ]; then
-        LINES=$(echo "$LINE_LINE" | awk '{print $NF}' | tr -d '%')
-    fi
-    # Branch coverage (if pytest-cov --cov-branch)
-    BRANCH_LINE=$(grep -E "^TOTAL.*branch" "$RAW" | tail -1 || echo "")
-    if [ -n "$BRANCH_LINE" ]; then
-        BRANCHES=$(echo "$BRANCH_LINE" | grep -oE "[0-9]+%" | tail -1 | tr -d '%')
+        LINES=$(num_or_na "$(echo "$LINE_LINE" | awk '{print $NF}' | tr -d '%')")
     fi
 elif [ "$RUNNER" = "go" ]; then
-    # "coverage: 78.5% of statements"
+    # "coverage: 78.5% of statements" — statement coverage only
     GOLINE=$(grep -oE "coverage: [0-9.]+% of statements" "$RAW" | tail -1 || echo "")
     if [ -n "$GOLINE" ]; then
-        LINES=$(echo "$GOLINE" | grep -oE "[0-9.]+" | head -1)
+        LINES=$(num_or_na "$(echo "$GOLINE" | grep -oE "[0-9.]+" | head -1)")
     fi
 elif [ "$RUNNER" = "cargo" ]; then
-    # cargo tarpaulin output varies; assume 1 line near end with "XX.XX% coverage"
-    LINES=$(grep -oE "[0-9.]+% coverage" "$RAW" | tail -1 | grep -oE "[0-9.]+" | head -1)
+    # cargo tarpaulin: "XX.XX% coverage" — line coverage only
+    LINES=$(num_or_na "$(grep -oE "[0-9.]+% coverage" "$RAW" | tail -1 | grep -oE "[0-9.]+" | head -1)")
+fi
+
+if [ "$LINES" = "N/A" ]; then
+    echo "❌ Could not parse a line-coverage number from the tool output."
+    echo "   Last 15 lines of output:"
+    tail -15 "$RAW" | sed 's/^/   | /'
+    echo "   Fix the parser or pass an explicit coverage command. Do NOT treat this as a pass."
+    rm -f "$RAW"
+    exit 2
 fi
 
 # === Evaluate floors ===
@@ -163,32 +180,31 @@ echo ""
 PASS=1
 FAIL_MSG=""
 
-# Use awk for float comparison (POSIX sh doesn't do floats)
-check() {
-    local val=$1
-    local floor=$2
-    local name=$3
-    awk -v v="$val" -v f="$floor" 'BEGIN { if (v+0 < f+0) exit 1; exit 0 }'
+# Use awk for float comparison (POSIX sh doesn't do floats).
+# N/A metrics are announced and skipped — the tool doesn't report them.
+check_floor() {
+    local name=$1 val=$2 floor=$3
+    if [ "$val" = "N/A" ]; then
+        echo "   ℹ️  $name: no data from this coverage tool — floor not enforced"
+        return 0
+    fi
+    if ! awk -v v="$val" -v f="$floor" 'BEGIN { if (v+0 < f+0) exit 1; exit 0 }'; then
+        PASS=0
+        FAIL_MSG="${FAIL_MSG}   - $name: ${val}% < ${floor}%\n"
+    fi
 }
 
-if [ "${LINES%.*}" -lt 0 ] 2>/dev/null || ! check "$LINES" "$LINE_FLOOR" "lines"; then
-    PASS=0
-    FAIL_MSG="${FAIL_MSG}   - lines: ${LINES}% < ${LINE_FLOOR}%\n"
-fi
-if [ "${BRANCHES%.*}" -lt 0 ] 2>/dev/null || ! check "$BRANCHES" "$BRANCH_FLOOR" "branches"; then
-    PASS=0
-    FAIL_MSG="${FAIL_MSG}   - branches: ${BRANCHES}% < ${BRANCH_FLOOR}%\n"
-fi
-if [ "${FUNCS%.*}" -lt 0 ] 2>/dev/null || ! check "$FUNCS" "$FUNC_FLOOR" "funcs"; then
-    PASS=0
-    FAIL_MSG="${FAIL_MSG}   - funcs: ${FUNCS}% < ${FUNC_FLOOR}%\n"
-fi
+check_floor "lines"     "$LINES"    "$LINE_FLOOR"
+check_floor "branches"  "$BRANCHES" "$BRANCH_FLOOR"
+check_floor "functions" "$FUNCS"    "$FUNC_FLOOR"
 
 rm -f "$RAW"
 
 if [ $PASS -eq 0 ]; then
     echo "❌ Coverage gate FAILED:"
-    printf "$FAIL_MSG"
+    # '%b' expands the \n escapes; passing FAIL_MSG as the format string would
+    # let its '%' characters (e.g. "55.0% < 60%") be eaten as format specifiers
+    printf '%b' "$FAIL_MSG"
     echo ""
     echo "   Add tests or document an exception in TEST-REPORT.md '## Coverage Exceptions'."
     exit 1
