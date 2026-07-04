@@ -4,15 +4,13 @@ title: {{ source_file.path }}
 sidebar_label: {{ source_file.path }}
 ---
 
+import SourceCodeBlock from '@site/src/components/SourceCodeBlock';
+
 # `{{ source_file.path }}`
 
 {% if source_file.available %}
 
-<div className="tgd-source-code">
-{% for line in source_file.lines %}
-<div id="L{{ line.number }}" className="tgd-source-line"><a className="tgd-line-no" href="#L{{ line.number }}">{{ line.number }}</a><code>{{ line.text }}</code></div>
-{% endfor %}
-</div>
+<SourceCodeBlock lines={ {{ source_file_lines_json | safe }} } />
 
 {% else %}
 

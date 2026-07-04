@@ -291,7 +291,7 @@ def infer_symbol_line(repo_root: Path, file_path: str, symbol_name: str, node_ty
 def collect_source_files(nodes: List[Dict[str, Any]], repo_root: Path) -> List[Dict[str, Any]]:
     seen: Dict[str, Dict[str, Any]] = {}
     for n in nodes:
-        fp = n.get("filePath") or ""
+        fp = n.get("filePath") or n.get("path") or ""
         if not fp:
             continue
         item = seen.setdefault(fp, {
@@ -310,7 +310,7 @@ def collect_source_files(nodes: List[Dict[str, Any]], repo_root: Path) -> List[D
                 item["available"] = True
                 item["line_count"] = len(raw_lines)
                 item["lines"] = [
-                    {"number": idx, "text": html.escape(text).replace("{", "&#123;").replace("}", "&#125;")}
+                    {"number": idx, "text": text}
                     for idx, text in enumerate(raw_lines, start=1)
                 ]
         except Exception:
@@ -356,7 +356,7 @@ def _node_paths(nodes: List[Dict[str, Any]]) -> Dict[str, str]:
         nid = n.get("id")
         if not nid:
             continue
-        result[nid] = n.get("filePath") or n.get("name") or nid
+        result[nid] = n.get("filePath") or n.get("path") or n.get("name") or nid
     return result
 
 
@@ -371,7 +371,7 @@ def build_modules(
     for layer in layers:
         title = layer.get("name") or layer.get("id") or "unnamed"
         slug = slugify(title)
-        node_ids = layer.get("nodeIds") or []
+        node_ids = layer.get("nodeIds") or layer.get("nodes") or []
         files: List[Dict[str, Any]] = []
         symbols: List[Dict[str, Any]] = []
         for nid in node_ids:
@@ -380,14 +380,14 @@ def build_modules(
                 continue
             ntype = node.get("type")
             entry = {
-                "path": node.get("filePath") or node.get("name") or nid,
+                "path": node.get("filePath") or node.get("path") or node.get("name") or nid,
                 "summary": node.get("summary") or "",
-                "source_href": source_href(repo_slug, node.get("filePath") or node.get("name") or nid),
+                "source_href": source_href(repo_slug, node.get("filePath") or node.get("path") or node.get("name") or nid),
             }
             if ntype in FILE_LEVEL_TYPES:
                 files.append(entry)
             elif ntype in SYMBOL_TYPES:
-                symbol_file = node.get("filePath") or ""
+                symbol_file = node.get("filePath") or node.get("path") or ""
                 line = explicit_line(node) or infer_symbol_line(
                     repo_root, symbol_file, node.get("name") or nid, ntype or ""
                 )
@@ -554,7 +554,7 @@ def detect_entry_points(nodes: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     )
     seen = set()
     for n in nodes:
-        fp = n.get("filePath") or ""
+        fp = n.get("filePath") or n.get("path") or ""
         tags = n.get("tags") or []
         is_entry = any(fp.endswith(p) or f"/{p}" in f"/{fp}" for p in entry_patterns) or "entry" in tags
         if is_entry and fp and fp not in seen:
@@ -802,13 +802,21 @@ def compile_repo_model(
     )
 
 
-def infer_repo_path(scan_dir: Path, project: Dict[str, Any]) -> str:
-    root = project.get("rootPath") or project.get("primaryRepoPath")
-    if root:
-        return root
+def infer_repo_path(scan_dir: Path, project: Any) -> str:
+    # project can be a dict (real UA output), a string (simple graph),
+    # or None — handle all three defensively.
+    if isinstance(project, dict):
+        root = project.get("rootPath") or project.get("primaryRepoPath")
+        if root:
+            return root
+        name = project.get("name") or ""
+    elif isinstance(project, str):
+        name = project
+    else:
+        name = ""
     home = Path.home()
-    guess = home / scan_dir.name
-    return str(guess if guess.is_dir() else scan_dir.name)
+    guess = home / (name or scan_dir.name)
+    return str(guess if guess.is_dir() else (scan_dir.name if not name else name))
 
 
 # ---------------------------------------------------------------------------
@@ -907,7 +915,15 @@ def render_repo(
     for sf in model.source_files:
         write_text(
             repo_docs_dir / "source" / f"{sf['slug']}.mdx",
-            render(env, "source-file.mdx.jinja", {**ctx, "source_file": sf}),
+            render(env, "source-file.mdx.jinja", {
+                **ctx,
+                "source_file": sf,
+                # JSON-encoded lines for the React component prop. Pass through
+                # Jinja with `| safe` to avoid double-escaping the JSON.
+                "source_file_lines_json": json.dumps(
+                    sf.get("lines", []), ensure_ascii=False
+                ),
+            }),
         )
 
     write_text(
