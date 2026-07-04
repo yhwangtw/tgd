@@ -38,11 +38,6 @@ Idea Refine is a three-phase dialogue that turns a vague concept into a concrete
 
 This skill is primarily an interactive dialogue. Invoke it with an idea, and the agent will guide you through the process.
 
-```bash
-# Optional: Initialize the ideas directory
-bash scripts/idea-refine.sh
-```
-
 **Trigger Phrases:**
 - "Help me refine this idea"
 - "Ideate on [concept]"
@@ -50,12 +45,7 @@ bash scripts/idea-refine.sh
 
 ## Output
 
-The final output is a markdown one-pager saved to `docs/ideas/[idea-name].md` (after user confirmation), containing:
-- Problem Statement
-- Recommended Direction
-- Key Assumptions
-- MVP Scope
-- Not Doing list
+The deliverable is a **conversational one-pager** (Problem Statement, Recommended Direction, Key Assumptions, MVP Scope, Not Doing list) presented in the chat — **no file is written**. In the `/tgd-define` pipeline this content is absorbed minutes later into PRD.md (Problem Statement, Scope, Risks, Non-Goals); a separate saved copy would be a duplicate that drifts the moment the PRD evolves. If the user explicitly asks to keep a copy (e.g. a rejected idea worth remembering), save wherever they say.
 
 ## Detailed Instructions
 
@@ -102,7 +92,7 @@ When the user invokes this skill with an idea (`$ARGUMENTS`), guide them through
 
 **If running inside a codebase:** Use `Glob`, `Grep`, and `Read` to scan for relevant context — existing architecture, patterns, constraints, prior art. Ground your variations in what actually exists. Reference specific files and patterns when relevant.
 
-Read `frameworks.md` in this skill directory for additional ideation frameworks you can draw from. Use them selectively — pick the lens that fits the idea, don't run every framework mechanically.
+Use the lenses selectively — pick the one that fits the idea, don't run every lens mechanically.
 
 #### Phase 2: Evaluate & Converge
 
@@ -114,8 +104,6 @@ After the user reacts to Phase 1 (indicates which ideas resonate, pushes back, a
    - **User value:** Who benefits and how much? Is this a painkiller or a vitamin?
    - **Feasibility:** What's the technical and resource cost? What's the hardest part?
    - **Differentiation:** What makes this genuinely different? Would someone switch from their current solution?
-
-   Read `refinement-criteria.md` in this skill directory for the full evaluation rubric.
 
 3. **Surface hidden assumptions.** For each direction, explicitly name:
    - What you're betting is true (but haven't validated)
@@ -158,7 +146,7 @@ Produce a concrete artifact — a markdown one-pager that moves work forward:
 
 **The "Not Doing" list is arguably the most valuable part.** Focus is about saying no to good ideas. Make the trade-offs explicit.
 
-Ask the user if they'd like to save this to `docs/ideas/[idea-name].md` (or a location of their choosing). Only save if they confirm.
+Present the one-pager in the conversation — do not write it to a file. The `/tgd-define` pipeline absorbs it into PRD.md next; only save a copy if the user explicitly asks (their choice of location).
 
 ### Anti-patterns to Avoid
 
@@ -173,8 +161,6 @@ Ask the user if they'd like to save this to `docs/ideas/[idea-name].md` (or a lo
 ### Tone
 
 Direct, thoughtful, slightly provocative. You're a sharp thinking partner, not a facilitator reading from a script. Channel the energy of "that's interesting, but what if..." -- always pushing one step further without being exhausting.
-
-Read `examples.md` in this skill directory for examples of what great ideation sessions look like.
 
 ## Red Flags
 

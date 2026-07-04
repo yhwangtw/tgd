@@ -57,9 +57,14 @@ Load this when the user says things like "sketch this screen", "show me what X c
 - User wants a diagram — `excalidraw`, `architecture-diagram`
 - The design is already locked — just build it
 
+## Where variants live
+
+- **Inside the tGD lifecycle** (called from `/tgd-define`'s UI Design Gate): save variants to `$TGD_DIR/<feature-name>/prototype/` — this is the directory the define/plan verification gates check. Name the three variants after the mandated stances: `conservative/`, `strong-fit/`, `divergent/` (see `tgd-spec-driven-development` Phase 1.5).
+- **Ad-hoc sketching** (user just wants mockups, no feature in flight): ask where to put them, defaulting to a scratch location. **Never write into the code repo root** — sketches are throwaway artifacts, not source.
+
 ## If the user has the full GSD system installed
 
-If `gsd-sketch` shows up as a sibling skill (installed via `npx get-shit-done-cc --hermes`), prefer **`gsd-sketch`** for the full workflow: persistent `.planning/sketches/` with MANIFEST, frontier mode analysis, consistency audits across past sketches, and integration with the rest of GSD. This skill is the lightweight standalone version — one-off sketching without the state machinery.
+Outside the tGD lifecycle only: if `gsd-sketch` is installed (`npx get-shit-done-cc`), it offers persistent sketch state, MANIFEST, and consistency audits. Inside `/tgd-define`, always use THIS skill — the gates check `$TGD_DIR/<feature-name>/prototype/`, not GSD's `.planning/sketches/`.
 
 ## Core method
 
@@ -91,17 +96,17 @@ Each variant should take a **different design stance**, not different pixel valu
 
 Pick one axis and pull apart from it. Two variants that differ only in accent color are wasted effort — the user can't distinguish them.
 
-**Variant naming:** describe the stance, not the number.
+**Variant naming:** in the tGD lifecycle, use the mandated stance names; ad-hoc, describe the stance, not the number.
 
 ```
-sketches/
-├── 001-calm-editorial/
+$TGD_DIR/<feature-name>/prototype/
+├── conservative/
 │   ├── index.html
 │   └── README.md
-├── 001-utilitarian-dense/
+├── strong-fit/
 │   ├── index.html
 │   └── README.md
-└── 001-playful-split/
+└── divergent/
     ├── index.html
     └── README.md
 ```
@@ -118,14 +123,7 @@ Each variant is a **single self-contained HTML file**:
 
 Open it in a browser. If it looks broken, fix it before showing the user.
 
-**Verify variants visually — use Hermes' browser tools.** Don't just write HTML and hope it renders; load each variant and look at it:
-
-```
-browser_navigate(url="file:///absolute/path/to/sketches/001-calm-editorial/index.html")
-browser_vision(question="Does this layout look clean and readable? Any visible bugs (overlapping text, unstyled elements, broken images)?")
-```
-
-`browser_vision` returns an AI description of what's actually on the page plus a screenshot path — catches layout bugs that pure source inspection misses (e.g. a font import that silently failed, a flex container that collapsed). Fix and re-navigate until each variant looks right.
+**Verify variants visually — use the `tgd-agent-browser` skill** (or your platform's browser tooling). Don't just write HTML and hope it renders; open each variant over `file://`, take a screenshot, and look at it. This catches layout bugs that pure source inspection misses (a font import that silently failed, a flex container that collapsed). Fix and re-check until each variant looks right.
 
 **Default CSS reset + system font stack** for fast starts:
 
@@ -188,10 +186,10 @@ Let the user pick a winner, or combine two into a hybrid, or ask for another rou
 
 ## Theming (when the project has a visual identity)
 
-If the user has an existing theme (colors, fonts, tokens), put shared tokens in `sketches/themes/tokens.css` and `@import` them in each variant. Keep tokens minimal:
+If the user has an existing theme (colors, fonts, tokens), put shared tokens in `prototype/themes/tokens.css` and `@import` them in each variant. Keep tokens minimal:
 
 ```css
-/* sketches/themes/tokens.css */
+/* prototype/themes/tokens.css */
 :root {
   --color-bg: #fafafa;
   --color-fg: #1a1a1a;
@@ -229,22 +227,12 @@ Propose 2-4 named candidates. Let the user pick.
 
 ## Output
 
-- Create `sketches/` (or `.planning/sketches/` if the user is using GSD conventions) in the repo root
-- One subdir per variant: `NNN-stance-name/index.html` + `README.md`
-- Tell the user how to open them: `open sketches/001-calm-editorial/index.html` on macOS, `xdg-open` on Linux, `start` on Windows
+- In the tGD lifecycle: variants under `$TGD_DIR/<feature-name>/prototype/` (see "Where variants live" above). Ad-hoc: the location the user chose — never the code repo root.
+- One subdir per variant: `<stance>/index.html` + `README.md`
+- Tell the user how to open them: `open .../prototype/conservative/index.html` on macOS, `xdg-open` on Linux, `start` on Windows
 - Keep variants disposable — a sketch that you felt the need to preserve should be promoted into real project code, not curated as an asset
 
-**Typical tool sequence for one variant:**
-
-```
-terminal("mkdir -p sketches/001-calm-editorial")
-write_file("sketches/001-calm-editorial/index.html", "<!doctype html>...")
-write_file("sketches/001-calm-editorial/README.md", "## Variant: Calm editorial\n...")
-browser_navigate(url="file://$(pwd)/sketches/001-calm-editorial/index.html")
-browser_vision(question="How does this look? Any obvious layout issues?")
-```
-
-Repeat for each variant, then present the comparison table.
+**Typical sequence for one variant:** create the variant directory, write `index.html` and `README.md`, open the file in a browser via the `tgd-agent-browser` skill, screenshot, fix anything visibly broken. Repeat for each variant, then present the comparison table.
 
 ## Attribution
 

@@ -98,7 +98,7 @@ Before writing any code, operate in read-only mode to gather context from all av
   - **Test**: [`tests/path/to/test.ts` — filled during `/tgd-develop`; MANDATORY for `[R]` criteria]
 
 - **`[R]` marking rules** — must mark `[R]` if the criterion matches ANY of:
-  - (a) Verifies a PRD acceptance criterion (any `### AC-` in the PRD)
+  - (a) Verifies an acceptance criterion from the PRD's User Stories table (a US-xx row's "Acceptance Criteria" column) or a PRD Success Metric. (Note the namespaces: PRD rows are `US-xx`; the `AC-<task>.<n>` ids exist only in TASKS.md.)
   - (b) Covers a critical user path (auth, payment, data loss, security boundary)
   - (c) Catches a previously-fixed bug from `REGRESSION-CATALOG.md`
   - **SHOULD NOT mark `[R]`** if criterion is: cosmetic, internal refactor, dev-only tooling, single-use migration

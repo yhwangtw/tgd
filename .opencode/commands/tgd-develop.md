@@ -24,7 +24,9 @@ This is the BUILD phase. The pipeline operates in an isolated environment.
 
 **🌳 Step 1: Worktree Isolation (Mandatory)**
 Before writing any code, create an isolated workspace. This keeps `$TGD_DIR/` artifacts safe and prevents code mess from polluting the planning directory.
-1. **Create**: `git worktree add ../project-<feature-name> feature/<feature-name>`
+1. **Create** (branch + worktree in one step — the branch must NOT already be checked out anywhere, which is why `/tgd-define` does not create it):
+   - Branch doesn't exist yet (normal case): `git worktree add ../project-<feature-name> -b feature/<feature-name> main`
+   - Branch already exists (resuming): `git worktree add ../project-<feature-name> feature/<feature-name>` — if git says the branch is "already used by worktree", the main checkout is sitting on it: `git checkout main` there first, then retry.
 2. **Action**: All coding, testing, and commits MUST happen inside `../project-<feature-name>/`.
 
 **⚡ Step 2: Execution Mode Routing**

@@ -133,9 +133,7 @@ This is a checkable test, not a vibe. It also has a floor: if you've gone severa
 
 ## Output
 
-The output of this skill is a **confirmed statement of intent**: the restate from Step 4, with an explicit yes from Step 5. That's the deliverable. Specs, plans, and task lists are downstream; they consume the intent this skill produces.
-
-If the user wants the intent to persist (a multi-session project, a handoff to another collaborator), offer to save it to `docs/intent/[topic].md`. Only save if they confirm.
+The output of this skill is a **confirmed statement of intent**: the restate from Step 4, with an explicit yes from Step 5. That's the deliverable — **conversational, not a file**. Specs, plans, and task lists are downstream; in the `/tgd-define` pipeline the confirmed intent is absorbed into PRD.md (Problem Statement, Goals, Success Metrics) minutes later, so a separate intent file would be a duplicate that drifts as the PRD evolves. If the user explicitly asks to keep a copy (multi-session gap, handoff), save wherever they say.
 
 ## Example
 
@@ -208,7 +206,7 @@ Two questions in, the agent has discovered the actual ask isn't "a dashboard." I
 - The user gives a sophistication-signaling answer ("scalable", "clean", "modern") and you accept it without probing whether it's what they actually want
 - Three or more rounds without your confidence visibly rising: you're asking the wrong questions, step back and reframe
 - A confidence number below ~70% with no reason attached: the user can't help close the gap if they don't know what's missing
-- Saving the intent doc before the user has confirmed (the doc itself implies a yes the user didn't give)
+- Writing an intent file unprompted (the deliverable is conversational; a file both implies a confirmation the user didn't give and duplicates what PRD.md will absorb)
 - Skipping the "Out of scope" line in the restate (silent disagreement about non-goals is half of misalignment)
 
 ## Verification

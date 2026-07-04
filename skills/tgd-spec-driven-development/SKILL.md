@@ -31,11 +31,7 @@ Before writing any content, determine the `<feature-name>`:
 4. **Verify**: If `$TGD_DIR/<feature-name>/` already exists, use it. If not, the previous step must have created it.
 5. **Lock**: Use this exact `<feature-name>` for all subsequent files (PRD.md, SPEC.md, TASKS.md, etc.).
 
-**🌿 Step 0.5: Git Branch Setup**
-1. Check current branch: `git branch --show-current`.
-2. If on `main` or `master`: **Create feature branch** → `git checkout -b feature/<feature-name>`.
-3. If already on a `feature/` branch: Verify it matches `<feature-name>`.
-4. **Rule:** All tGD artifacts and code for this feature MUST be committed to `feature/<feature-name>`.
+**🌿 No git operations in this phase.** PRD/SPEC live in `$TGD_DIR` (outside the code repo) — there is nothing to commit yet. The `feature/<feature-name>` branch is created by `/tgd-develop`'s worktree step (`git worktree add -b`); creating and checking it out here would make that step fail, because git refuses to check out a branch that is already checked out in another worktree.
 
 ```
 SPECIFY ──→ PLAN ──→ TASKS ──→ IMPLEMENT
@@ -193,10 +189,10 @@ After writing SPEC.md, you MUST stop and ask the user via **Selection Protocol**
    - If `[Screenshot/PDF]` → Use `vision_analyze` to extract UI elements → skip to step 3
    - If `[None]` → proceed to step 2
 
-2. **Generate design mockups:**
+2. **Generate design mockups** (via the `tgd-sketch` skill):
    - Read the SPEC.md for feature requirements
    - Generate 3 variants (Conservative / Strong-fit / Divergent) as self-contained HTML files
-   - Save to `$TGD_DIR/<feature-name>/design/`
+   - Save to `$TGD_DIR/<feature-name>/prototype/` — the same directory `/tgd-define`'s verification gate checks
    - Present the 3 variants to the user with a comparison table
    - **STOP. Ask user to pick a direction** (or request a hybrid)
 
@@ -327,39 +323,19 @@ REFRAMED SUCCESS CRITERIA:
 
 This lets you loop, retry, and problem-solve toward a clear goal rather than guessing what "faster" means.
 
-### Phase 2: Plan
+### Phases 2–4: Plan, Tasks, Implement — owned by later lifecycle stages
 
-With the validated spec, generate a technical implementation plan:
+This skill's deliverable ends at the validated PRD + SPEC (+ DESIGN if UI). The
+remaining phases belong to their own commands and skills — do NOT plan, break
+down tasks, or implement from here, and do NOT use ad-hoc task formats:
 
-1. Identify the major components and their dependencies
-2. Determine the implementation order (what must be built first)
-3. Note risks and mitigation strategies
-4. Identify what can be built in parallel vs. what must be sequential
-5. Define verification checkpoints between phases
-
-The plan should be reviewable: the human should be able to read it and say "yes, that's the right approach" or "no, change X."
-
-### Phase 3: Tasks
-
-Break the plan into discrete, implementable tasks:
-
-- Each task should be completable in a single focused session
-- Each task has explicit acceptance criteria
-- Each task includes a verification step (test, build, manual check)
-- Tasks are ordered by dependency, not by perceived importance
-- No task should require changing more than ~5 files
-
-**Task template:**
-```markdown
-- [ ] Task: [Description]
-  - Acceptance: [What must be true when done]
-  - Verify: [How to confirm — test command, build, manual check]
-  - Files: [Which files will be touched]
-```
-
-### Phase 4: Implement
-
-Execute tasks one at a time following `skills/tgd-incremental-implementation/SKILL.md` (`tgd-incremental-implementation`) and `skills/tgd-test-driven-development/SKILL.md` (`tgd-test-driven-development`). Use `skills/tgd-context-engineering/SKILL.md` (`tgd-context-engineering`) to load the right spec sections and source files at each step rather than flooding the agent with the entire spec.
+- **Plan + Tasks** → `/tgd-plan` running `tgd-planning-and-task-breakdown`.
+  That skill owns the TASKS.md template — including the `AC-<task>.<n>`
+  criterion ids and `[R]`/`Test:` fields that `/tgd-verify`'s `ac-trace.py`
+  gate enforces. A task list written from memory here will fail that gate.
+- **Implement** → `/tgd-develop` running `tgd-incremental-implementation` or
+  `tgd-subagent-driven-development`, with `tgd-test-driven-development` and
+  `tgd-context-engineering`.
 
 ## Keeping the Spec Alive
 
@@ -397,7 +373,7 @@ Before proceeding to implementation, confirm:
 - [ ] Success criteria are specific and testable
 - [ ] Boundaries (Always/Ask First/Never) are defined
 - [ ] The spec is saved to `$TGD_DIR/<feature-name>/SPEC.md`
-- [ ] Working branch is `feature/<feature-name>` (not `main`/`master`)
+- [ ] No feature branch was created or checked out (that happens in `/tgd-develop`'s worktree step)
 - [ ] If UI feature: 3 design variants generated, user picked a direction
 - [ ] If UI feature: `$TGD_DIR/<feature-name>/DESIGN.md` exists with all required sections
 - [ ] If UI feature: user confirmed DESIGN.md before proceeding to PLAN
