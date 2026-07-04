@@ -60,8 +60,8 @@ command -v node && command -v npm && echo "node/npm: OK" || echo "node/npm: MISS
 | Tier | Steps | Runs when | Output |
 |------|-------|-----------|--------|
 | **Tier 1 — Core** (always) | 1, 2, 7, 8 | Every `/tgd-map` run, no dependencies | `CONTEXT.md` |
-| **Tier 2 — Deep scan** | 3, 4 | `codegraph` CLI / `understand` skill available | `.scans/<repo>/` symbol index + knowledge graph |
-| **Tier 3 — Human-facing docs** (opt-in) | 5, 6 | User passed `--wiki` (or explicitly asks) AND Tier 2 completed AND `node`/`npm` present | Dashboard + Docusaurus wiki |
+| **Tier 2 — Deep scan + wiki** | 3, 4, 6 | `codegraph` CLI / `understand` skill available | `.scans/<repo>/` symbol index + knowledge graph + `wiki/wiki.html` (single-file, python3-only, ~1s) |
+| **Tier 3 — Live dashboard** (opt-in) | 5 | User explicitly asks for the dashboard AND Tier 2 completed AND `node`/`npm` present | Interactive localhost dashboard |
 
 **Degradation rule:** If a tier cannot run, you MUST record it in `CONTEXT.md` under `## Degraded Mode` — which steps were skipped, why (missing tool), and how to enable them later. A skipped step that is not logged is a verification failure. Silent skipping is the failure mode this rule exists to prevent.
 
@@ -113,9 +113,9 @@ For each repo to map (primary + all additional repos from Step 1):
 
 ## Step 5: Launch Dashboard (Tier 3 — opt-in)
 
-**Run condition:** user passed `--wiki` or explicitly asked for the dashboard, AND Step 4 completed. Otherwise skip (no Degraded Mode entry needed — Tier 3 is opt-in, not degraded).
+**Run condition:** user explicitly asked for the live dashboard, AND Step 4 completed, AND `node`/`npm` present. Otherwise skip (no Degraded Mode entry needed — Tier 3 is opt-in, not degraded).
 
-The dashboard and wiki serve **humans**, not the agent — `CONTEXT.md` and the knowledge graph are what downstream `/tgd-*` commands consume. Don't pay the cost (npm install, localhost server) unless a human asked for it.
+The live dashboard serves **humans**, not the agent — `CONTEXT.md` and the knowledge graph are what downstream `/tgd-*` commands consume. For a browsable wiki, Step 6 already produces `wiki.html` at near-zero cost; only launch the localhost dashboard when someone asked for it.
 
 When it runs, for each repo (primary + all additional repos from Step 1):
 
@@ -124,57 +124,49 @@ When it runs, for each repo (primary + all additional repos from Step 1):
 3. Verify the dashboard is running (check for localhost URL in output)
 4. Report the dashboard URL to the user
 
-## Step 6: Generate tGD Wiki (Tier 3 — opt-in)
+## Step 6: Generate tGD Wiki (Tier 2 — runs automatically after Step 4)
 
-**Run condition:** same as Step 5, plus `node`/`npm` present.
+**Run condition:** Step 4 produced at least one knowledge graph. No other dependencies — python3 only, ~1 second, no build step.
 
 Load and execute the `tgd-wiki-generation` skill.
 
-This compiles the CodeGraph + Understand-Anything outputs into a browsable
-Docusaurus 3 documentation site with a uniform DeepWiki-style layout — same
-brand colors, Grid Cards, and React components across every project.
+This compiles the CodeGraph + Understand-Anything outputs into a
+**single self-contained HTML file** with a uniform DeepWiki-style layout —
+the same page structure (home, overview, architecture, modules, flows,
+onboarding, source browser, search) for every project; only the data varies.
 
-**Command sequence:**
+**Command:**
 
 ```bash
-python "$TGD_REPO_ROOT/skills/tgd-wiki-generation/scripts/generate-wiki.py" "$TGD_DIR"
-python "$TGD_REPO_ROOT/skills/tgd-wiki-generation/scripts/generate-docusaurus-config.py" "$TGD_DIR"
-bash   "$TGD_REPO_ROOT/skills/tgd-wiki-generation/scripts/build-site.sh" "$TGD_DIR"
+python3 "$TGD_REPO_ROOT/skills/tgd-wiki-generation/scripts/generate-wiki.py" "$TGD_DIR"
 ```
 
 Resolve `$TGD_REPO_ROOT` to the cloned tGD repo (typically `~/tGD/`).
 
 **Outputs (all under `$TGD_DIR/wiki/`):**
 
-- `docs/index.mdx` — top-level home with repo selector grid
-- `docs/search.mdx` — offline local search UI (repo/module/symbol/source)
-- `docs/sources.mdx` — all-repos summary page
+- `wiki.html` — the human-facing wiki. Single file, Mermaid renderer inlined,
+  works offline, opens by double-clicking. Share it by sending one file.
+- `docs/index.md` — home: repo table
+- `docs/sources.md` — source inventory
 - `docs/manifest.json` — top-level manifest listing every scanned repo
-- `docs/repos/<slug>/` — one full wiki tree per scanned repo, containing:
-  - `index.mdx`, `overview.mdx`, `architecture.mdx`, `onboarding.mdx`
-  - `modules/<layer>.mdx` — one page per architectural layer
-  - `flows/<step>.mdx` — one page per tour step
-  - `source/<file>.mdx` — offline source browser with line anchors for symbol jumps
-  - `diagrams/{architecture,dependencies}.mmd` — Mermaid source
+- `docs/repos/<slug>/` — the SAME Markdown tree per scanned repo:
+  - `index.md`, `overview.md`, `architecture.md`, `onboarding.md`
+  - `modules/<layer>.md` — one page per architectural layer
+  - `flows/<step>.md` — one page per tour step
+  - `diagrams/{index.md,architecture.mmd,dependencies.mmd}` — Mermaid source
   - `manifest.json` — per-repo machine-readable index
-- `docusaurus.config.ts`, `sidebars.ts`, `package.json`, `.gitignore` — auto-generated (config has a Repos dropdown when >1 repo scanned)
-- `src/components/*.tsx` and `src/css/custom.css` — copied from skill assets (do not edit)
-- `build/index.html` — built static site (if `npm` is installed)
 
 **Behavior:**
 
-- MDX content is always produced. If `node`/`npm` is missing, `build-site.sh`
-  logs a warning and continues — MDX under `docs/` remains readable.
-- First run does `npm install` (~2 min). Subsequent runs reuse `node_modules/`.
-- Re-running overwrites `docs/`, `src/components/`, `src/css/`, and generated
-  config files in place. `manifest.json` and `docs/` are the source of truth
-  for agents — do not hand-edit.
+- Re-running overwrites `wiki.html` and `docs/` in place. `manifest.json`
+  and `docs/` are the source of truth for agents — do not hand-edit.
+- GitHub renders the `docs/*.md` tree (including Mermaid) natively if
+  committed anywhere.
 
 **Report to the user:**
 
-- Site URL if built: `http://localhost:3000` (after `cd $TGD_DIR/wiki && npm run serve`)
-- Dev mode with hot reload: `cd $TGD_DIR/wiki && npm run start`
-- Wiki path: `$TGD_DIR/wiki/docs/index.mdx`
+- Wiki: `$TGD_DIR/wiki/wiki.html` — open directly in a browser
 - Manifest path: `$TGD_DIR/wiki/docs/manifest.json`
 
 ## Step 7: Produce CONTEXT.md
@@ -252,13 +244,11 @@ Synthesize data from the tools:
 - [ ] `$TGD_DIR/.scans/<repo>/.codegraph` symlink exists
 - [ ] `$TGD_DIR/.scans/<repo>/.understand-anything` symlink exists
 - [ ] `$TGD_DIR/.scans/<repo>/.understand-anything/knowledge-graph.json` exists
+- [ ] `$TGD_DIR/wiki/wiki.html` exists (single-file wiki)
+- [ ] `$TGD_DIR/wiki/docs/index.md` and `$TGD_DIR/wiki/docs/manifest.json` exist
 
 **Tier 3 (required only if the user opted in):**
 - [ ] **Dashboard is running** (localhost URL confirmed)
-- [ ] `$TGD_DIR/wiki/docs/index.mdx` and `$TGD_DIR/wiki/docs/manifest.json` exist
-- [ ] `$TGD_DIR/wiki/docusaurus.config.ts`, `sidebars.ts`, `package.json` exist
-- [ ] `$TGD_DIR/wiki/src/components/ModuleCard.tsx` and `src/css/custom.css` exist (copied from skill)
-- [ ] If `npm` is installed: `$TGD_DIR/wiki/build/index.html` exists
 
 **Gate integrity rule:** a Tier 2 checkbox may only be marked N/A if Step 0.5 proved the tool missing AND the skip is logged in Degraded Mode. "Tool probably missing" is not evidence — show the `command -v` output.
 

@@ -30,7 +30,7 @@ const tgdPrompts: Record<string, string> = {
     "- If user says \"no\" or provides nothing, proceed with primary repo only\n\n" +
     "## Step 2: Context Engineering\n\n" +
     "Run the `tgd-context-engineering` skill. Analyze the current project: tech stack, architecture, dependencies, code organization, and existing patterns.\n\n" +
-    "Tier rule: Steps 1, 2, 7, 8 are Tier 1 (always run). Steps 3-4 are Tier 2 (run if codegraph CLI / understand skill are available — probe with command -v first). Steps 5-6 are Tier 3 (opt-in: only when the user passed --wiki or explicitly asked, AND Tier 2 completed, AND node/npm present). Any skipped Tier 2 step MUST be logged in CONTEXT.md under ## Degraded Mode with the missing dependency — silent skipping is a verification failure.\n\n" +
+    "Tier rule: Steps 1, 2, 7, 8 are Tier 1 (always run). Steps 3-4 and 6 are Tier 2 (run if codegraph CLI / understand skill are available — probe with command -v first; Step 6 needs only python3). Step 5 is Tier 3 (opt-in: only when the user explicitly asked for the live dashboard, AND Tier 2 completed, AND node/npm present). Any skipped Tier 2 step MUST be logged in CONTEXT.md under ## Degraded Mode with the missing dependency — silent skipping is a verification failure.\n\n" +
     "⚠️ This is only Step 2. If Tier 2 is available you MUST continue to Step 3 (CodeGraph) and Step 4 (Understand-Anything) before producing CONTEXT.md.\n\n" +
     "## Step 3: CodeGraph Setup (Tier 2 — skip and log in Degraded Mode if codegraph is missing)\n\n" +
     "For each repo to map (primary + all additional repos from Step 1):\n\n" +
@@ -46,7 +46,7 @@ const tgdPrompts: Record<string, string> = {
     "3. Produces $TGD_DIR/.scans/<repo-name>/.understand-anything/knowledge-graph.json\n" +
     "4. If unfamiliar with any repo, load the `understand-onboard` skill for a guided tour\n\n" +
     "## Step 5: Launch Dashboard (Tier 3 — opt-in only)\n\n" +
-    "Run only if the user opted in (--wiki or explicit ask) and Step 4 completed. The dashboard serves humans, not the agent — do not pay its cost unprompted. When it runs, launch it for EACH repo.\n\n" +
+    "Run only if the user explicitly asked for the live dashboard and Step 4 completed. The dashboard serves humans, not the agent — Step 6 already produces wiki.html at near-zero cost. When it runs, launch it for EACH repo.\n\n" +
     "You MAY use subagent delegation to execute this step.\n\n" +
     "For each repo to map (primary + all additional repos from Step 1):\n\n" +
     "1. cd into the repo\n" +
@@ -54,33 +54,25 @@ const tgdPrompts: Record<string, string> = {
     "3. Verify the dashboard is running (check for localhost URL in output)\n" +
     "4. Report the dashboard URL to the user\n\n" +
      +
-    "## Step 6: Generate tGD Wiki (Tier 3 — opt-in only, same condition as Step 5, plus node/npm present)\n\n" +
+    "## Step 6: Generate tGD Wiki (Tier 2 — runs automatically after Step 4; python3 only, ~1s)\n\n" +
     "Load and execute the `tgd-wiki-generation` skill.\n\n" +
-    "This compiles CodeGraph + Understand-Anything into a browsable Docusaurus 3 documentation site with a uniform DeepWiki-style layout — same brand colors, Grid Cards, and React components across every project.\n\n" +
-    "Command sequence (resolve $TGD_REPO_ROOT to the cloned tGD repo, typically ~/tGD/):\n" +
-    "  python $TGD_REPO_ROOT/skills/tgd-wiki-generation/scripts/generate-wiki.py \"$TGD_DIR\"\n" +
-    "  python $TGD_REPO_ROOT/skills/tgd-wiki-generation/scripts/generate-docusaurus-config.py \"$TGD_DIR\"\n" +
-    "  bash   $TGD_REPO_ROOT/skills/tgd-wiki-generation/scripts/build-site.sh \"$TGD_DIR\"\n\n" +
+    "This compiles CodeGraph + Understand-Anything into a single self-contained HTML file with a uniform DeepWiki-style layout — the same page structure for every project, only the data varies.\n\n" +
+    "Command (resolve $TGD_REPO_ROOT to the cloned tGD repo, typically ~/tGD/):\n" +
+    "  python3 $TGD_REPO_ROOT/skills/tgd-wiki-generation/scripts/generate-wiki.py \"$TGD_DIR\"\n\n" +
     "Outputs (all under $TGD_DIR/wiki/):\n" +
-    "- docs/index.mdx — top-level home with repo selector grid\n" +
-    "- docs/search.mdx — offline local search UI (repo/module/symbol/source)\n" +
-    "- docs/sources.mdx — all-repos summary page\n" +
+    "- wiki.html — the human-facing wiki: single self-contained file, Mermaid renderer inlined, works offline, opens by double-clicking\n" +
+    "- docs/index.md — home: repo table\n" +
+    "- docs/sources.md — source inventory\n" +
     "- docs/manifest.json — top-level manifest listing every scanned repo\n" +
-    "- docs/repos/<slug>/ — one full wiki tree per scanned repo, containing:\n" +
-    "  - index.mdx, overview.mdx, architecture.mdx, onboarding.mdx\n" +
-    "  - modules/<layer>.mdx — one page per architectural layer\n" +
-    "  - flows/<step>.mdx — one page per tour step\n" +
-    "  - source/<file>.mdx — offline source browser with line anchors for symbol jumps\n" +
-    "  - diagrams/{architecture,dependencies}.mmd — Mermaid source\n" +
-    "  - manifest.json — per-repo machine-readable index\n" +
-    "- docusaurus.config.ts, sidebars.ts, package.json, .gitignore — auto-generated (config has a Repos dropdown when >1 repo scanned)\n" +
-    "- src/components/*.tsx and src/css/custom.css — copied from skill assets (do not edit)\n" +
-    "- build/index.html — built static site (if npm is installed)\n\n" +
-    "Behavior: MDX content is always produced. If node/npm is missing, build-site.sh warns and continues — MDX under docs/ remains readable. First run does npm install (~2 min). Subsequent runs reuse node_modules/. Re-running overwrites docs/, src/components/, src/css/, and generated config files in place.\n\n" +
+    "- docs/repos/<slug>/ — the SAME Markdown tree per scanned repo:\n" +
+    "  - index.md, overview.md, architecture.md, onboarding.md\n" +
+    "  - modules/<layer>.md — one page per architectural layer\n" +
+    "  - flows/<step>.md — one page per tour step\n" +
+    "  - diagrams/{index.md,architecture.mmd,dependencies.mmd} — Mermaid source\n" +
+    "  - manifest.json — per-repo machine-readable index\n\n" +
+    "Behavior: re-running overwrites wiki.html and docs/ in place. manifest.json and docs/ are the source of truth for agents — do not hand-edit. GitHub renders the docs/*.md tree (including Mermaid) natively.\n\n" +
     "Report to the user:\n" +
-    "- Site URL if built: http://localhost:3000 (after: cd $TGD_DIR/wiki && npm run serve)\n" +
-    "- Dev mode with hot reload: cd $TGD_DIR/wiki && npm run start\n" +
-    "- Wiki path: $TGD_DIR/wiki/docs/index.mdx\n" +
+    "- Wiki: $TGD_DIR/wiki/wiki.html — open directly in a browser\n" +
     "- Manifest path: $TGD_DIR/wiki/docs/manifest.json\n\n" +
     "## Step 7: Produce CONTEXT.md\n\n" +
     "CONTEXT.md must include:\n" +
@@ -95,16 +87,10 @@ const tgdPrompts: Record<string, string> = {
     "- [ ] $TGD_DIR/.scans/<repo>/.codegraph symlink exists\n" +
     "- [ ] $TGD_DIR/.scans/<repo>/.understand-anything symlink exists\n" +
     "- [ ] $TGD_DIR/.scans/<repo>/.understand-anything/knowledge-graph.json exists\n" +
+    "- [ ] $TGD_DIR/wiki/wiki.html exists (single-file wiki)\n" +
+    "- [ ] $TGD_DIR/wiki/docs/index.md and $TGD_DIR/wiki/docs/manifest.json exist\n" +
     "Tier 3 (required only if user opted in):\n" +
     "- [ ] Dashboard is running for EVERY repo (localhost URLs confirmed)\n" +
-    "- [ ] $TGD_DIR/wiki/docs/index.mdx exists (tGD Wiki generated)\n" +
-    "- [ ] $TGD_DIR/wiki/docs/manifest.json exists\n" +
-    "- [ ] $TGD_DIR/wiki/docusaurus.config.ts exists\n" +
-    "- [ ] $TGD_DIR/wiki/sidebars.ts exists\n" +
-    "- [ ] $TGD_DIR/wiki/package.json exists\n" +
-    "- [ ] $TGD_DIR/wiki/src/components/ModuleCard.tsx exists (copied from skill)\n" +
-    "- [ ] $TGD_DIR/wiki/src/css/custom.css exists (copied from skill)\n" +
-    "- [ ] If npm is installed: $TGD_DIR/wiki/build/index.html exists\n" +
     "Gate integrity: a Tier 2 checkbox may be N/A only if the probe proved the tool missing AND the skip is logged in Degraded Mode — show the command -v output.\n\n" +
     "After completing, suggest: /tgd-define",
 
