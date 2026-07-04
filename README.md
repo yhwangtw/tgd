@@ -655,7 +655,7 @@ my-project-backend/.codegraph → my-project-tGD/.scans/my-project-backend/.code
 ### Repo Contents
 ```
 tGD/
-├── skills/                     # 28 skills
+├── skills/                     # 29 skills
 ├── agents/                     # 3 specialist personas
 ├── references/                 # Checklists (Security, Testing, etc.)
 ├── .claude/commands/           # Claude Code slash commands
@@ -668,9 +668,9 @@ tGD/
 
 ---
 
-## 📦 All 28 Skills
+## 📦 All 29 Skills
 
-The commands above are entry points. The pack includes 28 skills total — 26 lifecycle skills plus `tgd-router` meta-skill and `tgd-rules` core rules.
+The commands above are entry points. The pack includes 29 skills total — 27 lifecycle skills plus `tgd-router` meta-skill and `tgd-rules` core rules.
 
 ### 🧭 Meta
 | Skill | Purpose |
@@ -725,6 +725,7 @@ The commands above are entry points. The pack includes 28 skills total — 26 li
 | [tgd-deprecation-and-migration](skills/tgd-deprecation-and-migration/SKILL.md) | Migration patterns |
 | [tgd-documentation-and-adrs](skills/tgd-documentation-and-adrs/SKILL.md) | ADRs & API docs |
 | [tgd-shipping-and-launch](skills/tgd-shipping-and-launch/SKILL.md) | Rollouts & monitoring |
+| [tgd-wiki-generation](skills/tgd-wiki-generation/SKILL.md) | DeepWiki-style multi-repo docs site |
 
 ---
 
@@ -733,7 +734,7 @@ The commands above are entry points. The pack includes 28 skills total — 26 li
 After you've built your first feature:
 
 1. 📖 Read the [Testing Strategy](#testing-strategy) to understand the 3-stage testing
-2. 🔧 Explore [All 28 Skills](#all-28-skills) to see what's available
+2. 🔧 Explore [All 29 Skills](#all-29-skills) to see what's available
 3. 🤖 Try [Agent Personas](#agent-personas) for specialized review
 4. 🔗 Set up [Jira Integration](#jira-data-center) for task tracking
 5. 🌐 Enable [tgd-agent-browser](skills/tgd-agent-browser/SKILL.md) for E2E browser testing

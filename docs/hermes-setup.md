@@ -10,7 +10,7 @@ tGD integrates with Hermes via a **Python plugin** that provides:
 
 - **7 slash commands** (`/tgd-map` → `/tgd-release`)
 - **Session-start hook** (auto-injects the tgd-router meta-skill)
-- **28 skills** (symlinked into `~/.hermes/skills/`)
+- **29 skills** (symlinked into `~/.hermes/skills/`)
 
 This gives Hermes the same lifecycle enforcement as Claude Code — skills are auto-discovered, commands are native slash commands, and the meta-skill is injected at session start.
 

@@ -23,7 +23,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versions follow
 
 ### Changed
 - **Wiki artifact layout** — nest generated wiki artifacts under `$TGD_DIR/wiki/` (`39ee3b4`)
-- **Setup support for wiki sites** — auto-install MkDocs dependencies needed by the tGD Wiki site flow (`960d4a7`)
+- **Setup support for wiki sites** — auto-install Docusaurus 3 dependencies needed by the tGD Wiki site flow (`960d4a7`)
 
 ### Fixed
 - **Hermes plugin packaging** — unignore `.hermes/plugins/tgd/`, which had been blocked by the repo gitignore rule (`f00f739`)
