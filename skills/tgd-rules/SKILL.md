@@ -26,7 +26,7 @@ A collection of skills for Claude.ai and Claude Code for senior software enginee
 | Command | Phase | Pipeline | Artifacts |
 |---------|-------|----------|-----------|
 | `/tgd-map` | Map | `tgd-context-engineering` → `codegraph init` → `understand` (MANDATORY) | `CONTEXT.md` + `.scans/<repo>/` |
-| `/tgd-define` | Define | `tgd-interview-me` → `tgd-idea-refine` → `tgd-spec-driven-development` → `tgd-sketch` (if UI) | `PRD.md` · `SPEC.md` · `DESIGN.md` (if UI) · `docs/ideas/` (if vague) |
+| `/tgd-define` | Define | `tgd-interview-me` → `tgd-idea-refine` → `tgd-spec-driven-development` → `tgd-sketch` (if UI) | `PRD.md` · `SPEC.md` · `DESIGN.md` + `prototype/` (if UI) — interview/ideation outputs are conversational and absorbed into PRD.md, not saved as files |
 | `/tgd-plan` | Plan | `tgd-planning-and-task-breakdown` | `TASKS.md` |
 | `/tgd-develop` | Develop | `tgd-context-engineering` → `tgd-source-driven-development` → (`tgd-subagent-driven-development` OR `tgd-incremental-implementation`) → `tgd-test-driven-development` → `tgd-verification-before-completion` | Code + Tests (on `feature/<name>` branch) |
 | `/tgd-verify` | Verify | `tgd-debugging-and-error-recovery` → `tgd-test-driven-development` → `tgd-agent-browser` (if UI) | `TEST-REPORT.md` |

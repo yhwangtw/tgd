@@ -18,8 +18,9 @@ This is the DEFINE phase. The full pipeline is:
    - Option 3: Domain-specific if applicable (e.g., `auth-flow`)
    
    **Wait for the user to select one by number or provide their own before proceeding.** Once locked, create `$TGD_DIR/<feature-name>/`.
-4. **🌿 Git Branch Setup** — If on `main`/`master`, create and switch to `feature/<feature-name>` (`git checkout -b feature/user-login`).
-5. `tgd-spec-driven-development` — write the structured spec (PRD + SPEC)
+4. `tgd-spec-driven-development` — write the structured spec (PRD + SPEC)
+
+**🌿 No git operations in this phase.** PRD/SPEC live in `$TGD_DIR` (outside the code repo) — there is nothing to commit yet. The `feature/<feature-name>` branch is created by `/tgd-develop`'s worktree step (`git worktree add -b`). Creating AND checking out the branch here would make that mandatory worktree step fail: git refuses to check out a branch that is already checked out in another worktree (`fatal: '<branch>' is already used by worktree …`).
 
 **Multi-Repo Tagging:** If CONTEXT.md lists multiple repos, SPEC.md MUST be tagged by repo:
 ```markdown
@@ -51,7 +52,7 @@ After completing the spec, verify the outputs.
 - [ ] `$TGD_DIR/` directory exists
 - [ ] `$TGD_DIR/<feature-name>/PRD.md` exists and is non-empty
 - [ ] `$TGD_DIR/<feature-name>/SPEC.md` exists and is non-empty
-- [ ] Working branch is `feature/<feature-name>`
+- [ ] No feature branch was created or checked out (that happens in `/tgd-develop`)
 - [ ] If UI feature: `$TGD_DIR/<feature-name>/DESIGN.md` exists with Component Tree
 - [ ] If UI feature: `$TGD_DIR/<feature-name>/prototype/` contains at least 2 HTML variants
 
