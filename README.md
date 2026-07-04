@@ -677,6 +677,11 @@ The commands above are entry points. The pack includes 29 skills total — 27 li
 |---|---|
 | [tgd-router](skills/tgd-router/SKILL.md) | Maps work to the right skill |
 
+### 🗺️ Map
+| Skill | Purpose |
+|---|---|
+| [tgd-wiki-generation](skills/tgd-wiki-generation/SKILL.md) | DeepWiki-style multi-repo docs site |
+
 ### 📋 Define
 | Skill | Purpose |
 |---|---|
@@ -725,7 +730,6 @@ The commands above are entry points. The pack includes 29 skills total — 27 li
 | [tgd-deprecation-and-migration](skills/tgd-deprecation-and-migration/SKILL.md) | Migration patterns |
 | [tgd-documentation-and-adrs](skills/tgd-documentation-and-adrs/SKILL.md) | ADRs & API docs |
 | [tgd-shipping-and-launch](skills/tgd-shipping-and-launch/SKILL.md) | Rollouts & monitoring |
-| [tgd-wiki-generation](skills/tgd-wiki-generation/SKILL.md) | DeepWiki-style multi-repo docs site |
 
 ---
 
