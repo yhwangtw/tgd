@@ -230,20 +230,20 @@ flowchart LR
 ## 🔑 Key Features
 
 ### 📖 DeepWiki-Style Project Documentation
-`/tgd-map` now compiles CodeGraph + Understand-Anything analysis into a
-browsable **Docusaurus 3** static site at `$TGD_DIR/wiki/build/`. You get:
-- **Multi-repo wiki trees** — every scanned repo gets `wiki/docs/repos/<slug>/` with overview, architecture, onboarding, modules, flows, diagrams, and source pages
-- **Repo selector** — top-level `wiki/docs/index.mdx` shows a repo grid; navbar includes a Repos dropdown when multiple repos are scanned
-- **Offline local search** — `wiki/docs/search.mdx` searches repos, modules, symbols, flows, and source files in-browser with no external service
-- **Symbol → source jumps** — module tables link functions/classes to `source/<file>#L<line>` using graph line numbers or local source inference
-- **`wiki/docs/manifest.json`** — machine-readable top-level index; each repo also has `repos/<slug>/manifest.json`
-- **Mermaid diagrams** — architecture, dependencies, and per-module graphs
-- **React components** — ModuleCard, KPIGrid, LayerBadge, LocalSearch, Hero (uniform layout across every project)
-- **`npm run start`** — dev server with hot reload; **`npm run serve`** — production preview
+`/tgd-map` compiles CodeGraph + Understand-Anything analysis into a
+**single self-contained `wiki.html`** at `$TGD_DIR/wiki/` — open it by
+double-clicking, no server, no build step, no node/npm. You get:
+- **Uniform structure across every project** — the same page skeleton (home, overview, architecture, onboarding, modules, flows, source, search); only the data varies
+- **Multi-repo support** — repo selector on the home page and a sidebar switcher when multiple repos are scanned
+- **Offline search** — repos, modules, symbols, flows, and source files, all client-side
+- **Symbol → source jumps** — module tables link functions/classes into the built-in source browser with line highlighting
+- **Mermaid diagrams** — architecture, dependencies, and per-module graphs; the renderer is inlined so diagrams work offline
+- **Markdown twin for agents & GitHub** — `wiki/docs/` mirrors the same structure as plain `.md` (GitHub renders it, Mermaid included) with `manifest.json` as the machine-readable index
+- **Shareable** — send one file to a teammate; it just opens
 
 Everything lives in `$TGD_DIR/wiki/`, so the wiki never pollutes your code repo.
-Layout is uniform across projects because CSS and React components ship
-inside the `tgd-wiki-generation` skill and are copied on every `/tgd-map`.
+Layout is uniform across projects because the HTML template ships inside the
+`tgd-wiki-generation` skill — there is no artifact-side knob that can change the structure.
 
 ### 🏖️ Mandatory Worktree Isolation
 When you run `/tgd-develop`, tGD **automatically creates a Git Worktree** sandbox (`../project-<feature>/`) before writing any code. This ensures:
