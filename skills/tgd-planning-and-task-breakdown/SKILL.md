@@ -43,8 +43,8 @@ This means every task must contain:
 
 ### Step 0: Feature Name Resolution
 Before planning, determine and validate `<feature-name>`:
-1. **Verify**: Check if `$TGD_DIR/` contains exactly one subdirectory (set by `/tgd-define`). If so, lock that name.
-2. **Propose (if ambiguous)**: If multiple feature directories exist or none exist, propose 3 kebab-case `<feature-name>` options and wait for user selection.
+1. **Verify**: Scan `$TGD_DIR/` for **feature directories** — subdirectories containing `SPEC.md` or `PRD.md`. Infrastructure dirs (`.scans/`, `wiki/`, and any dot-directories) are NOT features — always exclude them. If exactly one feature directory exists, lock that name.
+2. **Ask (if ambiguous)**: If multiple feature directories exist, list them and ask the user to pick. If none exist, STOP — run `/tgd-define` first.
 3. **Lock**: All planning artifacts go into `$TGD_DIR/<feature-name>/`.
 
 ### Step 1: Enter Plan Mode (Read-Only Analysis)
@@ -67,6 +67,13 @@ Before writing any code, operate in read-only mode to gather context from all av
 
 > **Corresponding PRD**: [PRD.md](PRD.md)
 > **Tech Stack**: [List from SPEC]
+
+## Overview
+[One paragraph summary of what we're building]
+
+## Architecture Decisions
+- [Key decision 1 and rationale]
+- [Key decision 2 and rationale]
 
 ---
 
@@ -117,9 +124,21 @@ Before writing any code, operate in read-only mode to gather context from all av
 ✅ Build succeeds
 ✅ Lint clean
 
+## Risks & Mitigations
+| Risk | Impact | Mitigation |
+|------|--------|------------|
+| [Risk] | High/Med/Low | [Strategy] |
+
+## Open Questions
+- [Question needing human input]
+
 ## Sign-off
 - [ ] **DEV**: (pending)
 ```
+
+**This is the ONLY TASKS.md format.** Everything below describes how to fill
+it in — do not invent alternative task layouts; `ac-trace.py` (run by
+`/tgd-verify`) fails closed on task lists without `AC-<task>.<n>` ids.
 
 ### Step 2: Identify the Dependency Graph
 
@@ -167,30 +186,17 @@ Each vertical slice delivers working, testable functionality.
 
 ### Step 4: Write Tasks
 
-Each task follows this structure:
+Write each task using the **canonical per-task block from the TASKS.md
+template above** (Context & Goal → Technical Design → Acceptance Criteria
+with `AC-<task>.<n>` ids, `[R]` decision, and `Test:` field → Files Likely
+Touched). Do not use a simplified layout — the AC ids and `Test:` fields are
+machine-checked downstream.
 
-```markdown
-## Task [N]: [Short descriptive title]
-
-**Description:** One paragraph explaining what this task accomplishes.
-
-**Acceptance criteria:**
-- [ ] [Specific, testable condition]
-- [ ] [Specific, testable condition]
-
-**Verification:**
-- [ ] Tests pass: `npm test -- --grep "feature-name"`
-- [ ] Build succeeds: `npm run build`
-- [ ] Manual check: [description of what to verify]
-
-**Dependencies:** [Task numbers this depends on, or "None"]
-
-**Files likely touched:**
-- `src/path/to/file.ts`
-- `tests/path/to/test.ts`
-
-**Estimated scope:** [Small: 1-2 files | Medium: 3-5 files | Large: 5+ files]
-```
+Per-task quality bar (in addition to the template fields):
+- **Verification is explicit**: name the exact command (`npm test -- --grep "x"`),
+  not "run the tests" (Zero-Context Rule)
+- **Dependencies declared**: task numbers this depends on, or "None"
+- **Scope estimated**: Small (1-2 files) / Medium (3-5) / Large (5+ → split it)
 
 ### Step 5: Order and Checkpoint
 
@@ -229,51 +235,6 @@ If a task is L or larger, it should be broken into smaller tasks. An agent perfo
 - It touches two or more independent subsystems (e.g., auth and billing)
 - You find yourself writing "and" in the task title (a sign it is two tasks)
 
-## Plan Document Template
-
-```markdown
-# Implementation Plan: [Feature/Project Name]
-
-## Overview
-[One paragraph summary of what we're building]
-
-## Architecture Decisions
-- [Key decision 1 and rationale]
-- [Key decision 2 and rationale]
-
-## Task List
-
-### Phase 1: Foundation
-- [ ] Task 1: ...
-- [ ] Task 2: ...
-
-### Checkpoint: Foundation
-- [ ] Tests pass, builds clean
-
-### Phase 2: Core Features
-- [ ] Task 3: ...
-- [ ] Task 4: ...
-
-### Checkpoint: Core Features
-- [ ] End-to-end flow works
-
-### Phase 3: Polish
-- [ ] Task 5: ...
-- [ ] Task 6: ...
-
-### Checkpoint: Complete
-- [ ] All acceptance criteria met
-- [ ] Ready for review
-
-## Risks and Mitigations
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| [Risk] | [High/Med/Low] | [Strategy] |
-
-## Open Questions
-- [Question needing human input]
-```
-
 ## Parallelization Opportunities
 
 When multiple agents or sessions are available:
@@ -304,7 +265,8 @@ When multiple agents or sessions are available:
 
 Before starting implementation, confirm:
 
-- [ ] Every task has acceptance criteria
+- [ ] Every task has acceptance criteria in BDD format with stable `AC-<task>.<n>` ids (`ac-trace.py` fails closed without them)
+- [ ] Every criterion has an explicit `[R]` Yes/No decision; every `[R]` will get a `Test:` file reference during `/tgd-develop`
 - [ ] Every task has a verification step
 - [ ] Task dependencies are identified and ordered correctly
 - [ ] No task touches more than ~5 files
