@@ -4,6 +4,26 @@ All notable changes to tGD will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/). Versions follow [CalVer](https://calver.org/) (YYYY.MM.DD).
 
+## v2026.07.04.1
+
+### 🐛 Bug Fixes
+- repair lifecycle command bugs and add tiered degradation to tgd-map (`1360d50`)
+  - gate scripts were invoked from the artifacts dir where they don't exist ($TGD_DIR → $TGD_REPO_ROOT)
+  - /tgd-develop merged to main before verify/review; merge moved to /tgd-release
+  - feature-dir scan no longer matches infrastructure dirs (.scans/, wiki/)
+  - /tgd-map degrades by tier (CONTEXT.md always; deep scan when tools exist; dashboard opt-in) with mandatory Degraded Mode logging
+- enforce Node >= 22 in setup.sh prerequisite check; warn when jq is missing (`abefdfc`)
+- regression gate looked for the catalog in the wrong directory — it had never actually gated; now executes every catalog entry individually with a retry-once flaky policy (`50594ae`)
+
+### ✨ Features
+- replace Docusaurus wiki with a single self-contained wiki.html — python3 stdlib only, ~1s, opens by double-clicking; identical page structure across projects; Markdown twin for agents/GitHub (`71306d4`)
+- generate platform command mirrors (codex/opencode/gemini/pi) from .claude/commands as single source, with a "Mirror sync" CI gate that fails on drift (`b0bc087`)
+- machine-checked requirement coverage: AC-<task>.<n> ids in TASKS.md cross-referenced to tests by scripts/ac-trace.py as a mandatory /tgd-verify gate; [R] criteria must name their test file (`f28e614`)
+
+### 🔧 Chores
+- write commitlint config to a filename commitlint actually loads — the Conventional Commits check had failed on every PR with [empty-rules] (`a8dcf01`)
+
+
 ## v2026.07.04
 
 ### 🐛 Bug Fixes
