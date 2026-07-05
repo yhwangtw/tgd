@@ -4,6 +4,29 @@ All notable changes to tGD will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/). Versions follow [CalVer](https://calver.org/) (YYYY.MM.DD).
 
+## v2026.07.05
+
+### ✨ Features
+- redesign the landing page — funnel architecture, new visual system, rewritten copy (`9c40c8a`)
+- wire PRD success metrics into an enforceable instrumentation chain (`a1e5e7c`)
+### 🐛 Bug Fixes
+- default the landing page to English (`4cd54a3`)
+- enforce the release-phase gates the docs promised (`92785a1`)
+- wire the review personas into the lifecycle they were written for (`f84d731`)
+- the coverage gate failed on every runner regardless of coverage (`b2f61ae`)
+- close the develop-phase gaps in the AC traceability chain (`1a38a76`)
+- unify the plan phase on one TASKS.md format and repair jira-sync (`e5205ef`)
+- repair the define-phase pipeline (`ca2b7a7`)
+### 📝 Documentation
+- add metrics artifacts to site pages and desktop setup guide (`b135b0c`)
+- sync READMEs and one-pager with the metrics chain artifacts (`b153e9d`)
+- sync all READMEs and web pages — 29 skills, translation parity, blue branding, mobile fixes (`db69a84`)
+### ♻️ Refactoring
+- split release into prepare (script) and publish (CI) (`249a539`)
+### 🔧 Chores
+- add README parity check; document commit convention (`39ed573`)
+
+
 ## v2026.07.04.1
 
 ### 🐛 Bug Fixes
