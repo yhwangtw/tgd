@@ -139,6 +139,16 @@ Don't silently fill in ambiguous requirements. The spec's entire purpose is to s
 | Phase 1 | [X weeks] | [Milestone] |
 ```
 
+**§6 Success Metrics — filling rules (enforced by `/tgd-define`'s gate):**
+
+A metric whose number has no named source is not a metric. Every row's **Measurement Method** must be exactly one of:
+
+1. **A concrete query in an existing tool** — e.g. "GA4 funnel report `sign_up`", "Grafana dashboard `api-latency`, p95 panel". "Check analytics" or "look at usage" is a placeholder, not a source.
+2. **A named tracking event that does not exist yet** — write the event name (e.g. `sign_up_completed`). `/tgd-plan` will register it in `$TGD_DIR/TRACKING-PLAN.md` and create an instrumentation task with its own acceptance criteria (see `tgd-planning-and-task-breakdown`).
+3. **`N/A — no user-measurable outcome`** — legitimate for refactors, internal tooling, migrations. Requires a named PM sign-off line directly under the table (`Approved N/A — PM, YYYY-MM-DD`). An N/A without sign-off fails the define gate; a fabricated metric ("deploy success rate 100%") is worse than an honest N/A.
+
+At `/tgd-release`, the §6 table becomes `$TGD_DIR/<feature-name>/METRICS.md` — a handoff sheet whose Actual column is filled by whoever owns the data (PM, analyst), on their schedule, in their rituals. tGD's responsibility ends at making that sheet accurate and cheap to fill.
+
 **SPEC.md template (save to `$TGD_DIR/<feature-name>/SPEC.md`):**
 
 ```markdown

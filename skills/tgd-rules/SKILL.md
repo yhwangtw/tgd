@@ -27,11 +27,11 @@ A collection of skills for Claude.ai and Claude Code for senior software enginee
 |---------|-------|----------|-----------|
 | `/tgd-map` | Map | `tgd-context-engineering` → `codegraph init` → `understand` (MANDATORY) | `CONTEXT.md` + `.scans/<repo>/` |
 | `/tgd-define` | Define | `tgd-interview-me` → `tgd-idea-refine` → `tgd-spec-driven-development` → `tgd-sketch` (if UI) | `PRD.md` · `SPEC.md` · `DESIGN.md` + `prototype/` (if UI) — interview/ideation outputs are conversational and absorbed into PRD.md, not saved as files |
-| `/tgd-plan` | Plan | `tgd-planning-and-task-breakdown` | `TASKS.md` |
+| `/tgd-plan` | Plan | `tgd-planning-and-task-breakdown` | `TASKS.md` (+ `TRACKING-PLAN.md` entries if PRD §6 names new events) |
 | `/tgd-develop` | Develop | `tgd-context-engineering` → `tgd-source-driven-development` → (`tgd-subagent-driven-development` OR `tgd-incremental-implementation`) → `tgd-test-driven-development` → `tgd-verification-before-completion` | Code + Tests (on `feature/<name>` branch) |
 | `/tgd-verify` | Verify | `tgd-debugging-and-error-recovery` → `tgd-test-driven-development` → `tgd-agent-browser` (if UI) | `TEST-REPORT.md` |
 | `/tgd-review` | Review | `tgd-code-review-and-quality` → `tgd-code-simplification` (+ `tgd-security-and-hardening`, `tgd-performance-optimization` when relevant) | `REVIEW.md` · `decisions/ADR-*.md` (if architectural) |
-| `/tgd-release` | Release | `tgd-shipping-and-launch` (+ `tgd-ci-cd-and-automation`, `tgd-deprecation-and-migration`, `tgd-documentation-and-adrs` when relevant) | `CHANGELOG.md` · `REGRESSION-CATALOG.md` (if `[R]` tasks) |
+| `/tgd-release` | Release | `tgd-shipping-and-launch` (+ `tgd-ci-cd-and-automation`, `tgd-deprecation-and-migration`, `tgd-documentation-and-adrs` when relevant) | `CHANGELOG.md` · `REGRESSION-CATALOG.md` (if `[R]` tasks) · `METRICS.md` (unless PRD §6 is signed-off N/A) |
 
 All artifacts live under `$TGD_DIR/<feature-name>/`. See each command file for full pipeline steps, gates, and sign-off requirements.
 

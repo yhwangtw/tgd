@@ -217,6 +217,47 @@ Add explicit checkpoints:
 - [ ] Review with human before proceeding
 ```
 
+## Instrumentation Tasks and TRACKING-PLAN.md
+
+If the PRD's §6 Success Metrics names a tracking event that does not exist yet (rule 2 in `tgd-spec-driven-development`'s §6 filling rules), planning owns two outputs:
+
+**1. Register the event in `$TGD_DIR/TRACKING-PLAN.md`** — the cumulative event dictionary shared across ALL features and ALL repos of the project (same role as `REGRESSION-CATALOG.md`: append-only, one source of truth). Create the file on first use with this header, then append one entry per event:
+
+```markdown
+# Tracking Plan
+
+> Cumulative event dictionary across all features and platforms.
+> Event names are semantic and platform-agnostic — see the three rules below.
+
+---
+
+### sign_up_completed
+- **Semantic trigger:** User completes registration (server returns 201)
+- **Source of truth:** server
+- **Platforms:** server (web/ios do NOT duplicate this event)
+- **Properties:** `method: "email"|"oauth"` · `platform` (auto-attached by SDK) · no PII
+- **Feature:** user-login
+- **Status:** planned  <!-- flipped to "live since vYYYY.MM.DD" by /tgd-release -->
+```
+
+**Cross-platform rules (non-negotiable):**
+
+1. **One semantic = one event name; platform is a property, not a suffix.** `sign_up_completed` + `platform: web|ios|android` — never `sign_up_web` / `signUpIos` triplets. Split names silently break every funnel that forgets one variant.
+2. **Triggers are defined semantically, not by UI.** "Registration completed = server returns 201", not "register button clicked" — each platform's UI differs; the semantic moment is the single shared definition every implementer maps to.
+3. **Every event declares a source of truth.** Conversion-critical events (signup, payment) default to **server-side** — one implementation covers all platforms and survives ad-blockers. Pure interaction events (scroll, hover) are client-side. Often the answer to "do all three platforms need this?" is "no — server emits it once."
+
+**Naming convention:** `object_action` in `snake_case`, property keys also `snake_case` — on every platform. Payload key drift (`plan_type` vs `planType`) is exactly what the dictionary exists to prevent.
+
+**2. Create one instrumentation task per platform listed in the entry's Platforms field** — a normal task in TASKS.md (multi-repo tagged if applicable) with its own BDD acceptance criteria, e.g.:
+
+```markdown
+- **AC-4.1** — **Given** a user completes registration **When** the server responds 201 **Then** `sign_up_completed` is emitted with properties `method`, `platform` and no PII
+  - **Regression**: No
+  - **Test**: [filled during /tgd-develop — the test asserts the event fires with the expected payload keys]
+```
+
+A mis-firing event is worse than a missing one — you will trust a wrong number. That is why instrumentation gets tested ACs, not a "remember to add analytics" checklist line.
+
 ## Task Sizing Guidelines
 
 | Size | Files | Scope | Example |
