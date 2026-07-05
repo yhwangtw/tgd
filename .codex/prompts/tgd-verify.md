@@ -72,7 +72,9 @@ python3 "$TGD_REPO_ROOT/scripts/ac-trace.py" "$TGD_DIR/<feature-name>/" .
 - **Exit 1** = untraced criteria or `[R]` entries without valid `Test:` files — the output lists exactly which. 🛑 Write the missing tests (or tag the existing ones with the AC id), re-run, only then proceed.
 - **Exit 2** = TASKS.md missing or carries no AC ids. A plan without AC ids fails closed — fix TASKS.md (see `tgd-planning-and-task-breakdown`).
 
-**🛡️ Cross-Feature Regression Gate (MANDATORY)**
+**📡 Event Test Check (only if `$TGD_DIR/TRACKING-PLAN.md` has entries for this feature)**
+
+For each event whose **Platforms** field includes the platform this worktree implements: at least one test must reference the event name and assert it fires with the expected property keys. A mis-firing event is worse than a missing one — a wrong number gets trusted. Check with a plain search (e.g. `grep -r "sign_up_completed" <test-dirs>`); the instrumentation task's AC id is already covered by `ac-trace.py`, so this check is specifically about the payload assertion. If no test asserts the payload: write it before proceeding — same standard as any other AC.
 
 Run the machine gate — do NOT manually walk the catalog:
 
@@ -100,6 +102,7 @@ The gate executes **every catalog entry individually** (jest/vitest/npm/pytest/g
 - [ ] Summary table counts match the meta-comment (no fabrication)
 - [ ] `coverage-check.sh` exits 0 (or exceptions documented in "## Coverage Exceptions")
 - [ ] `ac-trace.py` exits 0 — every acceptance criterion traced to a test
+- [ ] If TRACKING-PLAN.md has entries for this feature: each event owned by this platform has a test asserting it fires with the expected properties
 - [ ] `regression-gate.sh` exits 0 (or 3 = no catalog yet); FLAKY entries recorded in "## Flaky Tests"
 
 If verification passes, suggest the next step: `/tgd-review` to review the code quality.

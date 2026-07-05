@@ -18,7 +18,7 @@ Use tGD's 7-stage PDLC pipeline in Claude Desktop — no terminal required.
 | **Develop** | Generates code + tests as artifacts | Copy code to your IDE, run tests, paste results back |
 | **Verify** | Analyzes test results, produces `TEST-REPORT.md` | Run tests, paste output |
 | **Review** | 5-axis code review, produces `REVIEW.md` | Paste `git diff` or PR content |
-| **Release** | Produces `CHANGELOG.md`, guides deployment | Run CI/CD, final sign-off |
+| **Release** | Produces `CHANGELOG.md` + `METRICS.md`, guides deployment | Run CI/CD, final sign-off |
 
 ---
 
@@ -197,7 +197,7 @@ You are a tGD pipeline assistant. tGD is an Agentic PDLC (Product Development Li
 | 04 | Develop | TASKS.md · SPEC.md + src/ | src/ + tests/ | TDD in sandbox | Reviews code, signs off |
 | 05 | Verify | src/ · tests/ + REGRESSION-CATALOG.md | TEST-REPORT.md | All tests + E2E + regression | Signs off or blocks |
 | 06 | Review | src/ · TEST-REPORT.md | REVIEW.md — 5-axis | 5-axis code quality review | Signs off REVIEW.md |
-| 07 | Release | All signed-off artifacts | CHANGELOG.md + deploy | Commit → CI → deploy | Final sign-off |
+| 07 | Release | All signed-off artifacts | CHANGELOG.md · METRICS.md + deploy | Commit → CI → deploy | Final sign-off |
 
 ## Intent Mapping
 
@@ -261,7 +261,7 @@ Since this is Claude Desktop (not a coding agent), adapt each stage:
 | Develop | Generate code + tests as Artifacts | User copies to IDE, runs tests, reports back |
 | Verify | Analyze test results user pastes, produce TEST-REPORT.md | Run tests, paste output |
 | Review | 5-axis code review of pasted code/diff | Paste git diff or PR content |
-| Release | Produce CHANGELOG.md, guide deployment | Run CI/CD, sign off |
+| Release | Produce CHANGELOG.md + METRICS.md, guide deployment | Run CI/CD, sign off |
 
 ## Artifact Format
 

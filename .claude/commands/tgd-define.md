@@ -7,6 +7,8 @@ description: Start spec-driven development — write a structured specification 
 - **If missing:** STOP. Tell user: "Project context not mapped. Please run `/tgd-map` first."
 - **$TGD_DIR:** Check env var `$TGD_DIR` first. If not set, check sibling `../<project-name>-tGD/`. If neither exists: STOP — run `/tgd-map` first.
 
+**📊 FYI (non-blocking):** If any `$TGD_DIR/*/METRICS.md` still has a blank Actual column, mention it in ONE line ("N features shipped with metrics not yet filled in — the sheets are ready for whoever owns the data") and move on. Do NOT stop, do NOT ask, do NOT start filling them — reviewing metrics belongs to the team's own rituals, not to this command.
+
 Run the `tgd-spec-driven-development` skill. Write a PRD (product requirements document) covering objectives, commands, structure, code style, testing strategy, and boundaries before any code is written.
 
 This is the DEFINE phase. The full pipeline is:
@@ -19,6 +21,8 @@ This is the DEFINE phase. The full pipeline is:
    
    **Wait for the user to select one by number or provide their own before proceeding.** Once locked, create `$TGD_DIR/<feature-name>/`.
 4. `tgd-spec-driven-development` — write the structured spec (PRD + SPEC)
+
+**📊 §6 Success Metrics rule** (see the filling rules in `tgd-spec-driven-development`): every metric's Measurement Method must be one of — (a) a concrete query in an existing tool, (b) a named tracking event (registered in `$TGD_DIR/TRACKING-PLAN.md` by `/tgd-plan`, which also creates the instrumentation tasks), or (c) `N/A — no user-measurable outcome` with a named PM sign-off line. "Check analytics" is a placeholder, not a source. Do not invent filler metrics for refactors — an honest N/A beats a fabricated KPI.
 
 **🌿 No git operations in this phase.** PRD/SPEC live in `$TGD_DIR` (outside the code repo) — there is nothing to commit yet. The `feature/<feature-name>` branch is created by `/tgd-develop`'s worktree step (`git worktree add -b`). Creating AND checking out the branch here would make that mandatory worktree step fail: git refuses to check out a branch that is already checked out in another worktree (`fatal: '<branch>' is already used by worktree …`).
 
@@ -52,6 +56,7 @@ After completing the spec, verify the outputs.
 - [ ] `$TGD_DIR/` directory exists
 - [ ] `$TGD_DIR/<feature-name>/PRD.md` exists and is non-empty
 - [ ] `$TGD_DIR/<feature-name>/SPEC.md` exists and is non-empty
+- [ ] PRD §6 Success Metrics: at least one row names a real data source (concrete tool query or named event) — OR the section is `N/A` with a named PM sign-off line. Placeholder rows (`[Metric 1]`, "check analytics") fail this gate.
 - [ ] No feature branch was created or checked out (that happens in `/tgd-develop`)
 - [ ] If UI feature: `$TGD_DIR/<feature-name>/DESIGN.md` exists with Component Tree
 - [ ] If UI feature: `$TGD_DIR/<feature-name>/prototype/` contains at least 2 HTML variants

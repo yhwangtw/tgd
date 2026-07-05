@@ -58,6 +58,20 @@ After releasing, update `$TGD_DIR/CHANGELOG.md` (create if it doesn't exist) wit
 - Date shipped
 - Key changes
 
+**📊 METRICS.md — Metrics Handoff**
+Skip this step entirely if PRD §6 is `N/A` (with its PM sign-off) — do NOT generate an empty sheet.
+Otherwise, create `$TGD_DIR/<feature-name>/METRICS.md` from the PRD §6 table:
+```markdown
+# METRICS: <feature-name>
+> Shipped: vYYYY.MM.DD · Source: PRD §6
+
+| Metric | Target | Data Source / Event | Actual | Filled on |
+|--------|--------|---------------------|--------|-----------|
+| [from §6] | [from §6] | [from §6] | | |
+```
+- Copy every §6 row verbatim; leave **Actual** and **Filled on** blank. This sheet is a **handoff** — whoever owns the data (PM, analyst) fills it in their own rituals (weekly review, dashboard check). tGD's job ends at making the sheet accurate; do NOT chase the numbers, do NOT schedule follow-ups.
+- In `$TGD_DIR/TRACKING-PLAN.md`, flip this feature's event entries from `Status: planned` to `Status: live since vYYYY.MM.DD`.
+
 **📦 Regression Catalog Update**
 After releasing, scan `$TGD_DIR/<feature-name>/TASKS.md` for Acceptance Criteria marked `[R]` (Regression). For EACH `[R]` criterion:
 1. Extract the BDD criterion (Given/When/Then) and its AC id.
@@ -88,6 +102,7 @@ This catalog is cumulative — every shipped feature's `[R]` tests are preserved
 - [ ] Git commit created with clean history
 - [ ] `feature/<feature-name>` merged to `main` (or PR opened), worktree removed, branch deleted
 - [ ] `$TGD_DIR/CHANGELOG.md` exists and is updated
+- [ ] `$TGD_DIR/<feature-name>/METRICS.md` created from PRD §6 with Actual left blank (skipped only for signed-off N/A); TRACKING-PLAN entries flipped to `live`
 - [ ] `$TGD_DIR/REGRESSION-CATALOG.md` updated with new `[R]` entries (if any)
 
 If verification passes, confirm that monitoring is active and the rollback plan is documented.
