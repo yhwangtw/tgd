@@ -649,11 +649,11 @@ my-project-backend/.codegraph → my-project-tGD/.scans/my-project-backend/.code
 |-------|---------|-----------|----------|
 | Map | `/tgd-map` | CONTEXT.md | `$TGD_DIR/CONTEXT.md` |
 | Define | `/tgd-define` | PRD.md, SPEC.md, DESIGN.md, prototype/ | `$TGD_DIR/<feature>/` |
-| Plan | `/tgd-plan` | TASKS.md | `$TGD_DIR/<feature>/TASKS.md` |
-| Develop | `/tgd-develop` | src/ | Code repo |
-| Verify | `/tgd-verify` | tests/ | Code repo |
+| Plan | `/tgd-plan` | TASKS.md (+ TRACKING-PLAN.md entries) | `$TGD_DIR/<feature>/TASKS.md` · `$TGD_DIR/TRACKING-PLAN.md` |
+| Develop | `/tgd-develop` | src/ + tests/ | Code repo (worktree) |
+| Verify | `/tgd-verify` | TEST-REPORT.md | `$TGD_DIR/<feature>/TEST-REPORT.md` |
 | Review | `/tgd-review` | REVIEW.md | `$TGD_DIR/<feature>/REVIEW.md` |
-| Release | `/tgd-release` | CHANGELOG.md, git tag | `$TGD_DIR/CHANGELOG.md` |
+| Release | `/tgd-release` | CHANGELOG.md, METRICS.md, REGRESSION-CATALOG.md, git tag | `$TGD_DIR/` + `$TGD_DIR/<feature>/METRICS.md` |
 
 ### Repo Contents
 ```
