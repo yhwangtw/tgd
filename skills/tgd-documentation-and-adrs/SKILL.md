@@ -28,7 +28,7 @@ ADRs capture the reasoning behind significant technical decisions. They're the h
 Before writing ADRs, determine `<feature-name>`:
 1. **Derive**: Use kebab-case from the feature (e.g., `user-login`).
 2. **Verify**: Ensure `$TGD_DIR/<feature-name>/SPEC.md` exists.
-3. **Path**: All ADRs go in `$TGD_DIR/decisions/<feature-name>/`. If it affects multiple features, use `$TGD_DIR/shared/decisions/`.
+3. **Path**: All ADRs go in `$TGD_DIR/<feature-name>/decisions/` (the same place `/tgd-review` writes them). If a decision affects multiple features, use `$TGD_DIR/shared/decisions/`.
 
 ### When to Write an ADR
 
@@ -41,9 +41,7 @@ Before writing ADRs, determine `<feature-name>`:
 
 ### ADR Template
 
-Store ADRs in `$TGD_DIR/decisions/<feature-name>/` with sequential numbering:
-
-**Cross-feature decisions** go in `$TGD_DIR/shared/decisions/`:
+Store ADRs in `$TGD_DIR/<feature-name>/decisions/` with sequential numbering (`ADR-NNN-<decision>.md`). **Cross-feature decisions** go in `$TGD_DIR/shared/decisions/`:
 
 ```markdown
 # ADR-001: Use PostgreSQL for primary database
@@ -228,7 +226,7 @@ How to contribute, coding standards, PR process.
 
 ## Changelog Maintenance
 
-For shipped features:
+For shipped features. The example below uses SemVer, common in library projects — inside the tGD lifecycle, `$TGD_DIR/CHANGELOG.md` uses CalVer (`vYYYY.MM.DD`, micro-bumped `.2`, `.3` for same-day releases) as specified by `/tgd-release`:
 
 ```markdown
 # Changelog
