@@ -771,7 +771,8 @@ Möchten Sie einen Skill hinzufügen oder tGD verbessern? Siehe [CONTRIBUTING.md
 1. Repository forken
 2. Skill in `skills/your-skill/` erstellen
 3. `node scripts/validate-skills.js` ausführen
-4. PR einreichen
+4. Mit [Conventional Commits](https://www.conventionalcommits.org/) committen (z.B. `feat: add your-skill`) — CI erzwingt das
+5. PR einreichen
 
 ---
 

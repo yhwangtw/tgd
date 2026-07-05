@@ -758,7 +758,8 @@ Want to add a skill or improve tGD? See [CONTRIBUTING.md](CONTRIBUTING.md).
 1. Fork the repo
 2. Create a skill in `skills/your-skill/`
 3. Run `node scripts/validate-skills.js`
-4. Submit a PR
+4. Commit with [Conventional Commits](https://www.conventionalcommits.org/) (e.g. `feat: add your-skill`) — CI enforces this
+5. Submit a PR
 
 ---
 

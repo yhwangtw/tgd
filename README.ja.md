@@ -771,7 +771,8 @@ tGD/
 1. リポジトリをフォーク
 2. `skills/your-skill/` にスキルを作成
 3. `node scripts/validate-skills.js` を実行
-4. PRを送信
+4. [Conventional Commits](https://www.conventionalcommits.org/) 形式でコミット（例：`feat: add your-skill`）— CIが強制します
+5. PRを送信
 
 ---
 

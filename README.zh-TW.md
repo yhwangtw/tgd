@@ -772,7 +772,8 @@ tGD/
 1. Fork repo
 2. 在 `skills/your-skill/` 建立 skill
 3. 執行 `node scripts/validate-skills.js`
-4. 提交 PR
+4. 用 [Conventional Commits](https://www.conventionalcommits.org/) 格式提交（例如 `feat: add your-skill`）——CI 會強制檢查
+5. 提交 PR
 
 ---
 

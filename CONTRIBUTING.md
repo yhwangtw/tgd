@@ -1,5 +1,31 @@
 # Contributing to tGD
 
+## Commit Messages
+
+CI enforces [Conventional Commits](https://www.conventionalcommits.org/) on every
+PR (`lint.yml` → "Conventional Commits"). Prefix each commit subject with a type:
+
+```
+feat: add tgd-example skill
+fix: correct regression-gate exit code handling
+docs: update Japanese README
+```
+
+Allowed types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`,
+`ci`, `perf`, `build`, `revert`. Subject line max 120 characters. Commits
+without a valid prefix fail the PR check.
+
+## Updating the READMEs
+
+`README.md` is the source of truth; `README.zh-TW.md`, `README.ja.md`, and
+`README.de.md` must carry the same content. When you add a skill or a section,
+update all four. CI (`lint.yml` → "README parity") fails the build if any
+translation is missing a skill link or a top-level section:
+
+```bash
+node scripts/check-readme-parity.js
+```
+
 ## Editing Lifecycle Commands (`/tgd-*`)
 
 The 7 lifecycle commands exist on 5 platforms, but there is only ONE source

@@ -71,6 +71,15 @@ jobs:
             exit 1
           fi
 
+  readme-parity:
+    name: README parity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check translations against skills/ and README.md
+        run: node scripts/check-readme-parity.js
+
   links:
     name: Link check
     runs-on: ubuntu-latest
