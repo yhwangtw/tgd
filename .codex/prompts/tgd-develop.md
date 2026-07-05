@@ -30,9 +30,10 @@ Before writing any code, create an isolated workspace. This keeps `$TGD_DIR/` ar
 2. **Action**: All coding, testing, and commits MUST happen inside `../project-<feature-name>/`.
 
 **⚡ Step 2: Execution Mode Routing**
-Check the number of tasks in `TASKS.md`:
-- **< 3 tasks** (Simple/Fast): `tgd-incremental-implementation`. The main agent switches to the worktree directory and implements directly.
-- **≥ 3 tasks** (Complex/Quality): `tgd-subagent-driven-development`. Dispatch subagents to implement and review within the worktree directory.
+Route on risk first, then size:
+- **Any task with an `[R]` criterion on a critical path** (auth, payment, data loss, security boundary) OR **any Large task (5+ files)** → `tgd-subagent-driven-development`. High-stakes work gets fresh-context implementation and two-stage review regardless of task count.
+- Otherwise, **< 3 tasks** → `tgd-incremental-implementation`. The main agent switches to the worktree directory and implements directly.
+- Otherwise (**≥ 3 tasks**) → `tgd-subagent-driven-development`. Dispatch subagents to implement and review within the worktree directory.
 
 **Core flow (both modes):**
 1. `tgd-context-engineering` — load the right spec sections and source files for the current task
@@ -40,7 +41,9 @@ Check the number of tasks in `TASKS.md`:
 2. `tgd-source-driven-development` — ground framework decisions in official docs, verify and cite
 3. `tgd-subagent-driven-development` OR `tgd-incremental-implementation` — execute tasks in worktree
 4. `tgd-test-driven-development` — Red-Green-Refactor, write tests alongside each task
-5. `tgd-verification-before-completion` — evidence before claims, no exceptions
+   - Every test verifying a criterion MUST mention its `AC-<task>.<n>` id in the test name, docstring, or a comment (`ac-trace.py` cross-references them in `/tgd-verify`).
+5. **Backfill `Test:` fields** — after each task's tests pass, record the test file path in the corresponding criterion's `Test:` field in `$TGD_DIR/<feature-name>/TASKS.md`. MANDATORY for `[R]` criteria — they feed REGRESSION-CATALOG.md at release, and `/tgd-verify` fails closed on `[R]` criteria without a `Test:` file.
+6. `tgd-verification-before-completion` — evidence before claims, no exceptions
 
 **Conditional (apply when relevant):**
 - Working with unfamiliar code? → the `understand` skill to clarify architectural boundaries.
@@ -61,8 +64,9 @@ Use feature flags for incomplete features, safe defaults, and rollback-friendly 
 After completing the implementation, verify the outputs.
 
 **Verification Gate:**
-- [ ] Source code files created/modified in `src/`
-- [ ] Tests written AND passing for new logic in `tests/`
+- [ ] The feature branch has source changes: `git diff main...feature/<feature-name> --stat` is non-empty (use the project's actual layout from CONTEXT.md — do NOT assume `src/` + `tests/`)
+- [ ] Tests written AND passing for new logic, each tagged with its `AC-<task>.<n>` id
+- [ ] Every completed task's criteria have their `Test:` fields filled in TASKS.md (all `[R]` criteria without exception)
 - [ ] Verification commands run and output confirmed (no "should work")
 
 If verification passes, suggest the next step: `/tgd-verify` to prove it works.

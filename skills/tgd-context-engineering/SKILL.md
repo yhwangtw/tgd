@@ -19,15 +19,18 @@ Feed agents the right information at the right time. Context is the single bigge
 
 ## Context Discovery (First Step)
 
-Before any analysis, determine the full scope of context needed:
+**Inside the tGD lifecycle** (invoked from `/tgd-develop` or any command whose
+pre-flight found `$TGD_DIR/CONTEXT.md`): the repo scope was already established
+by `/tgd-map` Step 1 — **read CONTEXT.md's repo list instead of re-asking the
+user**. Asking "還有其他 repo 嗎" again on every task is noise.
+
+**Standalone use only** (no CONTEXT.md exists):
 
 1. Ask the user: "除了當前 repo，還有其他需要參考的 repo 嗎？（local path 或 git URL）"
 2. Accept **local paths** (e.g. `~/Projects/wayflow`) — resolve to absolute path
 3. Accept **git URLs** (e.g. `github.com/CopilotKit/CopilotKit`) — clone to `/tmp/tgd-context/<repo-name>`
 4. If user says "no" or provides nothing, proceed with primary repo only
 5. For each additional repo, run the same context loading process (read key files, understand structure)
-
-This ensures the agent has a complete picture of all relevant codebases before proceeding.
 
 ## The Context Hierarchy
 
