@@ -14,11 +14,11 @@
   :root{
     --bg:#ffffff;--bg-soft:#f6f7fb;--surface:#fff;--border:rgba(0,0,0,.06);
     --text-1:#0d1130;--text-2:#4a5070;--text-3:#8a90ad;
-    --accent:#16a34a;--accent-2:#0d9488;--accent-3:#0891b2;
+    --accent:#2563eb;--accent-2:#4f46e5;--accent-3:#7c3aed;
     --blue:#3b82f6;--purple:#8b5cf6;--red:#ef4444;
-    --grad:linear-gradient(135deg,#16a34a 0%,#0d9488 55%,#0891b2 100%);
-    --grad-soft:linear-gradient(135deg,rgba(22,163,74,.06),rgba(13,148,136,.04),rgba(8,145,178,.03));
-    --radius:14px;--shadow:0 1px 3px rgba(0,0,0,.06);--shadow-lg:0 8px 24px rgba(22,163,74,.1);
+    --grad:linear-gradient(135deg,#2563eb 0%,#4f46e5 55%,#7c3aed 100%);
+    --grad-soft:linear-gradient(135deg,rgba(37,99,235,.06),rgba(79,70,229,.04),rgba(124,58,237,.03));
+    --radius:14px;--shadow:0 1px 3px rgba(0,0,0,.06);--shadow-lg:0 8px 24px rgba(37,99,235,.1);
     --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   }
   html{scroll-behavior:smooth}
@@ -45,7 +45,7 @@
   .hero .subtitle{font-size:19px;color:var(--text-2);max-width:60ch;margin:0 auto 24px;line-height:1.6}
   .hero .subtitle b{color:var(--text-1)}
   .hero .pills{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:28px}
-  .pill{display:inline-flex;align-items:center;gap:4px;padding:5px 14px;border-radius:99px;font-size:13px;font-weight:600;border:1px solid rgba(22,163,74,.3);color:var(--accent);background:rgba(22,163,74,.06)}
+  .pill{display:inline-flex;align-items:center;gap:4px;padding:5px 14px;border-radius:99px;font-size:13px;font-weight:600;border:1px solid rgba(37,99,235,.3);color:var(--accent);background:rgba(37,99,235,.06)}
 
   /* ===================== PIPELINE (TABLE) ===================== */
   .pipeline-section{background:var(--bg)}
@@ -63,17 +63,17 @@
   .pipe-table thead th.col-agent{color:var(--blue)}
   .pipe-table thead th.col-human{color:var(--purple)}
   .pipe-table tbody tr{transition:background .15s}
-  .pipe-table tbody tr:hover{background:rgba(22,163,74,.03)}
+  .pipe-table tbody tr:hover{background:rgba(37,99,235,.03)}
   .pipe-table tbody tr:not(:last-child) td{border-bottom:1px solid var(--border)}
 
   /* Left gradient bar: progressively greener from stage 1→7 */
   .pipe-table tbody tr:nth-child(1) td:first-child{border-left:4px solid #e5e7eb}
   .pipe-table tbody tr:nth-child(2) td:first-child{border-left:4px solid #bbf7d0}
-  .pipe-table tbody tr:nth-child(3) td:first-child{border-left:4px solid #86efac}
+  .pipe-table tbody tr:nth-child(3) td:first-child{border-left:4px solid #93c5fd}
   .pipe-table tbody tr:nth-child(4) td:first-child{border-left:4px solid #4ade80}
-  .pipe-table tbody tr:nth-child(5) td:first-child{border-left:4px solid #22c55e}
-  .pipe-table tbody tr:nth-child(6) td:first-child{border-left:4px solid #16a34a}
-  .pipe-table tbody tr:nth-child(7) td:first-child{border-left:4px solid #15803d}
+  .pipe-table tbody tr:nth-child(5) td:first-child{border-left:4px solid #3b82f6}
+  .pipe-table tbody tr:nth-child(6) td:first-child{border-left:4px solid #2563eb}
+  .pipe-table tbody tr:nth-child(7) td:first-child{border-left:4px solid #1d4ed8}
 
   .pipe-table td{padding:20px 16px;vertical-align:middle;font-size:17px;color:var(--text-2);line-height:1.6}
 
@@ -112,14 +112,14 @@
   .kpi-card{padding:20px 24px;border-radius:var(--radius);background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow)}
   .kpi-card .kn{font-size:40px;font-weight:900;letter-spacing:-.03em;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;line-height:1}
   .kpi-card .kd{font-size:14px;color:var(--text-2);margin-top:6px;line-height:1.5}
-  .kpi-card .kt{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);margin-top:6px;background:rgba(22,163,74,.08);padding:3px 10px;border-radius:5px}
+  .kpi-card .kt{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);margin-top:6px;background:rgba(37,99,235,.08);padding:3px 10px;border-radius:5px}
 
   /* ===================== CTA ===================== */
   .cta-section{text-align:center;padding:60px 0}
   .cta-section h2{font-size:32px;font-weight:800;margin-bottom:12px}
   .cta-section p{font-size:16px;color:var(--text-2);margin-bottom:24px}
-  .cta-btn{display:inline-block;padding:14px 36px;border-radius:12px;background:var(--grad);color:#fff;font-weight:800;font-size:16px;text-decoration:none;transition:transform .2s,box-shadow .2s;box-shadow:0 6px 20px rgba(22,163,74,.2)}
-  .cta-btn:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(22,163,74,.3);text-decoration:none}
+  .cta-btn{display:inline-block;padding:14px 36px;border-radius:12px;background:var(--grad);color:#fff;font-weight:800;font-size:16px;text-decoration:none;transition:transform .2s,box-shadow .2s;box-shadow:0 6px 20px rgba(37,99,235,.2)}
+  .cta-btn:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(37,99,235,.3);text-decoration:none}
 
   /* ===================== FOOTER ===================== */
   footer{padding:24px 0;border-top:1px solid var(--border);text-align:center;font-size:13px;color:var(--text-3)}
@@ -226,7 +226,7 @@
 <section class="kpi-section">
   <div class="container">
     <h2>📈 Engineering Productivity</h2>
-    <p class="section-sub">Estimated PDLC efficiency gains when a team adopts tGD for agent-driven development.</p>
+    <p class="section-sub">Illustrative PDLC efficiency gains when a team adopts tGD for agent-driven development.</p>
 
     <div class="kpi-grid">
       <!-- Chart -->
@@ -234,8 +234,8 @@
         <svg viewBox="0 0 720 360" preserveAspectRatio="xMidYMid meet">
           <defs>
             <pattern id="hatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
-              <rect width="6" height="6" fill="#16a34a"/>
-              <line x1="0" y1="0" x2="0" y2="6" stroke="#0d9488" stroke-width="2"/>
+              <rect width="6" height="6" fill="#2563eb"/>
+              <line x1="0" y1="0" x2="0" y2="6" stroke="#4f46e5" stroke-width="2"/>
             </pattern>
           </defs>
 
@@ -254,12 +254,12 @@
           <line x1="50" y1="225" x2="700" y2="225" stroke="#e5e7eb" stroke-width=".5"/>
 
           <!-- Milestone: tGD adopted (between bar 4 & 5) -->
-          <line x1="355" y1="60" x2="355" y2="315" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="4,3"/>
-          <text x="355" y="52" text-anchor="middle" font-size="10" fill="#16a34a" font-weight="700" font-family="Inter,sans-serif">tGD adopted</text>
+          <line x1="355" y1="60" x2="355" y2="315" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="4,3"/>
+          <text x="355" y="52" text-anchor="middle" font-size="10" fill="#2563eb" font-weight="700" font-family="Inter,sans-serif">tGD adopted</text>
 
           <!-- Milestone: Agents ramped (between bar 6 & 7) -->
-          <line x1="505" y1="60" x2="505" y2="315" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="4,3"/>
-          <text x="505" y="52" text-anchor="middle" font-size="10" fill="#16a34a" font-weight="700" font-family="Inter,sans-serif">Agents ramped</text>
+          <line x1="505" y1="60" x2="505" y2="315" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="4,3"/>
+          <text x="505" y="52" text-anchor="middle" font-size="10" fill="#2563eb" font-weight="700" font-family="Inter,sans-serif">Agents ramped</text>
 
           <!-- ===== PRE-tGD: flat plateau (gray) ===== -->
 
@@ -286,39 +286,36 @@
           <!-- ===== POST-tGD: growth (green) ===== -->
 
           <!-- 5. Sprint 5: 5 → 90px -->
-          <rect x="365" y="225" width="55" height="90" fill="#16a34a" rx="2"/>
+          <rect x="365" y="225" width="55" height="90" fill="#2563eb" rx="2"/>
           <text x="392" y="220" text-anchor="middle" font-size="12" font-weight="700" fill="#1f2937" font-family="Inter,sans-serif">5</text>
           <text x="392" y="332" text-anchor="middle" font-size="9" fill="#9ca3af" font-family="Inter,sans-serif">Sprint 5</text>
 
           <!-- 6. Sprint 6: 7 → 126px -->
-          <rect x="440" y="189" width="55" height="126" fill="#16a34a" rx="2"/>
+          <rect x="440" y="189" width="55" height="126" fill="#2563eb" rx="2"/>
           <text x="467" y="184" text-anchor="middle" font-size="12" font-weight="700" fill="#1f2937" font-family="Inter,sans-serif">7</text>
           <text x="467" y="332" text-anchor="middle" font-size="9" fill="#9ca3af" font-family="Inter,sans-serif">Sprint 6</text>
 
           <!-- 7. Sprint 7: 10 → 180px -->
-          <rect x="515" y="135" width="55" height="180" fill="#16a34a" rx="2"/>
+          <rect x="515" y="135" width="55" height="180" fill="#2563eb" rx="2"/>
           <text x="542" y="130" text-anchor="middle" font-size="12" font-weight="700" fill="#1f2937" font-family="Inter,sans-serif">10</text>
           <text x="542" y="332" text-anchor="middle" font-size="9" fill="#9ca3af" font-family="Inter,sans-serif">Sprint 7</text>
 
           <!-- 8. Sprint 8: 13 → 234px -->
-          <rect x="590" y="81" width="55" height="234" fill="#16a34a" rx="2"/>
+          <rect x="590" y="81" width="55" height="234" fill="#2563eb" rx="2"/>
           <text x="617" y="76" text-anchor="middle" font-size="12" font-weight="700" fill="#1f2937" font-family="Inter,sans-serif">13</text>
           <text x="617" y="332" text-anchor="middle" font-size="9" fill="#9ca3af" font-family="Inter,sans-serif">Sprint 8</text>
 
           <!-- 9. Steady: 15+ → 270px (hatched) -->
           <rect x="665" y="45" width="55" height="270" fill="url(#hatch)" rx="2"/>
-          <text x="692" y="40" text-anchor="middle" font-size="12" font-weight="700" fill="#16a34a" font-family="Inter,sans-serif">15+</text>
+          <text x="692" y="40" text-anchor="middle" font-size="12" font-weight="700" fill="#2563eb" font-family="Inter,sans-serif">15+</text>
           <text x="692" y="332" text-anchor="middle" font-size="9" fill="#9ca3af" font-family="Inter,sans-serif">Steady</text>
 
           <!-- Baseline at ~2.5 (y=270) — drawn AFTER bars so it stays on top -->
           <line x1="50" y1="270" x2="700" y2="270" stroke="#9ca3af" stroke-width="1" stroke-dasharray="6,4"/>
-          <text x="696" y="265" text-anchor="end" font-size="10" fill="#6b7280" font-weight="600" font-family="Inter,sans-serif">PRE-tGD PLATEAU · ~2-3 features</text>
+          <text x="58" y="245" text-anchor="start" font-size="10" fill="#6b7280" font-weight="600" font-family="Inter,sans-serif">PRE-tGD PLATEAU · ~2-3 features</text>
 
           <!-- Source -->
-          <text x="50" y="352" font-size="9" fill="#9ca3af" font-family="Inter,sans-serif">Estimated from AI-augmented engineering benchmarks · </text>
-          <a href="https://www.anthropic.com/institute/recursive-self-improvement" target="_blank" rel="noopener">
-            <text x="340" y="352" font-size="9" fill="#16a34a" font-family="Inter,sans-serif" text-decoration="underline">Anthropic Research (2026)</text>
-          </a>
+          <text x="50" y="352" font-size="9" fill="#9ca3af" font-family="Inter,sans-serif">Illustrative projection — not measured data</text>
         </svg>
       </div>
 

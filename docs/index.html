@@ -11,7 +11,7 @@
     <link rel="icon" type="image/svg+xml" href="favicon-gd.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
 
         :root {
@@ -59,7 +59,7 @@
         }
 
         body {
-            font-family: 'DM Sans', -apple-system, sans-serif;
+            font-family: 'Inter', -apple-system, sans-serif;
             background: var(--bg);
             color: var(--text);
             line-height: 1.6;
@@ -941,6 +941,11 @@
 
         /* Project structure */
         .tree-block { font-family: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', 'SF Mono', Consolas, monospace; font-size: 14px; line-height: 1.8; color: var(--text-muted); white-space: pre; overflow-x: auto; }
+        /* two-column tree layout: stacks on narrow screens; min-width:0 lets
+           the pre-formatted tree scroll inside its column instead of blowing
+           the grid (and the page) out sideways */
+        .tree-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+        .tree-cols > div { min-width: 0; }
         .tree-block .dir { color: var(--accent); }
         .tree-block .file { color: var(--text-muted); }
         .tree-block .desc { color: var(--tree-desc); }
@@ -1007,7 +1012,7 @@
     <section class="hero">
 
         <div class="hero-content">
-            <div class="hero-badge">✨ Open Source • MIT License • 29 Skills</div>
+            <div class="hero-badge">✨ Open Source • Apache 2.0 • 29 Skills</div>
             <p class="hero-tagline">The Agentic PDLC Harness</p>
             <h1>t<span>GD</span></h1>
             <p class="hero-subtitle">
@@ -1032,7 +1037,7 @@
     <div class="container">
         <div class="stats">
             <div class="stat">
-                <div class="stat-number">28</div>
+                <div class="stat-number">29</div>
                 <div class="stat-label">Skills</div>
             </div>
             <div class="stat">
@@ -1388,9 +1393,9 @@
             <h2 class="fade-in"><span data-lang="en">Testing Strategy</span><span data-lang="zh">測試策略</span>
                 <span data-lang="ja">テスト戦略</span>
                 <span data-lang="de">Test-Strategie</span></h2>
-            <p class="section-subtitle fade-in"><span data-lang="en">Three stages, three roles. No lazy agent behavior.</span><span data-lang="zh">三個階段、三個角色。沒有懶 agent 行為。</span>
-                <span data-lang="ja">3つの段階、3つの役割。怠けエージェントの行動なし。</span>
-                <span data-lang="de">Drei Stufen, drei Rollen. Kein passives Agent-Verhalten.</span></p>
+            <p class="section-subtitle fade-in"><span data-lang="en">Three roles, one rule: no shortcuts. No lazy agent behavior.</span><span data-lang="zh">三個角色、一條鐵律：不准抄捷徑。沒有懶 agent 行為。</span>
+                <span data-lang="ja">3つの役割、1つの鉄則：近道なし。怠けエージェントの行動なし。</span>
+                <span data-lang="de">Drei Rollen, eine Regel: keine Abkürzungen. Kein passives Agent-Verhalten.</span></p>
             
             <div class="test-roles fade-in">
                 <div class="test-role">
@@ -1422,9 +1427,9 @@
             <h2 class="fade-in"><span data-lang="en">Agent Personas</span><span data-lang="zh">Agent 角色</span>
                 <span data-lang="ja">エージェントペルソナ</span>
                 <span data-lang="de">Agent-Personas</span></h2>
-            <p class="section-subtitle fade-in"><span data-lang="en">Three specialized reviewers run in parallel during Release. Each has a distinct lens.</span><span data-lang="zh">三個專門審查員在 Release 階段並行執行。各有不同視角。</span>
-                <span data-lang="ja">Release段階で3人の専門レビュアーが並列実行。それぞれ異なる視点。</span>
-                <span data-lang="de">Drei spezialisierte Reviewer laufen parallel in der Release-Phase. Jeder mit anderer Perspektive.</span></p>
+            <p class="section-subtitle fade-in"><span data-lang="en">Three specialized reviewer personas — you (or a slash command) orchestrate them. Each has a distinct lens.</span><span data-lang="zh">三個專門審查 persona——由你（或 slash command）調度。各有不同視角。</span>
+                <span data-lang="ja">3つの専門レビュアーペルソナ — あなた（またはスラッシュコマンド）がオーケストレート。それぞれ異なる視点。</span>
+                <span data-lang="de">Drei spezialisierte Reviewer-Personas — Sie (oder ein Slash Command) orchestrieren sie. Jede mit anderer Perspektive.</span></p>
 
             <div class="personas-grid fade-in">
                 <div class="persona-card">
@@ -1537,7 +1542,7 @@
                 <span data-lang="ja">tGDはプロジェクトrepoの兄弟ディレクトリ。フェーズではなく機能単位。</span>
                 <span data-lang="de">tGD ist ein Geschwister-Repo. Feature-first, nicht Phase-first.</span></p>
 
-            <div class="fade-in" style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            <div class="fade-in tree-cols">
                 <div>
                     <h4 style="color:var(--accent);margin-bottom:8px;font-size:14px"><span data-lang="en">🗂️ Workspace</span><span data-lang="zh">🗂️ 工作區</span><span data-lang="ja">🗂️ ワークスペース</span><span data-lang="de">🗂️ Workspace</span></h4>
                     <div class="code-block tree-block" style="font-size:13px">

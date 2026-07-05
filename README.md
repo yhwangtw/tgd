@@ -94,6 +94,9 @@ gemini
 
 # Pi Coding Agent
 pi
+
+# Hermes Agent
+hermes
 ```
 
 ### 3. Initialize Your Project
@@ -122,7 +125,7 @@ Using Claude Desktop instead of a coding agent? tGD works in **semi-automatic mo
 ```
 User: /tgd-map
 
-Agent: 除了當前 repo，還有其他需要參考的 repo 嗎？（local path 或 git URL）
+Agent: Besides the current repo, any other repos to reference? (local path or git URL)
 User: github.com/CopilotKit/CopilotKit
 
 Agent: Cloning CopilotKit...
@@ -311,7 +314,7 @@ The `tgd` CLI manages installation, updates, and diagnostics:
 
 ## 🧪 Testing Strategy
 
-Testing in tGD isn't a single phase — it's a progressive discipline across four stages, each building on the previous:
+Testing in tGD isn't a single phase — it's a progressive discipline across five stages, each building on the previous:
 
 ```
 Plan            Develop           Verify            Review            Release
@@ -526,7 +529,7 @@ Skills use **progressive disclosure** — the agent only loads details when need
 
 | Metric | Value |
 |--------|-------|
-| **Skills loaded** | 28 (on-demand, not all at once) |
+| **Skills loaded** | 29 (on-demand, not all at once) |
 | **Context usage** | ~5% per skill (progressive disclosure) |
 | **Setup time** | < 30 seconds |
 | **First feature** | ~15 minutes (from `/tgd-define` to `/tgd-release`) |
@@ -676,6 +679,7 @@ The commands above are entry points. The pack includes 29 skills total — 27 li
 | Skill | Purpose |
 |---|---|
 | [tgd-router](skills/tgd-router/SKILL.md) | Maps work to the right skill |
+| [tgd-rules](skills/tgd-rules/SKILL.md) | Core rules — verification iron law, anti-rationalization |
 
 ### 🗺️ Map
 | Skill | Purpose |
@@ -738,9 +742,9 @@ The commands above are entry points. The pack includes 29 skills total — 27 li
 
 After you've built your first feature:
 
-1. 📖 Read the [Testing Strategy](#testing-strategy) to understand the 3-stage testing
-2. 🔧 Explore [All 29 Skills](#all-29-skills) to see what's available
-3. 🤖 Try [Agent Personas](#agent-personas) for specialized review
+1. 📖 Read the [Testing Strategy](#-testing-strategy) to understand the five-stage testing discipline
+2. 🔧 Explore [All 29 Skills](#-all-29-skills) to see what's available
+3. 🤖 Try [Agent Personas](#-agent-personas) for specialized review
 4. 🔗 Set up [Jira Integration](#jira-data-center) for task tracking
 5. 🌐 Enable [tgd-agent-browser](skills/tgd-agent-browser/SKILL.md) for E2E browser testing
 
@@ -753,7 +757,7 @@ Want to add a skill or improve tGD? See [CONTRIBUTING.md](CONTRIBUTING.md).
 ### ⚡ Quick contribution guide:
 1. Fork the repo
 2. Create a skill in `skills/your-skill/`
-3. Run `bash scripts/validate-skills.js`
+3. Run `node scripts/validate-skills.js`
 4. Submit a PR
 
 ---
@@ -793,29 +797,38 @@ Apache 2.0 - use these skills in your projects, teams, and tools.
 
 > **Note:** Only needed if `tgd` fails or you prefer manual linking.
 
+These commands mirror what `setup.sh` does — symlinks from the agent's config directory into the cloned repo. Run them from the repo root.
+
 ### Claude Code
 ```bash
-claude skills install . --path skills
+# one symlink per skill + the slash commands
+for s in skills/*/; do ln -sf "$(pwd)/$s" ~/.claude/skills/"$(basename "$s")"; done
+ln -sf "$(pwd)/.claude/commands"/* ~/.claude/commands/
 ```
 
 ### Gemini CLI
 ```bash
-gemini skills install . --path skills
+ln -sf "$(pwd)/skills" ~/.gemini/skills/tGD
+ln -sf "$(pwd)/.gemini/commands"/* ~/.gemini/commands/
 ```
 
 ### Codex CLI
-Codex relies on **Skill auto-detection** rather than slash commands.
+Codex relies on **skill auto-detection** rather than slash commands.
 ```bash
-ln -s $(pwd)/skills ~/.codex/skills/tGD
+ln -sf "$(pwd)/skills" ~/.codex/skills/tGD
+ln -sf "$(pwd)/.codex/prompts"/* ~/.codex/prompts/
 ```
-*Trigger:* Say "Plan this feature" or "Start tgd plan" — Codex will invoke the skill automatically.
+*Trigger:* Say "Plan this feature" or "Start tgd plan" — Codex invokes the skill automatically.
 
 ### OpenCode
-OpenCode auto-detects the `skills/` folder in the workspace.
+```bash
+ln -sf "$(pwd)/skills" ~/.config/opencode/skills/tGD
+ln -sf "$(pwd)/.opencode/commands"/* ~/.config/opencode/commands/
+```
 
 ### Pi Coding Agent
-Pi supports `/tgd-plan` natively via a **TypeScript Extension** (`.pi/extensions/`).
+Pi gets `/tgd-*` commands via a **TypeScript extension** (`.pi/extensions/`).
 ```bash
-pi
-/tgd-plan
+ln -sf "$(pwd)/.pi/extensions/tgd-commands.ts" ~/.pi/agent/extensions/tgd-commands.ts
+ln -sf "$(pwd)/skills" ~/.pi/agent/skills/tGD
 ```

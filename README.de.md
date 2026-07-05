@@ -27,15 +27,17 @@ Funktioniert mit Claude Code, Codex CLI, Gemini CLI, OpenCode, Pi Coding Agent u
 
 ## 🤔 Warum tGD?
 
-**❌ Ohne tGD:**
-- KI-Agent schreibt 500 Zeilen Code, Tests schlagen fehl, Sie wissen nicht warum
-- "Auf meinem Rechner funktioniert es" → Produktion bricht
-- Keine Spezifikation, kein Plan, nur Gefühl
+**Das Problem ist nicht, dass Agenten nicht programmieren können. Es ist, dass niemand sie zur Verantwortung zieht.**
+
+**❌ Ohne Harness:**
+- Agent sagt "sollte funktionieren" — Tests liefen nie
+- Schreibt 500 Zeilen, bevor er Ihre Codebasis liest
+- Überspringt die Spezifikation, liefert einen kaputten PR und verschwindet
 
 **✅ Mit tGD:**
-- Agent schreibt 50 Zeilen, Tests bestehen, weiter zum nächsten Task
-- Jedes Feature hat PRD + SPEC + DESIGN bevor Code geliefert wird
-- 7-Stufen-Pipeline fängt Bugs ab bevor sie die Produktion erreichen
+- Agent sagt "34/34 bestanden" — und zeigt die Ausgabe
+- Liest zuerst die Codebasis, schreibt 50 Zeilen, die bestehen
+- Spec → Plan → Code → Verify — keine Stufe wird übersprungen
 
 ---
 
@@ -43,10 +45,10 @@ Funktioniert mit Claude Code, Codex CLI, Gemini CLI, OpenCode, Pi Coding Agent u
 
 | Ihre Rolle | Wie tGD hilft |
 |------------|---------------|
-| **Solo-Entwickler** | Schneller liefern mit KI-Workflow |
-| **Team-Lead** | Coding-Standards für KI-generierten Code durchsetzen |
-| **Startup** | Schnell bewegen ohne etwas zu zerstören |
-| **Enterprise** | Qualitätsgates für KI-Entwicklung aufrechterhalten |
+| **Solo-Entwickler** | Schneller liefern mit diszipliniertem KI-Workflow. Der Agent übernimmt Specs, Tests, Reviews |
+| **Team-Lead** | Standards für KI-generierten Code durchsetzen. Jeder PR folgt derselben 7-Stufen-Pipeline |
+| **Startup** | Schnell bewegen, ohne etwas zu zerstören. Der Harness fängt Agent-Fehler vor der Produktion ab |
+| **Enterprise** | Qualitätsgates für KI-Entwicklung. Security, Performance und Compliance werden durchgesetzt |
 
 ---
 
@@ -57,7 +59,7 @@ Funktioniert mit Claude Code, Codex CLI, Gemini CLI, OpenCode, Pi Coding Agent u
 git clone https://github.com/openclawyhwang-hub/tGD.git && cd tGD
 bash setup.sh
 ```
-> Erkennt installierte CLIs automatisch. Webwright-Abhängigkeiten werden automatisch installiert.
+> Erkennt installierte CLIs automatisch. tgd-agent-browser-Abhängigkeiten werden automatisch installiert.
 >
 > Dies installiert auch die `tgd` CLI in Ihren PATH für zukünftige Verwendung.
 
@@ -86,6 +88,7 @@ codex    # Codex CLI
 opencode # OpenCode
 gemini   # Gemini CLI
 pi       # Pi Coding Agent
+hermes   # Hermes Agent
 ```
 
 ### 3. Projekt initialisieren
@@ -219,15 +222,53 @@ flowchart LR
 
 ## 🔑 Hauptfunktionen
 
-- **🏖️ Pflicht-Worktree-Isolierung**: Alle Code-Implementierungen laufen in einer isolierten Git-Worktree-Sandbox. `$TGD_DIR/`-Planungsdateien bleiben unberührt.
-- **🚦 Intelligentes Routing**: `/tgd-develop` routet je nach Task-Anzahl (<3 Tasks: Haupt-Agent, ≥3 Tasks: Subagent + Zwei-Stufen-Review).
-- **🧠 Drei-Quellen-Planung**: `/tgd-plan` integriert `CONTEXT.md` + `PRD.md` + `SPEC.md` bevor Tasks erstellt werden.
-- **🎯 3-Option Feature-Naming**: `/tgd-define` schlägt 3 Namen vor und wartet auf die Auswahl.
-- **🔄 Smarte Jira-Integration**: Erforderliche Felder werden automatisch erkannt. Issues werden mit strukturierter "As a... I want..." Formatierung erstellt.
+### 📖 Projektdokumentation im DeepWiki-Stil
+`/tgd-map` kompiliert die CodeGraph- + Understand-Anything-Analyse in eine **einzige, in sich geschlossene `wiki.html`** unter `$TGD_DIR/wiki/` — per Doppelklick öffnen, kein Server, kein Build-Schritt, kein node/npm. Sie erhalten:
+- **Einheitliche Struktur über alle Projekte** — dasselbe Seitengerüst (Home, Übersicht, Architektur, Onboarding, Module, Flows, Quellcode, Suche); nur die Daten variieren
+- **Multi-Repo-Unterstützung** — Repo-Auswahl auf der Startseite und Sidebar-Umschalter bei mehreren gescannten Repos
+- **Offline-Suche** — Repos, Module, Symbole, Flows und Quelldateien, alles clientseitig
+- **Symbol → Quellcode-Sprünge** — Funktionen/Klassen in Modultabellen verlinken in den eingebauten Quellcode-Browser mit Zeilenhervorhebung
+- **Mermaid-Diagramme** — Architektur, Abhängigkeiten und Graphen pro Modul; der Renderer ist eingebettet, Diagramme funktionieren offline
+- **Markdown-Zwilling für Agenten & GitHub** — `wiki/docs/` spiegelt dieselbe Struktur als reines `.md` (GitHub rendert es, inkl. Mermaid) mit `manifest.json` als maschinenlesbarem Index
+- **Teilbar** — schicken Sie eine Datei an einen Kollegen; sie öffnet sich einfach
+
+Alles liegt in `$TGD_DIR/wiki/`, das Wiki verschmutzt also nie Ihr Code-Repo.
+Das Layout ist über alle Projekte einheitlich, weil das HTML-Template im `tgd-wiki-generation`-Skill mitgeliefert wird — es gibt keinen artefaktseitigen Schalter, der die Struktur ändern könnte.
+
+### 🏖️ Pflicht-Worktree-Isolierung
+Beim Ausführen von `/tgd-develop` erstellt tGD **automatisch eine Git-Worktree-Sandbox** (`../project-<feature>/`), bevor Code geschrieben wird. Das stellt sicher:
+- Ihre `$TGD_DIR/`-Planungsdateien (PRD, SPEC, TASKS) bleiben sauber und unberührt.
+- Scheitert ein Experiment, wird die Worktree einfach entfernt — Ihre Pläne sind sicher.
+- Die Sandbox wird nach bestandener Verifikation automatisch gemerged und aufgeräumt.
+
+### 🚦 Intelligentes Ausführungs-Routing
+Während `/tgd-develop` routet tGD die Arbeit intelligent nach Task-Anzahl:
+| Task-Anzahl | Modus | Verhalten |
+|---|---|---|
+| **< 3 Tasks** | ⚡ Schnellmodus | Haupt-Agent implementiert direkt in der Worktree. Schnell und token-effizient. |
+| **≥ 3 Tasks** | 🔀 Qualitätsmodus | Delegiert an Subagenten mit Zwei-Stufen-Review (Spec-Konformität → Code-Qualität). Höchste Qualität. |
+
+### 🧠 Drei-Quellen-Planung
+Während `/tgd-plan` liest der Agent **drei Dokumente**, bevor Tasks erstellt werden:
+1. **`CONTEXT.md`** — Bestehende Projektstruktur, Konventionen und Tech-Stack
+2. **`PRD.md`** — Geschäftsziele, User-Pain-Points und Scope-Grenzen
+3. **`SPEC.md`** — Technische Anforderungen, API-Contracts und Datenbankschemata
+
+So spiegelt `TASKS.md` reale Randbedingungen wider, nicht nur theoretische Specs.
+
+### 🎯 3-Option Feature-Naming
+Bei `/tgd-define` schlägt der Agent **drei verschiedene kebab-case-Namen** für Ihr Feature vor und wartet, bis Sie einen wählen (oder einen eigenen vorschlagen). Kein Raten mehr — Sie kontrollieren die Benennung vom ersten Tag an.
+
+### 🔄 Smarte Jira-Integration
+Beim Sync zu Jira erstellt tGD nicht einfach blind Issues. Es:
+- **Erkennt** die Pflichtfelder Ihres Projekts über die `createmeta`-API
+- **Lässt Sie den Issue-Type wählen** (Story, Task, Bug, etc.)
+- **Formatiert** jedes Issue mit strukturierter `As a... I want...`-Zusammenfassung und `Given/When/Then`-Akzeptanzkriterien
+- **Umgeht Proxys** automatisch mit `curl -x ""`
 
 ---
 
-## ⚙️ Pipeline
+## ⌨️ Commands
 
 ### CLI (`tgd`)
 
@@ -250,7 +291,7 @@ Die `tgd` CLI verwaltet Installation, Updates und Diagnose:
 
 | 🎯 Was | ⌨️ Command | 💡 Prinzip | 🔧 Skills |
 |---|---|---|---|
-| Projekt verstehen | `/tgd-map` | Kontext vor Änderungen | `tgd-context-engineering` + `codegraph init` + `understand-dashboard` |
+| Projekt verstehen | `/tgd-map` | Kontext vor Änderungen + durchsuchbares Wiki | `tgd-context-engineering` + `codegraph init` + `understand-dashboard` + `tgd-wiki-generation` |
 | Definition | `/tgd-define` | 3-Option-Naming + Produkt + Spezifikation | `tgd-interview-me` → `tgd-idea-refine` → `tgd-spec-driven-development` |
 | Planung | `/tgd-plan` | CONTEXT + PRD + SPEC → Atomare Tasks | `tgd-planning-and-task-breakdown` → `tgd-jira-auto-sync` |
 | Sandbox-Bau | `/tgd-develop` | **Pflicht-Worktree** + Intelligentes Routing | `tgd-source-driven-development` → (`subagent` OR `incremental`) → `tgd-test-driven-development` |
@@ -262,7 +303,7 @@ Die `tgd` CLI verwaltet Installation, Updates und Diagnose:
 
 ## 🧪 Test-Strategie
 
-Testen ist in tGD kein einzelner Schritt — es ist eine fortschreitende Disziplin über vier Stufen, die aufeinander aufbauen:
+Testen ist in tGD kein einzelner Schritt — es ist eine fortschreitende Disziplin über fünf Stufen, die aufeinander aufbauen:
 
 ```
 Plan            Develop           Verify            Review            Release
@@ -457,6 +498,8 @@ Wenn `/tgd-plan` eine `TASKS.md` generiert, kann der **`tgd-jira-auto-sync`** Sk
 | [test-engineer](agents/test-engineer.md) | QA-Spezialist | Test-Strategie & Prove-It-Muster |
 | [security-auditor](agents/security-auditor.md) | Security Engineer | Schwachstellenerkennung |
 
+Personas rufen keine anderen Personas auf — der User (oder ein Slash Command) ist der Orchestrator.
+
 ---
 
 ## 🧩 So funktionieren Skills
@@ -475,7 +518,7 @@ Jeder Skill folgt einer konsistenten Anatomie:
 
 | Metrik | Wert |
 |--------|------|
-| **Geladene Skills** | 28 (On-Demand, nicht alle gleichzeitig) |
+| **Geladene Skills** | 29 (On-Demand, nicht alle gleichzeitig) |
 | **Kontextnutzung** | ~5% pro Skill (Progressive Disclosure) |
 | **Setup-Zeit** | < 30 Sekunden |
 | **Erstes Feature** | ~15 Minuten (von `/tgd-define` bis `/tgd-release`) |
@@ -495,6 +538,9 @@ A: Jede Stufe hat Pre-flight-Checks. Überspringen blockiert die nächste Stufe.
 
 **Q: Funktioniert es mit bestehenden Projekten?**
 A: Ja! `/tgd-map` scannt zuerst die bestehende Codebasis.
+
+**Q: Kann ich die Pipeline anpassen?**
+A: Ja! Bearbeiten Sie die Skill-Dateien in `skills/`, um sie an den Workflow Ihres Teams anzupassen.
 
 ---
 
@@ -599,10 +645,9 @@ my-project-backend/.codegraph → my-project-tGD/.scans/my-project-backend/.code
 | Release | `/tgd-release` | CHANGELOG.md, git tag | `$TGD_DIR/CHANGELOG.md` |
 
 ### Repository-Inhalt
-### Repository-Inhalt
 ```
 tGD/
-├── skills/                     # 28 Skills
+├── skills/                     # 29 Skills
 ├── agents/                     # 3 Spezialisten-Personas
 ├── references/                 # Checklisten (Sicherheit, Tests, etc.)
 ├── .claude/commands/           # Claude Code Slash Commands
@@ -615,24 +660,37 @@ tGD/
 
 ---
 
-## 📦 Alle 28 Skills
+## 📦 Alle 29 Skills
+
+Die obigen Commands sind Einstiegspunkte. Das Paket enthält insgesamt 29 Skills — 27 Lifecycle-Skills plus den `tgd-router`-Meta-Skill und die `tgd-rules`-Kernregeln.
 
 <details>
-<summary><b>🧭 Meta (1)</b></summary>
+<summary><b>🧭 Meta (2)</b></summary>
 
 | Skill | Zweck |
 |-------|-------|
 | [tgd-router](skills/tgd-router/SKILL.md) | Arbeit dem richtigen Skill zuordnen |
+| [tgd-rules](skills/tgd-rules/SKILL.md) | Kernregeln — Verifikations-Grundgesetz, Anti-Rationalisierung |
 </details>
 
 <details>
-<summary><b>📋 Define (3)</b></summary>
+<summary><b>🗺️ Map (2)</b></summary>
+
+| Skill | Zweck |
+|-------|-------|
+| [tgd-context-engineering](skills/tgd-context-engineering/SKILL.md) | Richtige Infos an Agent liefern |
+| [tgd-wiki-generation](skills/tgd-wiki-generation/SKILL.md) | Doku-Site im DeepWiki-Stil für mehrere Repos |
+</details>
+
+<details>
+<summary><b>📋 Define (4)</b></summary>
 
 | Skill | Zweck |
 |-------|-------|
 | [tgd-interview-me](skills/tgd-interview-me/SKILL.md) | Benutzer-Intent durch Q&A extrahieren |
 | [tgd-idea-refine](skills/tgd-idea-refine/SKILL.md) | Divergentes/konvergentes Denken |
 | [tgd-spec-driven-development](skills/tgd-spec-driven-development/SKILL.md) | PRD + SPEC vor Code |
+| [tgd-sketch](skills/tgd-sketch/SKILL.md) | Wegwerf-HTML-Mockups: 2-3 Design-Varianten |
 </details>
 
 <details>
@@ -645,7 +703,7 @@ tGD/
 </details>
 
 <details>
-<summary><b>⚡ Develop (9)</b></summary>
+<summary><b>⚡ Develop (8)</b></summary>
 
 | Skill | Zweck |
 |-------|-------|
@@ -653,7 +711,6 @@ tGD/
 | [tgd-incremental-implementation](skills/tgd-incremental-implementation/SKILL.md) | Schrittweise inkrementell |
 | [tgd-test-driven-development](skills/tgd-test-driven-development/SKILL.md) | Red-Green-Refactor |
 | [tgd-verification-before-completion](skills/tgd-verification-before-completion/SKILL.md) | Beweis vor Behauptungen |
-| [tgd-context-engineering](skills/tgd-context-engineering/SKILL.md) | Richtige Infos an Agent liefern |
 | [tgd-source-driven-development](skills/tgd-source-driven-development/SKILL.md) | Entscheidungen auf offizielle Docs stützen |
 | [tgd-doubt-driven-development](skills/tgd-doubt-driven-development/SKILL.md) | Gegnerische Überprüfung |
 | [tgd-frontend-ui-engineering](skills/tgd-frontend-ui-engineering/SKILL.md) | UI-Architektur & Design-Systeme |
@@ -661,7 +718,7 @@ tGD/
 </details>
 
 <details>
-<summary><b>🧪 Verify (3)</b></summary>
+<summary><b>🧪 Verify (2)</b></summary>
 
 | Skill | Zweck |
 |-------|-------|
@@ -698,9 +755,9 @@ tGD/
 
 Nachdem Sie Ihr erstes Feature gebaut haben:
 
-1. 📖 Lesen Sie die [Test-Strategie](#test-strategie) um die 3-Stufen-Tests zu verstehen
-2. 🔧 Entdecken Sie [alle 28 Skills](#alle-28-skills) um zu sehen was verfügbar ist
-3. 🤖 Probieren Sie [Agent Personas](#agent-personas) für spezialisierte Reviews
+1. 📖 Lesen Sie die [Test-Strategie](#-test-strategie), um die fünfstufige Test-Disziplin zu verstehen
+2. 🔧 Entdecken Sie [alle 29 Skills](#-alle-29-skills), um zu sehen, was verfügbar ist
+3. 🤖 Probieren Sie [Agent Personas](#-agent-personas) für spezialisierte Reviews
 4. 🔗 Richten Sie die [Jira-Integration](#integrationen) für Task-Tracking ein
 5. 🌐 Aktivieren Sie [tgd-agent-browser](skills/tgd-agent-browser/SKILL.md) für E2E-Browser-Tests
 
@@ -713,7 +770,7 @@ Möchten Sie einen Skill hinzufügen oder tGD verbessern? Siehe [CONTRIBUTING.md
 ### ⚡ Kurz-Anleitung:
 1. Repository forken
 2. Skill in `skills/your-skill/` erstellen
-3. `bash scripts/validate-skills.js` ausführen
+3. `node scripts/validate-skills.js` ausführen
 4. PR einreichen
 
 ---
@@ -753,29 +810,38 @@ Apache 2.0 – Nutzen Sie diese Skills in Ihren Projekten, Teams und Tools.
 
 > **Hinweis:** Nur nötig wenn `tgd` fehlschlägt oder Sie manuelles Linking bevorzugen.
 
+Diese Befehle spiegeln, was `setup.sh` tut — Symlinks vom Konfigurationsverzeichnis des Agenten in das geklonte Repository. Im Repo-Root ausführen.
+
 ### Claude Code
 ```bash
-claude skills install . --path skills
+# ein Symlink pro Skill + die Slash Commands
+for s in skills/*/; do ln -sf "$(pwd)/$s" ~/.claude/skills/"$(basename "$s")"; done
+ln -sf "$(pwd)/.claude/commands"/* ~/.claude/commands/
 ```
 
 ### Gemini CLI
 ```bash
-gemini skills install . --path skills
+ln -sf "$(pwd)/skills" ~/.gemini/skills/tGD
+ln -sf "$(pwd)/.gemini/commands"/* ~/.gemini/commands/
 ```
 
 ### Codex CLI
 Codex verlässt sich auf **Skill-Autoerkennung** statt auf Slash Commands.
 ```bash
-ln -s $(pwd)/skills ~/.codex/skills/tGD
+ln -sf "$(pwd)/skills" ~/.codex/skills/tGD
+ln -sf "$(pwd)/.codex/prompts"/* ~/.codex/prompts/
 ```
-*Auslöser:* Sagen Sie „Plane dieses Feature" – Codex wird den Skill automatisch aufrufen.
+*Auslöser:* Sagen Sie „Plane dieses Feature" – Codex ruft den Skill automatisch auf.
 
 ### OpenCode
-OpenCode erkennt den `skills/` Ordner im Workspace automatisch.
+```bash
+ln -sf "$(pwd)/skills" ~/.config/opencode/skills/tGD
+ln -sf "$(pwd)/.opencode/commands"/* ~/.config/opencode/commands/
+```
 
 ### Pi Coding Agent
-Pi unterstützt `/tgd-plan` nativ über eine **TypeScript Extension** (`.pi/extensions/`).
+Pi erhält die `/tgd-*` Commands über eine **TypeScript Extension** (`.pi/extensions/`).
 ```bash
-pi
-/tgd-plan
+ln -sf "$(pwd)/.pi/extensions/tgd-commands.ts" ~/.pi/agent/extensions/tgd-commands.ts
+ln -sf "$(pwd)/skills" ~/.pi/agent/skills/tGD
 ```

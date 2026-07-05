@@ -27,15 +27,17 @@ Claude Code、Codex CLI、Gemini CLI、OpenCode、Pi Coding Agent、Hermes Agent
 
 ## 🤔 なぜ tGD なのか？
 
-**❌ tGD なし：**
-- AIエージェントが500行のコードを書き、テストが失敗する。原因不明
-- 「私のマシンでは動くのに」→ 本番環境で障害
-- 仕様も計画もない、ただの感覚頼り
+**問題はエージェントがコードを書けないことではなく、誰もエージェントに責任を持たせていないことです。**
+
+**❌ ハーネスなし：**
+- エージェントは「動くはず」と言う — テストは一度も実行されていない
+- コードベースを読む前に500行書く
+- 仕様を飛ばし、壊れたPRを出して消える
 
 **✅ tGD あり：**
-- エージェントが50行書き、テストが通り、次のタスクへ
-- すべての機能にリリース前に PRD + SPEC + DESIGN がある
-- 8段階のパイプラインがバグを本番到達前に検出
+- エージェントは「34/34 パス」と言う — 出力を提示する
+- まずコードベースを読み、50行書いてテストを通す
+- 仕様 → 計画 → コード → 検証 — どの段階も飛ばせない
 
 ---
 
@@ -43,10 +45,10 @@ Claude Code、Codex CLI、Gemini CLI、OpenCode、Pi Coding Agent、Hermes Agent
 
 | あなたの役割 | tGD の活用法 |
 |--------------|-------------|
-| **個人開発者** | AI支援ワークフローでより速くリリース |
-| **チームリード** | AI生成コードにコーディング標準を強制 |
-| **スタートアップ** | 壊さずに速く動く |
-| **エンタープライズ** | AI開発の品質ゲートを維持 |
+| **個人開発者** | 規律あるAIワークフローでより速くリリース。仕様・テスト・レビューはエージェントが担当 |
+| **チームリード** | AI生成コード全体に標準を強制。すべてのPRが同じ7段階パイプラインに従う |
+| **スタートアップ** | 壊さずに速く動く。ハーネスがエージェントのミスを本番前に捕捉 |
+| **エンタープライズ** | AI開発の品質ゲート。セキュリティ・パフォーマンス・コンプライアンスを強制 |
 
 ---
 
@@ -57,7 +59,7 @@ Claude Code、Codex CLI、Gemini CLI、OpenCode、Pi Coding Agent、Hermes Agent
 git clone https://github.com/openclawyhwang-hub/tGD.git && cd tGD
 bash setup.sh
 ```
-> インストール済みCLI（Claude、Codex、Gemini、OpenCode、Pi、Hermes）を自動検出。Webwrightの依存関係も自動インストール。
+> インストール済みCLI（Claude、Codex、Gemini、OpenCode、Pi、Hermes）を自動検出。tgd-agent-browserの依存関係も自動インストール。
 >
 > これにより `tgd` CLI もPATHにインストールされ、次回から簡単に使えます。
 
@@ -86,6 +88,7 @@ codex    # Codex CLI
 opencode # OpenCode
 gemini   # Gemini CLI
 pi       # Pi Coding Agent
+hermes   # Hermes Agent
 ```
 
 ### 3. プロジェクトを初期化
@@ -219,15 +222,53 @@ flowchart LR
 
 ## 🔑 主な機能
 
-- **🏖️ 必須 Worktree 隔離**: 全てのコード実装は隔離された Git Worktree サンドボックスで実行。`$TGD_DIR/` 計画ファイルがコードで汚染されることはありません。
-- **🚦 スマートルーティング**: `/tgd-develop` はタスク数に応じてルーティング（<3 タスク: メイン Agent、≥3 タスク: Subagent + 二段階レビュー）。
-- **🧠 三源計画**: `/tgd-plan` は `CONTEXT.md` + `PRD.md` + `SPEC.md` の3つのドキュメントを統合してからタスクを作成します。
-- **🎯 3択機能名**: `/tgd-define` は3つの候補名を提案し、ユーザーが選択するまで待ちます。
-- **🔄 スマート Jira 統合**: 必須フィールドを自動検出し、構造化された「As a... I want...」形式で課題を作成。
+### 📖 DeepWikiスタイルのプロジェクトドキュメント
+`/tgd-map` は CodeGraph + Understand-Anything の分析結果を、`$TGD_DIR/wiki/` にある**単一の自己完結型 `wiki.html`** にコンパイルします — ダブルクリックで開き、サーバー不要、ビルド不要、node/npm 不要。得られるもの：
+- **どのプロジェクトでも同じ構造** — 同じページ骨格（ホーム、概要、アーキテクチャ、オンボーディング、モジュール、フロー、ソース、検索）で、変わるのはデータだけ
+- **マルチレポ対応** — ホームページのレポセレクターと、複数レポをスキャンした際のサイドバー切り替え
+- **オフライン検索** — レポ、モジュール、シンボル、フロー、ソースファイルをすべてクライアントサイドで検索
+- **シンボル → ソースへのジャンプ** — モジュール表の関数/クラスが、行ハイライト付きの内蔵ソースブラウザにリンク
+- **Mermaid 図** — アーキテクチャ、依存関係、モジュールごとのグラフ。レンダラーは埋め込み済みでオフラインでも表示可能
+- **エージェントとGitHub向けのMarkdown版** — `wiki/docs/` が同じ構造をプレーンな `.md` でミラー（GitHubがMermaid込みでレンダリング）、`manifest.json` が機械可読インデックス
+- **共有可能** — ファイルを1つチームメイトに送るだけで、そのまま開ける
+
+すべて `$TGD_DIR/wiki/` に置かれるため、wiki がコードレポを汚すことはありません。
+HTMLテンプレートは `tgd-wiki-generation` スキルに同梱されているため、レイアウトは全プロジェクトで統一 — 構造を変えられるアーティファクト側のスイッチは存在しません。
+
+### 🏖️ 必須 Worktree 隔離
+`/tgd-develop` を実行すると、tGD はコードを書く前に **Git Worktree サンドボックス**（`../project-<feature>/`）を自動作成します。これにより：
+- `$TGD_DIR/` の計画ファイル（PRD、SPEC、TASKS）はクリーンなまま保たれます。
+- 実験が失敗しても worktree を削除するだけ — 計画は無事です。
+- 検証をパスするとサンドボックスは自動的にマージ・クリーンアップされます。
+
+### 🚦 スマート実行ルーティング
+`/tgd-develop` 中、tGD はタスク数に基づいてインテリジェントにルーティングします：
+| タスク数 | モード | 動作 |
+|---|---|---|
+| **3未満** | ⚡ 高速モード | メインエージェントが worktree 内で直接実装。速くトークン効率も良い。 |
+| **3以上** | 🔀 品質モード | サブエージェントに委譲し二段階レビュー（仕様準拠 → コード品質）。最高品質。 |
+
+### 🧠 三源計画
+`/tgd-plan` 中、エージェントはタスク作成前に**3つのドキュメント**を読みます：
+1. **`CONTEXT.md`** — 既存のプロジェクト構造、慣習、技術スタック
+2. **`PRD.md`** — ビジネスゴール、ユーザーの課題、スコープ境界
+3. **`SPEC.md`** — 技術要件、APIコントラクト、データベーススキーマ
+
+これにより `TASKS.md` は机上の仕様ではなく、現実の制約を反映します。
+
+### 🎯 3択機能ネーミング
+`/tgd-define` 実行時、エージェントは**3つの異なるkebab-case名**を提案し、あなたが選ぶ（または独自案を出す）まで待ちます。推測は不要 — 初日からあなたが命名を握ります。
+
+### 🔄 スマート Jira 統合
+Jira への同期時、tGD はやみくもに課題を作成しません：
+- `createmeta` API でプロジェクトの必須フィールドを**自動検出**
+- Issue Type（Story、Task、Bug など）を**選択させてくれる**
+- すべての課題を構造化された `As a... I want...` サマリーと `Given/When/Then` 受け入れ基準で**フォーマット**
+- `curl -x ""` でプロキシを自動**バイパス**
 
 ---
 
-## ⚙️ パイプライン
+## ⌨️ コマンド
 
 ### CLI（`tgd`）
 
@@ -250,7 +291,7 @@ flowchart LR
 
 | 🎯 内容 | ⌨️ コマンド | 💡 原則 | 🔧 呼び出し |
 |---|---|---|---|
-| プロジェクト理解 | `/tgd-map` | 変更前にコンテキスト | `tgd-context-engineering` + `codegraph init` + `understand-dashboard` |
+| プロジェクト理解 | `/tgd-map` | 変更前にコンテキスト + 閲覧可能なwiki | `tgd-context-engineering` + `codegraph init` + `understand-dashboard` + `tgd-wiki-generation` |
 | 何を構築するか定義 | `/tgd-define` | 3択命名 + 製品 + 仕様 | `tgd-interview-me` → `tgd-idea-refine` → `tgd-spec-driven-development` |
 | 構築方法を計画 | `/tgd-plan` | CONTEXT + PRD + SPEC → アトミックタスク | `tgd-planning-and-task-breakdown` → `tgd-jira-auto-sync` |
 | サンドボックス構築 | `/tgd-develop` | **必須 Worktree** + スマートルーティング | `tgd-source-driven-development` → (`subagent` OR `incremental`) → `tgd-test-driven-development` |
@@ -262,7 +303,7 @@ flowchart LR
 
 ## 🧪 テスト戦略
 
-tGDのテストは単一フェーズではなく、4段階にわたる段階的な規律です。各段階が前の段階の成果を活かして進みます：
+tGDのテストは単一フェーズではなく、5段階にわたる段階的な規律です。各段階が前の段階の成果を活かして進みます：
 
 ```
 Plan              Develop            Verify             Review             Release
@@ -457,6 +498,8 @@ tGD には3つの人間ロール。各artifact の下部に `## Sign-off` セク
 | [test-engineer](agents/test-engineer.md) | QA スペシャリスト | テスト戦略 & Prove-Itパターン |
 | [security-auditor](agents/security-auditor.md) | セキュリティエンジニア | 脆弱性検出 |
 
+ペルソナが他のペルソナを呼び出すことはありません — オーケストレーターはユーザー（またはスラッシュコマンド）です。
+
 ---
 
 ## 🧩 スキルの仕組み
@@ -475,7 +518,7 @@ tGD には3つの人間ロール。各artifact の下部に `## Sign-off` セク
 
 | 指標 | 値 |
 |------|-----|
-| **ロードされたスキル** | 28（オンデマンド、全同時ではありません） |
+| **ロードされたスキル** | 29（オンデマンド、全同時ではありません） |
 | **コンテキスト使用量** | スキルあたり約5%（プログレッシブディスクロージャ） |
 | **セットアップ時間** | 30秒未満 |
 | **最初の機能** | 約15分（`/tgd-define` から `/tgd-release` まで） |
@@ -495,6 +538,9 @@ A：各ステージにプレフライトチェック。スキップすると次�
 
 **Q：既存プロジェクトで使える？**
 A：はい！`/tgd-map` が既存コードベースをスキャン。
+
+**Q：パイプラインをカスタマイズできる？**
+A：はい！`skills/` 内のスキルファイルを編集してチームのワークフローに合わせられます。
 
 ---
 
@@ -599,10 +645,9 @@ my-project-backend/.codegraph → my-project-tGD/.scans/my-project-backend/.code
 | Release | `/tgd-release` | CHANGELOG.md, git tag | `$TGD_DIR/CHANGELOG.md` |
 
 ### リポジトリ内容
-### リポジトリ内容
 ```
 tGD/
-├── skills/                     # 28 スキル
+├── skills/                     # 29 スキル
 ├── agents/                     # 3 スペシャリストペルソナ
 ├── references/                 # チェックリスト（セキュリティ、テスト等）
 ├── .claude/commands/           # Claude Code スラッシュコマンド
@@ -615,24 +660,37 @@ tGD/
 
 ---
 
-## 📦 全28スキル
+## 📦 全29スキル
+
+上記のコマンドはエントリーポイントです。パックには全29スキル — 27のライフサイクルスキルに `tgd-router` メタスキルと `tgd-rules` コアルールを加えたもの — が含まれます。
 
 <details>
-<summary><b>🧭 Meta (1)</b></summary>
+<summary><b>🧭 Meta (2)</b></summary>
 
 | スキル | 用途 |
 |--------|------|
 | [tgd-router](skills/tgd-router/SKILL.md) | 作業を適切なスキルにマッピング |
+| [tgd-rules](skills/tgd-rules/SKILL.md) | コアルール — 検証の鉄則、反合理化 |
 </details>
 
 <details>
-<summary><b>📋 Define (3)</b></summary>
+<summary><b>🗺️ Map (2)</b></summary>
+
+| スキル | 用途 |
+|--------|------|
+| [tgd-context-engineering](skills/tgd-context-engineering/SKILL.md) | 正確な情報をエージェントに供給 |
+| [tgd-wiki-generation](skills/tgd-wiki-generation/SKILL.md) | DeepWikiスタイルのマルチレポドキュメントサイト |
+</details>
+
+<details>
+<summary><b>📋 Define (4)</b></summary>
 
 | スキル | 用途 |
 |--------|------|
 | [tgd-interview-me](skills/tgd-interview-me/SKILL.md) | Q&Aでユーザー意図を抽出 |
 | [tgd-idea-refine](skills/tgd-idea-refine/SKILL.md) | 発散/収束思考 |
 | [tgd-spec-driven-development](skills/tgd-spec-driven-development/SKILL.md) | PRD + SPEC を先に作成 |
+| [tgd-sketch](skills/tgd-sketch/SKILL.md) | 使い捨てHTMLモックアップ：2〜3のデザイン案 |
 </details>
 
 <details>
@@ -645,7 +703,7 @@ tGD/
 </details>
 
 <details>
-<summary><b>⚡ Develop (9)</b></summary>
+<summary><b>⚡ Develop (8)</b></summary>
 
 | スキル | 用途 |
 |--------|------|
@@ -653,7 +711,6 @@ tGD/
 | [tgd-incremental-implementation](skills/tgd-incremental-implementation/SKILL.md) | 縦に薄くスライスして実装 |
 | [tgd-test-driven-development](skills/tgd-test-driven-development/SKILL.md) | Red-Green-Refactor |
 | [tgd-verification-before-completion](skills/tgd-verification-before-completion/SKILL.md) | 主張の前に証拠を |
-| [tgd-context-engineering](skills/tgd-context-engineering/SKILL.md) | 正確な情報をエージェントに供給 |
 | [tgd-source-driven-development](skills/tgd-source-driven-development/SKILL.md) | 公式ドキュメントに基づく判断 |
 | [tgd-doubt-driven-development](skills/tgd-doubt-driven-development/SKILL.md) | 対抗レビュー |
 | [tgd-frontend-ui-engineering](skills/tgd-frontend-ui-engineering/SKILL.md) | UIアーキテクチャ & デザインシステム |
@@ -661,7 +718,7 @@ tGD/
 </details>
 
 <details>
-<summary><b>🧪 Verify (3)</b></summary>
+<summary><b>🧪 Verify (2)</b></summary>
 
 | スキル | 用途 |
 |--------|------|
@@ -698,9 +755,9 @@ tGD/
 
 最初の機能を構築した後：
 
-1. 📖 [テスト戦略](#テスト戦略)を読んで3段階テストを理解
-2. 🔧 [全28スキル](#全28スキル)を探索して利用可能なものを見る
-3. 🤖 [Agent Personas](#agent-personas)で専門的なレビューを試す
+1. 📖 [テスト戦略](#-テスト戦略)を読んで5段階のテスト規律を理解
+2. 🔧 [全29スキル](#-全29スキル)を探索して利用可能なものを見る
+3. 🤖 [Agent Personas](#-agent-personas)で専門的なレビューを試す
 4. 🔗 [Jira 統合](#統合)でタスクトラッキングを設定
 5. 🌐 [tgd-agent-browser](skills/tgd-agent-browser/SKILL.md)でE2Eブラウザテストを有効化
 
@@ -713,7 +770,7 @@ tGD/
 ### ⚡ クイックコントリビュートガイド：
 1. リポジトリをフォーク
 2. `skills/your-skill/` にスキルを作成
-3. `bash scripts/validate-skills.js` を実行
+3. `node scripts/validate-skills.js` を実行
 4. PRを送信
 
 ---
@@ -753,29 +810,38 @@ Apache 2.0 - あなたのプロジェクト、チーム、ツールでこれら�
 
 > **注意：** `tgd` が失敗した場合、または手動リンクを希望する場合のみ必要です。
 
+以下のコマンドは `setup.sh` の動作と同じ — 各エージェントの設定ディレクトリからクローンしたリポジトリへのシンボリックリンクを作成します。リポジトリのルートで実行してください。
+
 ### Claude Code
 ```bash
-claude skills install . --path skills
+# スキルごとに1つのシンボリックリンク + スラッシュコマンド
+for s in skills/*/; do ln -sf "$(pwd)/$s" ~/.claude/skills/"$(basename "$s")"; done
+ln -sf "$(pwd)/.claude/commands"/* ~/.claude/commands/
 ```
 
 ### Gemini CLI
 ```bash
-gemini skills install . --path skills
+ln -sf "$(pwd)/skills" ~/.gemini/skills/tGD
+ln -sf "$(pwd)/.gemini/commands"/* ~/.gemini/commands/
 ```
 
 ### Codex CLI
 Codexはスラッシュコマンドではなく**スキル自動検出**に依存します。
 ```bash
-ln -s $(pwd)/skills ~/.codex/skills/tGD
+ln -sf "$(pwd)/skills" ~/.codex/skills/tGD
+ln -sf "$(pwd)/.codex/prompts"/* ~/.codex/prompts/
 ```
 *トリガー：*「この機能を計画して」と言うと、Codexが自動的にスキルを呼び出します。
 
 ### OpenCode
-OpenCodeはワークスペース内の `skills/` フォルダを自動検出します。
+```bash
+ln -sf "$(pwd)/skills" ~/.config/opencode/skills/tGD
+ln -sf "$(pwd)/.opencode/commands"/* ~/.config/opencode/commands/
+```
 
 ### Pi Coding Agent
-Piは**TypeScript Extension**（`.pi/extensions/`）で `/tgd-plan` をネイティブサポートしています。
+Piは**TypeScript extension**（`.pi/extensions/`）経由で `/tgd-*` コマンドを利用できます。
 ```bash
-pi
-/tgd-plan
+ln -sf "$(pwd)/.pi/extensions/tgd-commands.ts" ~/.pi/agent/extensions/tgd-commands.ts
+ln -sf "$(pwd)/skills" ~/.pi/agent/skills/tGD
 ```

@@ -97,6 +97,9 @@ gemini
 
 # Pi Coding Agent
 pi
+
+# Hermes Agent
+hermes
 ```
 
 ### 3. 初始化專案
@@ -243,6 +246,19 @@ flowchart LR
 
 ## 🔑 核心特色
 
+### 📖 DeepWiki 風格的專案文件
+`/tgd-map` 將 CodeGraph + Understand-Anything 的分析結果編譯成**單一自足的 `wiki.html`**，放在 `$TGD_DIR/wiki/`——雙擊即開，不用伺服器、不用 build、不用 node/npm。你會得到：
+- **每個專案結構一致**——相同的頁面骨架（首頁、總覽、架構、上手指南、模組、流程、原始碼、搜尋），只有資料不同
+- **多 repo 支援**——首頁有 repo 選擇器，掃描多個 repo 時側欄可切換
+- **離線搜尋**——repo、模組、符號、流程、原始碼檔案，全部在客戶端完成
+- **符號 → 原始碼跳轉**——模組表格的函式/類別連結到內建原始碼瀏覽器，附行號高亮
+- **Mermaid 圖表**——架構、依賴、各模組的關係圖；渲染器已內嵌，離線也能顯示
+- **給 agent 和 GitHub 的 Markdown 分身**——`wiki/docs/` 以純 `.md` 鏡射相同結構（GitHub 可直接渲染，含 Mermaid），`manifest.json` 是機器可讀的索引
+- **可分享**——傳一個檔案給隊友，打開就能看
+
+所有東西都在 `$TGD_DIR/wiki/`，wiki 永遠不會污染你的程式碼 repo。
+版面在所有專案間保持一致，因為 HTML 模板內建在 `tgd-wiki-generation` skill 裡——artifact 端沒有任何可以改變結構的開關。
+
 ### 🏖️ 強制 Worktree 隔離
 執行 `/tgd-develop` 時，tGD **自動建立 Git Worktree 沙盒**（`../project-<feature>/`）才開始寫 code。這確保：
 - `$TGD_DIR/` 規劃檔案（PRD, SPEC, TASKS）保持乾淨不受程式碼污染。
@@ -299,7 +315,7 @@ flowchart LR
 
 | 🎯 做什麼 | ⌨️ 指令 | 💡 核心原則 | 🔧 呼叫的 Skills |
 |---|---|---|---|
-| 了解專案 | `/tgd-map` | 先有 context 再動手 | `tgd-context-engineering` + `codegraph init` + `understand-dashboard` |
+| 了解專案 | `/tgd-map` | 先有 context 再動手 + 可瀏覽的 wiki | `tgd-context-engineering` + `codegraph init` + `understand-dashboard` + `tgd-wiki-generation` |
 | 定義要做什麼 | `/tgd-define` | 3 選 1 命名 + 產品 + 規格 | `tgd-interview-me` → `tgd-idea-refine` → `tgd-spec-driven-development` |
 | 規劃怎麼做 | `/tgd-plan` | 讀 CONTEXT + PRD + SPEC → 原子任務 | `tgd-planning-and-task-breakdown` → `tgd-jira-auto-sync` |
 | 沙盒建造 | `/tgd-develop` | **強制 Worktree** + 智能路由 | `tgd-source-driven-development` → (`subagent` OR `incremental`) → `tgd-test-driven-development` |
@@ -311,7 +327,7 @@ flowchart LR
 
 ## 🧪 測試策略
 
-tGD 的測試不是單一階段——它是跨四個階段的漸進紀律，每個階段建立在前一個之上：
+tGD 的測試不是單一階段——它是跨五個階段的漸進紀律，每個階段建立在前一個之上：
 
 ```
 Plan            Develop           Verify            Review            Release
@@ -526,7 +542,7 @@ Skills 使用**漸進式揭露**——agent 只在需要時載入細節，保持
 
 | 指標 | 數值 |
 |------|------|
-| **載入的 Skills** | 28（按需載入，非一次全部） |
+| **載入的 Skills** | 29（按需載入，非一次全部） |
 | **Context 使用量** | 每個 skill ~5%（漸進式揭露） |
 | **安裝時間** | < 30 秒 |
 | **第一個功能** | ~15 分鐘（從 `/tgd-define` 到 `/tgd-release`） |
@@ -653,10 +669,9 @@ my-project-backend/.codegraph → my-project-tGD/.scans/my-project-backend/.code
 | Release | `/tgd-release` | CHANGELOG.md, git tag | `$TGD_DIR/CHANGELOG.md` |
 
 ### Repo 內容
-### Repo 內容
 ```
 tGD/
-├── skills/                            # 28 個 skills
+├── skills/                            # 29 個 skills
 ├── agents/                            # 3 個專家 personas
 ├── references/                        # 檢查清單（安全、測試等）
 ├── .claude/commands/                  # Claude Code 指令
@@ -670,21 +685,29 @@ tGD/
 
 ---
 
-## 📦 全部 28 個 Skills
+## 📦 全部 29 個 Skills
 
-上面的指令是入口點。這個 pack 包含 28 個 skills——26 個生命週期 skill 加上 `tgd-router` 元 skill 和 `tgd-rules` 核心規則。
+上面的指令是入口點。這個 pack 包含 29 個 skills——27 個生命週期 skill 加上 `tgd-router` 元 skill 和 `tgd-rules` 核心規則。
 
 ### 🧭 Meta
 | Skill | 用途 |
 |---|---|
 | [tgd-router](skills/tgd-router/SKILL.md) | 將工作映射到正確的 skill |
+| [tgd-rules](skills/tgd-rules/SKILL.md) | 核心規則——驗證鐵律、反合理化 |
+
+### 🗺️ Map
+| Skill | 用途 |
+|---|---|
+| [tgd-context-engineering](skills/tgd-context-engineering/SKILL.md) | 餵給 agent 正確的資訊 |
+| [tgd-wiki-generation](skills/tgd-wiki-generation/SKILL.md) | DeepWiki 風格的多 repo 文件站 |
 
 ### 📋 Define
 | Skill | 用途 |
 |---|---|
 | [tgd-interview-me](skills/tgd-interview-me/SKILL.md) | 透過 Q&A 提取使用者意圖 |
 | [tgd-idea-refine](skills/tgd-idea-refine/SKILL.md) | 發散/收斂思考 |
-| [tgd-spec-driven-development](skills/tgd-spec-driven-development/SKILL.md) | 寫 code 前先寫 PRD + SPEC + DESIGN.md（UI: claude-design 3 變體 + 用戶確認關卡） |
+| [tgd-spec-driven-development](skills/tgd-spec-driven-development/SKILL.md) | 寫 code 前先寫 PRD + SPEC + DESIGN.md（UI: claude-design 3 變體 + 使用者確認關卡） |
+| [tgd-sketch](skills/tgd-sketch/SKILL.md) | 拋棄式 HTML mockup：2-3 個設計變體 |
 
 ### 📐 Plan
 | Skill | 用途 |
@@ -699,7 +722,6 @@ tGD/
 | [tgd-incremental-implementation](skills/tgd-incremental-implementation/SKILL.md) | 薄的垂直切片 |
 | [tgd-verification-before-completion](skills/tgd-verification-before-completion/SKILL.md) | 聲明完成前必須有證據 |
 | [tgd-test-driven-development](skills/tgd-test-driven-development/SKILL.md) | Red-Green-Refactor |
-| [tgd-context-engineering](skills/tgd-context-engineering/SKILL.md) | 餵給 agent 正確的資訊 |
 | [tgd-source-driven-development](skills/tgd-source-driven-development/SKILL.md) | 以官方文件為依據 |
 | [tgd-doubt-driven-development](skills/tgd-doubt-driven-development/SKILL.md) | 對抗式審查 |
 | [tgd-frontend-ui-engineering](skills/tgd-frontend-ui-engineering/SKILL.md) | UI 架構 & 設計系統 |
@@ -734,9 +756,9 @@ tGD/
 
 建造完第一個功能之後：
 
-1. 📖 閱讀[測試策略](#測試策略)了解三階段測試
-2. 🔧 探索[全部 28 個 Skills](#全部-28-個-skills)看有什麼可用
-3. 🤖 試試 [Agent Personas](#agent-personas) 專門化審查
+1. 📖 閱讀[測試策略](#-測試策略)了解五階段測試紀律
+2. 🔧 探索[全部 29 個 Skills](#-全部-29-個-skills)看有什麼可用
+3. 🤖 試試 [Agent Personas](#-agent-personas) 專門化審查
 4. 🔗 設定 [Jira 整合](#jira-data-center) 任務追蹤
 5. 🌐 啟用 [tgd-agent-browser](skills/tgd-agent-browser/SKILL.md) E2E 瀏覽器測試
 
@@ -749,8 +771,33 @@ tGD/
 ### ⚡ 快速貢獻指南：
 1. Fork repo
 2. 在 `skills/your-skill/` 建立 skill
-3. 執行 `bash scripts/validate-skills.js`
+3. 執行 `node scripts/validate-skills.js`
 4. 提交 PR
+
+---
+
+## 🏷️ Release
+
+### 自動化（推薦）
+當 `VERSION` 更新並推送到 `main` 時，GitHub Actions 會自動建立 tag 和附帶 changelog 的 release。
+
+**發布新版本：**
+1. 更新 `VERSION` 為新版本（例如 `v2026.06.09`）
+2. 更新 `setup.sh` 裡的 `TGD_VERSION`（CalVer 格式，例如 `2026-06-09`）
+3. Commit 並推送到 `main`
+4. GitHub Actions 自動建立 release
+
+### 手動
+```bash
+# 使用 release 腳本
+bash scripts/release.sh          # 從 VERSION 讀取版本
+bash scripts/release.sh v2026.06.09   # 或指定版本
+
+# 或手動操作
+git tag v2026.06.09
+git push origin v2026.06.09
+gh release create v2026.06.09 --title "tGD v2026.06.09" --notes "Release notes..."
+```
 
 ---
 
@@ -764,29 +811,38 @@ Apache 2.0 - 在你的專案、團隊和工具中使用這些 skills。
 
 > **注意：** 只在 `tgd` 失敗或你偏好手動連結時才需要。
 
+以下指令與 `setup.sh` 的做法一致——從各 agent 的設定目錄建立 symlink 指向 clone 下來的 repo。請在 repo 根目錄執行。
+
 ### Claude Code
 ```bash
-claude skills install . --path skills
+# 每個 skill 一個 symlink + slash commands
+for s in skills/*/; do ln -sf "$(pwd)/$s" ~/.claude/skills/"$(basename "$s")"; done
+ln -sf "$(pwd)/.claude/commands"/* ~/.claude/commands/
 ```
 
 ### Gemini CLI
 ```bash
-gemini skills install . --path skills
+ln -sf "$(pwd)/skills" ~/.gemini/skills/tGD
+ln -sf "$(pwd)/.gemini/commands"/* ~/.gemini/commands/
 ```
 
 ### Codex CLI
-Codex 依賴 **Skill 自動偵測**而非 slash command。
+Codex 依賴 **skill 自動偵測**而非 slash command。
 ```bash
-ln -s $(pwd)/skills ~/.codex/skills/tGD
+ln -sf "$(pwd)/skills" ~/.codex/skills/tGD
+ln -sf "$(pwd)/.codex/prompts"/* ~/.codex/prompts/
 ```
 *觸發方式：* 說「規劃這個功能」或「開始 tgd plan」——Codex 會自動呼叫 skill。
 
 ### OpenCode
-OpenCode 自動偵測工作區中的 `skills/` 資料夾。
+```bash
+ln -sf "$(pwd)/skills" ~/.config/opencode/skills/tGD
+ln -sf "$(pwd)/.opencode/commands"/* ~/.config/opencode/commands/
+```
 
 ### Pi Coding Agent
-Pi 透過 **TypeScript Extension**（`.pi/extensions/`）原生支援 `/tgd-plan`。
+Pi 透過 **TypeScript extension**（`.pi/extensions/`）取得 `/tgd-*` 指令。
 ```bash
-pi
-/tgd-plan
+ln -sf "$(pwd)/.pi/extensions/tgd-commands.ts" ~/.pi/agent/extensions/tgd-commands.ts
+ln -sf "$(pwd)/skills" ~/.pi/agent/skills/tGD
 ```

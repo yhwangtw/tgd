@@ -4,6 +4,12 @@
 }
 .tpl-tgd-pitch .slide{padding:72px 96px}
 .tpl-tgd-pitch .slide>*{position:relative;z-index:1}
+/* the rule above must not capture the chrome: base.css positions the
+   header/footer absolutely at the slide edges; relative would drop them
+   into the content flow, shifted up 24px, overlapping the content above */
+.tpl-tgd-pitch .slide>.deck-header,
+.tpl-tgd-pitch .slide>.deck-footer{position:absolute}
+.tpl-tgd-pitch .brand-mark{position:absolute;top:48px;left:80px}
 .tpl-tgd-pitch .kicker{font-weight:700;font-size:14px;letter-spacing:.08em;text-transform:uppercase}
 .tpl-tgd-pitch .h1{font-size:72px;line-height:1.05;font-weight:900;letter-spacing:-.04em}
 .tpl-tgd-pitch .h2{font-size:48px;font-weight:800;letter-spacing:-.03em;line-height:1.15}
@@ -70,3 +76,20 @@
 .tpl-tgd-pitch .persona h4{margin-bottom:4px}
 .tpl-tgd-pitch .persona .role{font-size:13px;margin-bottom:8px}
 .tpl-tgd-pitch .persona p{font-size:13px}
+
+/* Mobile: the deck is a fixed 16:9 stage and unusable on phones — degrade
+   to a plain scrollable document: every slide stacked, chrome inline. */
+@media (max-width:768px){
+  .tpl-tgd-pitch .deck{height:auto;overflow:visible}
+  .tpl-tgd-pitch .slide{position:relative;inset:auto;height:auto;min-height:0;
+    opacity:1!important;transform:none!important;pointer-events:auto;
+    padding:48px 20px 32px;border-bottom:1px solid var(--border,rgba(0,0,0,.08))}
+  .tpl-tgd-pitch .slide>.deck-header,
+  .tpl-tgd-pitch .slide>.deck-footer{position:static;margin-top:24px}
+  .tpl-tgd-pitch .deck-footer span:first-child{display:none} /* keyboard hints */
+  .tpl-tgd-pitch .brand-mark{position:static;display:block;margin-bottom:16px}
+  .tpl-tgd-pitch .h1{font-size:42px}
+  .tpl-tgd-pitch .h2{font-size:30px}
+  .tpl-tgd-pitch .cover-blob{width:280px;height:280px;right:-80px;top:-80px}
+  .progress-bar,.notes-overlay,.overview{display:none!important}
+}
