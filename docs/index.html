@@ -768,16 +768,9 @@ navLinks.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
 /* ============================== init ============================== */
 setTheme(localStorage.getItem('tgd-theme') ||
   (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'));
+// English by default; only an explicit choice (persisted) switches language
 const saved = localStorage.getItem('tgd-lang');
 if (saved && saved !== 'en') setLang(saved);
-else {
-  const nav = (navigator.language || 'en').toLowerCase();
-  if (!saved) {
-    if (nav.startsWith('zh')) setLang('zh');
-    else if (nav.startsWith('ja')) setLang('ja');
-    else if (nav.startsWith('de')) setLang('de');
-  }
-}
 </script>
 </body>
 </html>
