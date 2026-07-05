@@ -24,9 +24,21 @@ prompt = """
 Run the `tgd-code-review-and-quality` skill. This is the REVIEW phase. The full pipeline is:
 
 **Core flow:**
-1. `tgd-code-review-and-quality` — five-axis review with severity labels (Nit/Optional/FYI), ~100 lines per change
+1. `tgd-code-review-and-quality` — five-axis review with severity labels (Critical/Important/Nit/FYI), ~100 lines per change
    - Run `codegraph callers <modified-function>` and `codegraph affected <changed-files>` to verify impact coverage.
 2. `tgd-code-simplification` — apply Chesterton's Fence, reduce complexity while preserving exact behavior
+
+**🎭 Persona Fan-Out (MANDATORY for high-stakes features, optional otherwise)**
+
+When the feature has any critical-path `[R]` criterion (auth, payment, data loss, security boundary), touches security-sensitive code, or the diff exceeds ~300 lines: dispatch the three review personas **in parallel** as fresh-context subagents, then merge their reports —
+
+```
+fan out ──┬─→ agents/code-reviewer.md    (five-axis review)      ─┐
+          ├─→ agents/security-auditor.md (vulnerability audit)    ├─→ merge into REVIEW.md
+          └─→ agents/test-engineer.md    (coverage gap analysis) ─┘   sections 1–3
+```
+
+Give each persona the diff + spec, NOT your conclusions. This is the only multi-persona pattern the repo endorses (parallel fan-out with merge — see `references/orchestration-patterns.md`); personas never invoke each other. For low-stakes features, the main-session five-axis review in step 1 suffices.
 
 **Conditional (apply when relevant):**
 - Security concerns? → `tgd-security-and-hardening`
@@ -46,7 +58,7 @@ After completing the review, create `$TGD_DIR/<feature-name>/REVIEW.md` using th
 | # | Severity | File:Line | Issue | Recommendation |
 |---|----------|-----------|-------|----------------|
  
-Severities: 🔴 Critical (must fix) · 🟡 Optional (should fix) · 🟢 Nit (FYI)
+Severities: 🔴 Critical (must fix before merge) · 🟠 Important (should fix before merge) · 🟡 Nit (optional) · 🟢 FYI (informational)
  
 ## 2. Security Scan
 - **Tool**: [tool or "manual review"]

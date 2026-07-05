@@ -46,13 +46,15 @@ Evaluate every change across these five dimensions:
 
 ## Output Format
 
-Categorize every finding:
+Categorize every finding using the shared review-phase taxonomy (same as `tgd-code-review-and-quality` and REVIEW.md):
 
 **Critical** — Must fix before merge (security vulnerability, data loss risk, broken functionality)
 
 **Important** — Should fix before merge (missing test, wrong abstraction, poor error handling)
 
-**Suggestion** — Consider for improvement (naming, code style, optional optimization)
+**Nit** — Minor, optional (naming, code style, optional optimization)
+
+**FYI** — Informational only, no action needed
 
 ## Review Output Template
 
@@ -69,7 +71,7 @@ Categorize every finding:
 ### Important Issues
 - [File:line] [Description and recommended fix]
 
-### Suggestions
+### Nits
 - [File:line] [Description]
 
 ### What's Done Well
@@ -93,5 +95,5 @@ Categorize every finding:
 ## Composition
 
 - **Invoke directly when:** the user asks for a review of a specific change, file, or PR.
-- **Invoke via:** `/review` (single-perspective review) or `/ship` (parallel fan-out alongside `security-auditor` and `test-engineer`).
+- **Invoke via:** `/tgd-review` — as the single five-axis reviewer on low-stakes features, or in the Persona Fan-Out alongside `security-auditor` and `test-engineer` on high-stakes ones.
 - **Do not invoke from another persona.** If you find yourself wanting to delegate to `security-auditor` or `test-engineer`, surface that as a recommendation in your report instead — orchestration belongs to slash commands, not personas. See [agents/README.md](README.md).

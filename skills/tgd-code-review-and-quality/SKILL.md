@@ -158,13 +158,14 @@ For each file changed:
 
 Label every comment with its severity so the author knows what's required vs optional:
 
+This is the ONE severity taxonomy for the review phase — REVIEW.md, the code-reviewer persona (agents/code-reviewer.md), and this skill all use it:
+
 | Prefix | Meaning | Author Action |
 |--------|---------|---------------|
-| *(no prefix)* | Required change | Must address before merge |
-| **Critical:** | Blocks merge | Security vulnerability, data loss, broken functionality |
-| **Nit:** | Minor, optional | Author may ignore — formatting, style preferences |
-| **Optional:** / **Consider:** | Suggestion | Worth considering but not required |
-| **FYI** | Informational only | No action needed — context for future reference |
+| **Critical:** | Blocks merge | Security vulnerability, data loss, broken functionality — must fix before merge |
+| **Important:** | Should fix before merge | Missing test, wrong abstraction, poor error handling — deferring requires explicit justification |
+| **Nit:** | Minor, optional | Author may ignore — formatting, style preferences, optional improvements |
+| **FYI:** | Informational only | No action needed — context for future reference |
 
 This prevents authors from treating all feedback as mandatory and wasting time on optional suggestions.
 
@@ -319,7 +320,10 @@ Part of code review is dependency review:
 
 ## Embedded Tech Debt Filing (Jira Integration)
 
-When code review identifies issues that are **known but intentionally not fixed** in the current cycle, automatically create a Jira issue to track the technical debt.
+When code review identifies issues that are **known but intentionally not fixed** in the current cycle, track them:
+
+- **Always**: record the item in `$TGD_DIR/<feature-name>/DEBT.md` (table below) — this is the primary record and works with zero configuration.
+- **Jira configured** (`JIRA_URL`/`JIRA_PROJECT`/`JIRA_TOKEN` set): additionally create a Jira issue and put its key in the DEBT.md row. Do NOT stall the review asking for credentials when Jira isn't configured.
 
 ### Tech Debt Filing Rules
 
