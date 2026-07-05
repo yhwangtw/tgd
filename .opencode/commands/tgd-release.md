@@ -20,14 +20,30 @@ description: Release to production — faster is safer
 - [ ] The feature's tests exist (per the project's layout in `CONTEXT.md`) and pass.
 - **If missing:** STOP. Tell user: "Review or tests incomplete. Please run `/tgd-review` first."
 
+**🔏 Pre-flight: Sign-off Gate (HARD GATE)**
+Release is the one phase that blocks on human sign-off (see `tgd-rules` → Human Roles & Sign-off Protocol). Check the `## Sign-off` sections:
+- [ ] `$TGD_DIR/<feature-name>/TEST-REPORT.md` — **QA** line is `[x] ... Approved`.
+- [ ] `$TGD_DIR/<feature-name>/REVIEW.md` — **QA** and **DEV** lines are `[x] ... Approved`.
+- [ ] **PM** final approval — `[x] ... Approved` in `$TGD_DIR/<feature-name>/PRD.md`'s Sign-off, or an explicit go-ahead from the user in this session (record it in the CHANGELOG entry).
+- **If any required line is unchecked, missing, or `Rejected`:** 🛑 STOP. List the pending roles and wait — humans review async. Do NOT proceed "provisionally".
+
 Run the `tgd-shipping-and-launch` skill. This is the Release phase. The full pipeline is:
 
 **Core flow:**
 1. `tgd-git-workflow-and-versioning` — clean commit history, trunk-based development
-2. **🌳 Merge & worktree cleanup** — this is where the feature branch lands on `main` (NOT in `/tgd-develop`):
+2. **🧹 Regression Catalog Audit — BEFORE merging** (MANDATORY if `$TGD_DIR/REGRESSION-CATALOG.md` exists). Run it in the worktree (`../project-<feature-name>`), so a failure stops the release before anything lands on `main`:
+   1. Read every entry in `$TGD_DIR/REGRESSION-CATALOG.md` (not just the current feature's).
+   2. **Test file exists?** If the path is broken (file deleted, moved, or renamed): remove the entry. Log the removal in `$TGD_DIR/CHANGELOG.md` under a `## Catalog Cleanup` subsection.
+   3. **Feature deprecated?** If the feature's code was removed or deprecated in this cycle (`tgd-deprecation-and-migration` ran): remove its entries from the catalog.
+   4. **Every entry still passes?** Run the machine gate — do NOT eyeball it:
+      `bash "$TGD_REPO_ROOT/scripts/regression-gate.sh" ../project-<feature-name> "$TGD_DIR"`
+      Exit 0 = pass. Exit 1 = 🛑 STOP — a shipped behavior regressed; fix before merging. Exit 2 = configuration error — fix the invocation, never treat as pass. Exit 3 = no catalog yet — skip this audit.
+   5. After the audit, the catalog contains ONLY entries whose test files exist and pass. This prevents the catalog from becoming a zombie file full of dead references.
+3. **🌳 Merge & worktree cleanup** — this is where the feature branch lands on `main` (NOT in `/tgd-develop`):
    1. Merge `feature/<feature-name>` into `main` (or open a PR, per team policy).
    2. Remove the worktree: `git worktree remove ../project-<feature-name>`.
-3. `tgd-shipping-and-launch` — pre-launch checklist, staged rollouts, monitoring setup
+   3. After the merge lands, delete the branch: `git branch -d feature/<feature-name>`.
+4. `tgd-shipping-and-launch` — pre-launch checklist, staged rollouts, monitoring setup
 
 **Conditional (apply when relevant):**
 - CI/CD pipeline work? → `tgd-ci-cd-and-automation`
@@ -37,7 +53,7 @@ Run the `tgd-shipping-and-launch` skill. This is the Release phase. The full pip
 Faster is safer. Deploy in stages, confirm monitoring, and have a rollback plan.
 
 After releasing, update `$TGD_DIR/CHANGELOG.md` (create if it doesn't exist) with:
-- Version (CalVer: `vYYYY.MM.DD`)
+- Version (CalVer: `vYYYY.MM.DD`; if that version already exists in the CHANGELOG, append a micro number — `vYYYY.MM.DD.2`, `.3`, … — for additional releases on the same day)
 - Feature name and summary
 - Date shipped
 - Key changes
@@ -64,24 +80,14 @@ After releasing, scan `$TGD_DIR/<feature-name>/TASKS.md` for Acceptance Criteria
    - **Test:** `tests/path/to/test.ts`
    - **Shipped:** vYYYY.MM.DD
    ```
-This catalog is cumulative — every shipped feature's `[R]` tests are preserved for future regression checks. Future features will re-run ALL catalog entries during `/tgd-verify`.
-
-**🧹 Regression Catalog Audit (MANDATORY if `$TGD_DIR/REGRESSION-CATALOG.md` exists)**
-Before finalizing the release, audit the existing catalog for staleness:
-1. Read every entry in `$TGD_DIR/REGRESSION-CATALOG.md`.
-2. For EACH existing entry (not just the current feature's new ones):
-   - **Test file exists?** If the path is broken (file deleted, moved, or renamed): remove the entry. Log the removal in `$TGD_DIR/CHANGELOG.md` under a `## Catalog Cleanup` subsection.
-   - **Test still passes?** Run it. If it fails: 🛑 STOP — this is a regression. Fix before releasing.
-   - **Feature deprecated?** If the feature's code was removed or deprecated in this cycle (`tgd-deprecation-and-migration` ran): remove its entries from the catalog.
-3. After audit, the catalog must contain ONLY entries whose test files exist and pass.
-
-This prevents the catalog from becoming a zombie file full of dead references. Every entry should be runnable.
+This catalog is cumulative — every shipped feature's `[R]` tests are preserved for future regression checks. Future features will re-run ALL catalog entries during `/tgd-verify` (and again in this command's pre-merge audit).
 
 **Verification Gate:**
+- [ ] Sign-off Gate passed — all required role lines are `[x] Approved`
+- [ ] Regression Catalog Audit ran BEFORE the merge — `regression-gate.sh` exit 0 (or 3), all entries point to existing, passing test files
 - [ ] Git commit created with clean history
-- [ ] `feature/<feature-name>` merged to `main` (or PR opened) and worktree removed
+- [ ] `feature/<feature-name>` merged to `main` (or PR opened), worktree removed, branch deleted
 - [ ] `$TGD_DIR/CHANGELOG.md` exists and is updated
 - [ ] `$TGD_DIR/REGRESSION-CATALOG.md` updated with new `[R]` entries (if any)
-- [ ] Regression Catalog Audit completed — all entries point to existing, passing test files
 
 If verification passes, confirm that monitoring is active and the rollback plan is documented.

@@ -13,6 +13,8 @@ Automate quality gates so that no change reaches production without passing test
 
 **Faster is Safer:** Smaller batches and more frequent releases reduce risk, not increase it. A deployment with 3 changes is easier to debug than one with 30. Frequent releases build confidence in the release process itself.
 
+> **Stack note:** The pipeline examples in this skill use Node/npm and GitHub Actions. Substitute the project's actual commands and CI platform from `$TGD_DIR/CONTEXT.md` — the gates are mandatory, the specific tools are not.
+
 ## When to Use
 
 - Setting up a new project's CI pipeline

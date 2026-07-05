@@ -9,6 +9,8 @@ description: Prepares production launches. Use when preparing to deploy to produ
 
 Ship with confidence. The goal is not just to deploy — it's to deploy safely, with monitoring in place, a rollback plan ready, and a clear understanding of what success looks like. Every launch should be reversible, observable, and incremental.
 
+> **Stack note:** Concrete commands in this skill (`npm audit`, `npx prisma migrate ...`, React error boundaries) are Node-ecosystem examples. Substitute the project's actual commands from `$TGD_DIR/CONTEXT.md` — the checklist items are what's mandatory, not the specific tools.
+
 ## When to Use
 
 - Deploying a feature to production for the first time
