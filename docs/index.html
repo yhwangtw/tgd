@@ -1,1851 +1,783 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="color-scheme" content="dark light">
-    <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)">
-    <meta name="theme-color" content="#0c0f1a" media="(prefers-color-scheme: dark)">
-    <title>tGD — The Agentic PDLC Harness</title>
-    <meta name="description" content="Your PDLC was built for humans. Now agents do the work. tGD transforms your existing workflow into an agentic PDLC pipeline — same gates, same accountability, 10× the velocity.">
-    <link rel="icon" type="image/svg+xml" href="favicon-gd.svg">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <style>
-
-        :root {
-            --bg: #0c0f1a;
-            --bg-card: #121620;
-            --bg-code: #1a1e2e;
-            --text: #e5e5e5;
-            --text-muted: #737373;
-            --accent: #3b82f6;
-            --accent-dim: #1d4ed8;
-            --green: #22c55e;
-            --red: #ef4444;
-            --amber: #f59e0b;
-            --purple: #8b5cf6;
-            --cyan: #06b6d4;
-            --border: #262626;
-            --shadow-color: rgba(0, 0, 0, 0.3);
-            --tree-desc: #525252;
-            --nav-bg: rgba(12, 15, 26, 0.85);
-        }
-
-        body.light {
-            --bg: #fafafa;
-            --bg-card: #f3f4f6;
-            --bg-code: #f1f3f5;
-            --text: #1a1a1a;
-            --text-muted: #6b7280;
-            --accent: #2563eb;
-            --accent-dim: #1d4ed8;
-            --green: #16a34a;
-            --red: #dc2626;
-            --amber: #d97706;
-            --purple: #7c3aed;
-            --cyan: #0891b2;
-            --border: #e5e7eb;
-            --shadow-color: rgba(0, 0, 0, 0.08);
-            --tree-desc: #9ca3af;
-            --nav-bg: rgba(255, 255, 255, 0.85);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            line-height: 1.6;
-            overflow-x: hidden;
-            transition: background 0.3s ease, color 0.3s ease;
-        }
-
-        /* D: Dot grid — site-wide subtle texture */
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image:
-                radial-gradient(circle at 1px 1px, var(--border) 1px, transparent 0);
-            background-size: 40px 40px;
-            opacity: 0.15;
-            z-index: 0;
-            pointer-events: none;
-        }
-
-        /* C: Noise texture — grain depth */
-        body::after {
-            content: '';
-            position: fixed;
-            inset: 0;
-            opacity: 0.035;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-            z-index: 0;
-            pointer-events: none;
-        }
-        body.light::after { opacity: 0.025; }
-
-        /* C: Static mesh gradient — soft colored glow spots */
-        .bg-glow {
-            position: fixed;
-            inset: 0;
-            z-index: 0;
-            pointer-events: none;
-            background:
-                radial-gradient(ellipse 600px 500px at 15% 10%, rgba(59, 130, 246, 0.06) 0%, transparent 100%),
-                radial-gradient(ellipse 500px 600px at 85% 80%, rgba(139, 92, 246, 0.04) 0%, transparent 100%),
-                radial-gradient(ellipse 400px 400px at 50% 50%, rgba(6, 182, 212, 0.03) 0%, transparent 100%);
-        }
-        body.light .bg-glow {
-            background:
-                radial-gradient(ellipse 600px 500px at 15% 10%, rgba(59, 130, 246, 0.12) 0%, transparent 100%),
-                radial-gradient(ellipse 500px 600px at 85% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 100%),
-                radial-gradient(ellipse 400px 400px at 50% 50%, rgba(6, 182, 212, 0.06) 0%, transparent 100%);
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 24px;
-            padding-left: max(24px, env(safe-area-inset-left));
-            padding-right: max(24px, env(safe-area-inset-right));
-        }
-
-        main {
-            position: relative;
-            z-index: 1;
-        }
-
-        /* Hero */
-        .hero {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            padding: 80px 24px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        
-
-         
-
-         
-
-         
-         
-
-         
-
-         
-        /* Subtle Grid Overlay */
-
-
-        .hero-content {
-            position: relative;
-            z-index: 1;
-        }
-
-        .hero-badge {
-            display: inline-block;
-            padding: 8px 20px;
-            background: rgba(59, 130, 246, 0.1);
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--accent);
-            margin-bottom: 24px;
-            position: relative;
-        }
-        
-        .hero-tagline {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: clamp(12px, 1.5vw, 15px);
-            color: var(--accent);
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            margin-bottom: 8px;
-        }
-
-        h1 {
-            font-size: clamp(48px, 8vw, 96px);
-            font-weight: 800;
-            letter-spacing: -0.03em;
-            line-height: 1.1;
-            margin-bottom: 24px;
-        }
-
-        h1 span {
-            color: var(--accent);
-        }
-        
-        
-
-        .hero-subtitle {
-            font-size: clamp(18px, 2.5vw, 24px);
-            color: var(--text-muted);
-            max-width: 600px;
-            margin: 0 auto 40px;
-        }
-
-        .hero-cta {
-            display: flex;
-            gap: 16px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 14px 28px;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            text-decoration: none;
-            transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
-            cursor: pointer;
-            border: none;
-            touch-action: manipulation;
-            font-size: 14px;
-        }
-
-        .btn-primary {
-            background: var(--accent);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: var(--accent-dim);
-            transform: translateY(-2px);
-        }
-
-        .btn-secondary {
-            background: transparent;
-            color: var(--text);
-            border: 1px solid var(--border);
-        }
-
-        .btn-secondary:hover {
-            border-color: var(--text-muted);
-        }
-
-        /* Sections */
-        section {
-            padding: 100px 0;
-        }
-
-        h2 {
-            font-size: clamp(32px, 5vw, 48px);
-            font-weight: 700;
-            letter-spacing: -0.02em;
-            margin-bottom: 16px;
-        }
-
-        h3 {
-            font-size: 24px;
-            font-weight: 600;
-            margin-bottom: 12px;
-        }
-
-        .section-subtitle {
-            color: var(--text-muted);
-            font-size: 18px;
-            max-width: 600px;
-            margin-bottom: 48px;
-            text-align: left;
-        }
-
-        /* Before/After */
-        .comparison {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 24px;
-            max-width: 900px;
-            margin: 0 auto;
-        }
-
-        @media (max-width: 768px) {
-            .comparison { grid-template-columns: 1fr; }
-        }
-
-        .comparison-card {
-            padding: 32px;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-        }
-
-        .comparison-card.before {
-            background: rgba(239, 68, 68, 0.05);
-            border-color: rgba(239, 68, 68, 0.2);
-        }
-
-        .comparison-card.after {
-            background: rgba(34, 197, 94, 0.05);
-            border-color: rgba(34, 197, 94, 0.2);
-        }
-
-        .comparison-card h3 {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .comparison-card ul {
-            list-style: none;
-            margin-top: 16px;
-        }
-
-        .comparison-card li {
-            padding: 8px 0;
-            color: var(--text-muted);
-            display: flex;
-            align-items: flex-start;
-            gap: 8px;
-        }
-
-        .comparison-card.before li::before {
-            content: '✗';
-            color: var(--red);
-            font-weight: bold;
-        }
-
-        .comparison-card.after li::before {
-            content: '✓';
-            color: var(--green);
-            font-weight: bold;
-        }
-
-        /* Pipeline — Connected Timeline */
-        .pipeline-track {
-            position: relative;
-            padding: 40px 0 20px;
-        }
-        .pipeline-track::before {
-            content: '';
-            position: absolute;
-            top: 70px;
-            left: 80px;
-            right: 80px;
-            height: 2px;
-            background: linear-gradient(90deg,
-                rgba(59,130,246,0.0) 0%,
-                rgba(59,130,246,0.2) 8%,
-                rgba(59,130,246,0.2) 92%,
-                rgba(59,130,246,0.0) 100%
-            );
-            z-index: 0;
-        }
-        .pipeline {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            position: relative;
-            z-index: 1;
-            gap: 4px;
-        }
-        @media (max-width: 768px) {
-            .pipeline-track { padding: 20px 0; }
-            .pipeline-track::before { display: none; }
-            .pipeline {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 12px;
-                padding: 0 16px;
-            }
-        }
-        @media (max-width: 1024px) {
-            .pipeline {
-                grid-template-columns: repeat(4, 1fr);
-                gap: 16px;
-            }
-            .pipeline-track::before { display: none; }
-            .pipeline-step { max-width: none; }
-        }
-
-        .pipeline-step {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            flex: 1;
-            max-width: 130px;
-        }
-
-        .pipeline-step-num {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 12px;
-            color: rgba(59, 130, 246, 0.4);
-            letter-spacing: 0.5px;
-        }
-
-        .pipeline-dot {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--bg);
-            border: 2px solid rgba(59, 130, 246, 0.25);
-            color: var(--accent);
-            position: relative;
-            z-index: 2;
-            transition: border-color 0.3s, background 0.3s, box-shadow 0.3s, transform 0.3s;
-        }
-        .pipeline-step:hover .pipeline-dot {
-            border-color: var(--accent);
-            background: rgba(59, 130, 246, 0.08);
-            box-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
-            transform: scale(1.1);
-        }
-        .pipeline-dot svg {
-            width: 20px;
-            height: 20px;
-        }
-
-        .pipeline-step-info {
-            text-align: center;
-            max-width: 120px;
-        }
-
-        .pipeline-label {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text);
-            letter-spacing: 0.5px;
-        }
-
-        .pipeline-cmd {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 13px;
-            color: var(--text-muted);
-            margin-top: 4px;
-        }
-
-        .pipeline-output {
-            text-align: center;
-            margin-top: 4px;
-        }
-        .pipeline-output code {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 12px;
-            color: var(--green);
-            background: rgba(34, 197, 94, 0.08);
-            padding: 1px 6px;
-            border-radius: 4px;
-        }
-        .pipeline-desc { display: none; }
-
-        /* Commands Table */
-        .commands-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 32px;
-        }
-
-        .commands-table th {
-            text-align: left;
-            padding: 16px;
-            border-bottom: 1px solid var(--border);
-            color: var(--text-muted);
-            font-weight: 500;
-            font-size: 14px;
-        }
-
-        .commands-table td {
-            padding: 16px;
-            border-bottom: 1px solid var(--border);
-            vertical-align: top;
-        }
-
-        .commands-table tr:last-child td {
-            border-bottom: none;
-        }
-
-        .cmd-name {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 14px;
-            color: var(--accent);
-            background: rgba(59, 130, 246, 0.1);
-            padding: 4px 8px;
-            border-radius: 4px;
-        }
-
-        .skill-tag {
-            display: inline-block;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 12px;
-            color: var(--text-muted);
-            background: var(--bg-code);
-            padding: 2px 8px;
-            border-radius: 4px;
-            margin: 2px;
-        }
-
-        /* Testing */
-        .test-roles {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 24px;
-            margin-top: 32px;
-        }
-
-        @media (max-width: 768px) {
-            .test-roles { grid-template-columns: 1fr; }
-        }
-
-        .test-role {
-            padding: 32px;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-            background: var(--bg-card);
-        }
-
-        .test-role-icon {
-            font-size: 32px;
-            margin-bottom: 16px;
-        }
-
-        .test-role h3 {
-            font-size: 20px;
-            margin-bottom: 8px;
-        }
-
-        .test-role p {
-            color: var(--text-muted);
-            font-size: 14px;
-        }
-
-        /* FAQ */
-        .faq-item {
-            border-bottom: 1px solid var(--border);
-            padding: 24px 0;
-        }
-
-        .faq-question {
-            font-weight: 600;
-            font-size: 18px;
-            cursor: pointer;
-            touch-action: manipulation;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .faq-question::after {
-            content: '+';
-            font-size: 24px;
-            color: var(--text-muted);
-            transition: transform 0.2s;
-        }
-
-        .faq-item.active .faq-question::after {
-            transform: rotate(45deg);
-        }
-
-        .faq-answer {
-            display: none;
-            margin-top: 16px;
-            color: var(--text-muted);
-            line-height: 1.8;
-        }
-
-        .faq-item.active .faq-answer {
-            display: block;
-        }
-
-        /* Code block */
-        .code-block {
-            background: var(--bg-code);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 24px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 14px;
-            overflow-x: auto;
-            margin: 16px 0;
-        }
-
-        .code-block .comment {
-            color: var(--text-muted);
-        }
-
-        .code-block .cmd {
-            color: var(--green);
-        }
-
-        .code-block .output {
-            color: var(--accent);
-        }
-
-        /* Footer */
-        footer {
-            padding: 48px 0;
-            padding-bottom: env(safe-area-inset-bottom);
-            border-top: 1px solid var(--border);
-            text-align: center;
-            color: var(--text-muted);
-            font-size: 14px;
-        }
-
-        footer a {
-            color: var(--text);
-            text-decoration: none;
-        }
-
-        footer a:hover {
-            color: var(--accent);
-        }
-
-        .footer-links {
-            display: flex;
-            gap: 24px;
-            justify-content: center;
-            margin-bottom: 24px;
-        }
-
-        /* Stats */
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 24px;
-            margin: 48px 0;
-        }
-
-        @media (max-width: 768px) {
-            .stats { grid-template-columns: repeat(2, 1fr); }
-        }
-
-        .stat {
-            text-align: center;
-            padding: 24px;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-            background: var(--bg-card);
-        }
-
-        .stat-number {
-            font-size: 36px;
-            font-weight: 700;
-            color: var(--accent);
-        }
-
-        .stat-label {
-            color: var(--text-muted);
-            font-size: 14px;
-            margin-top: 4px;
-        }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: var(--bg);
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--border);
-            border-radius: 4px;
-        }
-
-        /* Animations */
-        .fade-in {
-            opacity: 0;
-            transform: translateY(20px);
-            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
-        }
-
-        .fade-in.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        
-
-        
-        .btn-primary:hover {
-            box-shadow: 0 4px 16px var(--shadow-color);
-            transform: translateY(-2px);
-        }
-
-        /* Pipeline sequential dot reveal */
-        @keyframes dot-reveal {
-            0% { transform: scale(0); opacity: 0; }
-            60% { transform: scale(1.2); }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        .pipeline-track.animate .pipeline-dot {
-            opacity: 0;
-            transform: scale(0);
-            animation: dot-reveal 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-        }
-        .pipeline-track.animate .pipeline-step:nth-child(1) .pipeline-dot { animation-delay: 0.0s; }
-        .pipeline-track.animate .pipeline-step:nth-child(2) .pipeline-dot { animation-delay: 0.1s; }
-        .pipeline-track.animate .pipeline-step:nth-child(3) .pipeline-dot { animation-delay: 0.2s; }
-        .pipeline-track.animate .pipeline-step:nth-child(4) .pipeline-dot { animation-delay: 0.3s; }
-        .pipeline-track.animate .pipeline-step:nth-child(5) .pipeline-dot { animation-delay: 0.4s; }
-        .pipeline-track.animate .pipeline-step:nth-child(6) .pipeline-dot { animation-delay: 0.5s; }
-        .pipeline-track.animate .pipeline-step:nth-child(7) .pipeline-dot { animation-delay: 0.6s; }
-
-        /* Pipeline info stagger */
-        .pipeline-track.animate .pipeline-step-info {
-            opacity: 0;
-            animation: fade-up 0.4s ease-out forwards;
-        }
-        .pipeline-track.animate .pipeline-step:nth-child(1) .pipeline-step-info { animation-delay: 0.15s; }
-        .pipeline-track.animate .pipeline-step:nth-child(2) .pipeline-step-info { animation-delay: 0.25s; }
-        .pipeline-track.animate .pipeline-step:nth-child(3) .pipeline-step-info { animation-delay: 0.35s; }
-        .pipeline-track.animate .pipeline-step:nth-child(4) .pipeline-step-info { animation-delay: 0.45s; }
-        .pipeline-track.animate .pipeline-step:nth-child(5) .pipeline-step-info { animation-delay: 0.55s; }
-        .pipeline-track.animate .pipeline-step:nth-child(6) .pipeline-step-info { animation-delay: 0.65s; }
-        .pipeline-track.animate .pipeline-step:nth-child(7) .pipeline-step-info { animation-delay: 0.75s; }
-
-        @keyframes fade-up {
-            from { opacity: 0; transform: translateY(12px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Pipeline line draw */
-        @keyframes line-draw {
-            from { transform: scaleX(0); }
-            to { transform: scaleX(1); }
-        }
-        .pipeline-track.animate::before {
-            transform: scaleX(0);
-            transform-origin: left;
-            animation: line-draw 0.8s ease-out 0.1s forwards;
-        }
-
-        /* Pipeline step number fade */
-        .pipeline-track.animate .pipeline-step-num {
-            opacity: 0;
-            animation: fade-up 0.3s ease-out forwards;
-        }
-        .pipeline-track.animate .pipeline-step:nth-child(1) .pipeline-step-num { animation-delay: 0.05s; }
-        .pipeline-track.animate .pipeline-step:nth-child(2) .pipeline-step-num { animation-delay: 0.15s; }
-        .pipeline-track.animate .pipeline-step:nth-child(3) .pipeline-step-num { animation-delay: 0.25s; }
-        .pipeline-track.animate .pipeline-step:nth-child(4) .pipeline-step-num { animation-delay: 0.35s; }
-        .pipeline-track.animate .pipeline-step:nth-child(5) .pipeline-step-num { animation-delay: 0.45s; }
-        .pipeline-track.animate .pipeline-step:nth-child(6) .pipeline-step-num { animation-delay: 0.55s; }
-        .pipeline-track.animate .pipeline-step:nth-child(7) .pipeline-step-num { animation-delay: 0.65s; }
-
-        /* Card hover lift */
-        .example-card, .skill-card, .who-card {
-            transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease, border-color 0.3s ease;
-        }
-        .example-card:hover, .skill-card:hover, .who-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 40px var(--shadow-color);
-        }
-
-        .who-card:hover, .skill-group:hover, .example-card:hover, .persona-card:hover,
-        .test-role:hover, .anatomy-step:hover, .next-step:hover, .comparison-card:hover {
-            border-color: rgba(59, 130, 246, 0.3);
-        }
-
-        /* Stagger grid children */
-        .fade-stagger > * {
-            opacity: 0;
-            transform: translateY(16px);
-            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
-        }
-        .fade-stagger.visible > *:nth-child(1) { transition-delay: 0.0s; opacity: 1; transform: none; }
-        .fade-stagger.visible > *:nth-child(2) { transition-delay: 0.08s; opacity: 1; transform: none; }
-        .fade-stagger.visible > *:nth-child(3) { transition-delay: 0.16s; opacity: 1; transform: none; }
-        .fade-stagger.visible > *:nth-child(4) { transition-delay: 0.24s; opacity: 1; transform: none; }
-        .fade-stagger.visible > *:nth-child(5) { transition-delay: 0.32s; opacity: 1; transform: none; }
-        .fade-stagger.visible > *:nth-child(6) { transition-delay: 0.40s; opacity: 1; transform: none; }
-
-        /* Reduced motion */
-        @media (prefers-reduced-motion: reduce) {
-            *, *::before, *::after {
-                animation-duration: 0.01ms !important;
-                animation-iteration-count: 1 !important;
-                transition-duration: 0.01ms !important;
-            }
-            .blob, .particle, .hero-ribbon, .mouse-glow { display: none !important; }
-        }
-
-        /* Who Section */
-        .who-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 24px;
-            margin-top: 32px;
-        }
-
-        @media (max-width: 768px) {
-            .who-grid { grid-template-columns: 1fr; }
-        }
-
-        .who-card {
-            padding: 32px;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-            background: var(--bg-card);
-        }
-
-        .who-card h3 {
-            color: var(--accent);
-            margin-bottom: 8px;
-        }
-
-        .who-card p {
-            color: var(--text-muted);
-            font-size: 14px;
-        }
-
-        /* Language switcher */
-        [data-lang] { display: none; }
-        [data-lang="en"] { display: block; }
-        span[data-lang="en"], a[data-lang="en"] { display: inline; }
-        body.lang-zh [data-lang="en"],
-        body.lang-ja [data-lang="en"],
-        body.lang-de [data-lang="en"] { display: none; }
-        body.lang-zh span[data-lang="en"],
-        body.lang-ja span[data-lang="en"],
-        body.lang-de span[data-lang="en"],
-        body.lang-zh a[data-lang="en"],
-        body.lang-ja a[data-lang="en"],
-        body.lang-de a[data-lang="en"] { display: none; }
-        body.lang-zh [data-lang="zh"],
-        body.lang-ja [data-lang="ja"],
-        body.lang-de [data-lang="de"] { display: block; }
-        body.lang-zh span[data-lang="zh"],
-        body.lang-ja span[data-lang="ja"],
-        body.lang-de span[data-lang="de"],
-        body.lang-zh a[data-lang="zh"],
-        body.lang-ja a[data-lang="ja"],
-        body.lang-de a[data-lang="de"] { display: inline; }
-        .lang-select {
-            background: var(--bg-code);
-            border: 1px solid var(--border);
-            color: var(--text-muted);
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: border-color 0.2s, color 0.2s;
-            outline: none;
-            touch-action: manipulation;
-        }
-        .lang-select:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
-        .lang-select:hover { border-color: var(--text-muted); color: var(--text); }
-        .lang-select option { background: var(--bg); color: var(--text); }
-
-        /* Divider */
-        .divider {
-            width: 100%;
-            height: 1px;
-            background: var(--border);
-            margin: 0;
-        }
-
-        /* Sticky Nav */
-        .navbar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-            background: var(--nav-bg);
-            -webkit-backdrop-filter: blur(12px);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid var(--border);
-            padding: 12px 0;
-            transform: translateY(-100%);
-            transition: transform 0.3s;
-        }
-        .navbar.visible { transform: translateY(0); }
-        .navbar .container { display: flex; justify-content: space-between; align-items: center; }
-        .navbar-brand { font-weight: 700; font-size: 20px; color: var(--text); text-decoration: none; }
-        .navbar-brand span { color: var(--accent); }
-        .navbar-links { display: flex; gap: 24px; }
-        .navbar-links a { color: var(--text-muted); text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.2s; }
-        .navbar-links a:hover { color: var(--text); }
-        .navbar-right { display: flex; align-items: center; gap: 16px; }
-
-        /* Theme toggle */
-        .theme-toggle {
-            background: none;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 6px;
-            cursor: pointer;
-            color: var(--text-muted);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: border-color 0.3s, color 0.3s, background 0.3s;
-            line-height: 1;
-            touch-action: manipulation;
-        }
-        .theme-toggle:hover { color: var(--text); border-color: var(--text-muted); }
-        .icon-moon { display: none; }
-        body.light .icon-sun { display: none; }
-        body.light .icon-moon { display: block; }
-
-        @media (max-width: 768px) { .navbar-links { display: none; } }
-
-        /* Pipeline descriptions */
-
-        /* Skills grid */
-        .skills-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; margin-top: 32px; }
-        .skill-group { padding: 24px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-card); }
-        .skill-group h3 { font-size: 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
-        .skill-group .skill-list { display: flex; flex-wrap: wrap; gap: 6px; }
-        .skill-group .skill-tag { font-size: 13px; }
-
-        /* Example cards */
-        .examples-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 32px; }
-        @media (max-width: 768px) { .examples-grid { grid-template-columns: 1fr; } }
-        .example-card { padding: 24px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-card); }
-        .example-card h3 { font-size: 18px; margin-bottom: 12px; }
-        .example-card .example-flow { font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--text-muted); line-height: 2; }
-        .example-card .example-flow .cmd { color: var(--green); }
-        .example-card .example-flow .output { color: var(--accent); }
-
-        /* Persona cards */
-        .personas-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 32px; }
-        @media (max-width: 768px) { .personas-grid { grid-template-columns: 1fr; } }
-        .persona-card { padding: 32px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-card); text-align: center; }
-        .persona-card .persona-icon { font-size: 48px; margin-bottom: 16px; }
-        .persona-card h3 { font-size: 20px; margin-bottom: 4px; }
-        .persona-card .persona-tagline { color: var(--accent); font-style: italic; font-size: 14px; margin-bottom: 12px; }
-        .persona-card p { color: var(--text-muted); font-size: 14px; }
-
-        /* How Skills Work */
-        .skills-anatomy { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 32px; }
-        @media (max-width: 768px) { .skills-anatomy { grid-template-columns: repeat(2, 1fr); } }
-        .anatomy-step { padding: 24px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-card); text-align: center; }
-        .anatomy-step .step-num { font-size: 32px; font-weight: 800; color: var(--accent); margin-bottom: 8px; }
-        .anatomy-step h4 { font-size: 16px; margin-bottom: 8px; }
-        .anatomy-step p { color: var(--text-muted); font-size: 14px; }
-
-        /* Project structure */
-        .tree-block { font-family: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', 'SF Mono', Consolas, monospace; font-size: 14px; line-height: 1.8; color: var(--text-muted); white-space: pre; overflow-x: auto; }
-        /* two-column tree layout: stacks on narrow screens; min-width:0 lets
-           the pre-formatted tree scroll inside its column instead of blowing
-           the grid (and the page) out sideways */
-        .tree-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
-        .tree-cols > div { min-width: 0; }
-        .tree-block .dir { color: var(--accent); }
-        .tree-block .file { color: var(--text-muted); }
-        .tree-block .desc { color: var(--tree-desc); }
-
-        /* What's Next */
-        .next-steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-top: 32px; }
-        @media (max-width: 768px) { .next-steps { grid-template-columns: 1fr; } }
-        .next-step { padding: 24px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-card); }
-        .next-step .step-num { font-size: 24px; font-weight: 800; color: var(--accent); margin-bottom: 8px; }
-        .next-step h4 { font-size: 15px; margin-bottom: 6px; }
-        .next-step p { color: var(--text-muted); font-size: 14px; }
-
-        /* Output tag */
-        .output-tag { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--green); background: rgba(34, 197, 94, 0.1); padding: 2px 8px; border-radius: 4px; margin: 2px; }
-
-        /* Skip link */
-        .skip-link {
-            position: absolute;
-            top: -100%;
-            left: 16px;
-            z-index: 9999;
-            padding: 8px 16px;
-            background: var(--accent);
-            color: white;
-            border-radius: 4px;
-            font-size: 14px;
-            text-decoration: none;
-        }
-        .skip-link:focus { top: 16px; }
-
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>tGD — The Agentic PDLC Harness</title>
+<meta name="description" content="tGD is an open-source skill pack for Claude Code, Codex, Gemini CLI, OpenCode, Pi, and Hermes. It wraps your product development lifecycle (PDLC) in the gates your team already trusts — spec before code, tests before claims, human sign-off before release.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="tGD — The Agentic PDLC Harness">
+<meta property="og:description" content="An open-source skill pack that wraps your coding agent's product development lifecycle in the gates your team already trusts.">
+<meta property="og:url" content="https://openclawyhwang-hub.github.io/tGD/">
+<meta property="og:image" content="https://openclawyhwang-hub.github.io/tGD/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="tGD — The Agentic PDLC Harness">
+<meta name="twitter:description" content="An open-source skill pack that wraps your coding agent's product development lifecycle in the gates your team already trusts.">
+<meta name="twitter:image" content="https://openclawyhwang-hub.github.io/tGD/assets/og.png">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* ============================== tokens ============================== */
+:root {
+  --bg: #0b0d14;
+  --bg-raise: #10131d;
+  --card: #12151f;
+  --card-2: #171b28;
+  --border: rgba(255,255,255,.08);
+  --border-strong: rgba(255,255,255,.14);
+  --ink: #e8eaf1;
+  --ink-2: #9aa1b4;
+  --ink-3: #8a90a5;
+  --accent: #3b82f6;
+  --accent-ink: #7db2ff;
+  --accent-grad: linear-gradient(100deg, #4f8ef7, #7c3aed);
+  --good: #34d399;
+  --bad: #f87171;
+  --chart-context: #71717a;
+  --chart-accent: #3b82f6;
+  --chart-grid: rgba(255,255,255,.07);
+  --chart-ink: #9aa1b4;
+  --code-bg: #0d1019;
+  --nav-bg: rgba(11,13,20,.82);
+  --shadow: 0 12px 40px rgba(0,0,0,.4);
+  --glow: radial-gradient(600px 300px at 50% -80px, rgba(59,130,246,.16), transparent 70%);
+}
+[data-theme="light"] {
+  --bg: #fafafa;
+  --bg-raise: #f2f3f6;
+  --card: #ffffff;
+  --card-2: #f6f7fa;
+  --border: rgba(15,20,40,.09);
+  --border-strong: rgba(15,20,40,.16);
+  --ink: #14161f;
+  --ink-2: #4c5468;
+  --ink-3: #676e82;
+  --accent: #2563eb;
+  --accent-ink: #2563eb;
+  --accent-grad: linear-gradient(100deg, #2563eb, #7c3aed);
+  --chart-context: #71717a;
+  --chart-accent: #2563eb;
+  --chart-grid: rgba(15,20,40,.08);
+  --chart-ink: #6b7280;
+  --code-bg: #0d1019;
+  --nav-bg: rgba(250,250,250,.85);
+  --shadow: 0 12px 32px rgba(15,20,40,.08);
+  --glow: radial-gradient(600px 300px at 50% -80px, rgba(37,99,235,.08), transparent 70%);
+}
+
+/* ============================== base ============================== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+  background: var(--bg); color: var(--ink);
+  line-height: 1.6; -webkit-font-smoothing: antialiased;
+}
+.mono { font-family: 'JetBrains Mono', monospace; }
+a { color: var(--accent-ink); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code {
+  font-family: 'JetBrains Mono', monospace; font-size: .86em;
+  background: var(--bg-raise); border: 1px solid var(--border);
+  padding: 1px 6px; border-radius: 5px; white-space: nowrap;
+}
+.wrap { max-width: 1060px; margin: 0 auto; padding: 0 24px; }
+section { padding: 96px 0; scroll-margin-top: 64px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.kicker {
+  font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600;
+  letter-spacing: .18em; text-transform: uppercase; color: var(--accent-ink);
+  margin-bottom: 14px;
+}
+h2 { font-size: clamp(26px, 4vw, 38px); font-weight: 800; letter-spacing: -.02em; line-height: 1.2; }
+.sub { color: var(--ink-2); font-size: 17px; margin-top: 12px; max-width: 60ch; }
+
+/* ============================== nav ============================== */
+nav {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--nav-bg); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-in { display: flex; align-items: center; gap: 22px; height: 60px; }
+.logo { font-weight: 800; font-size: 19px; letter-spacing: -.02em; color: var(--ink); }
+.logo b { color: var(--accent-ink); }
+.nav-links { display: flex; gap: 20px; margin-left: auto; }
+.nav-links a { color: var(--ink-2); font-size: 14px; font-weight: 500; }
+.nav-links a:hover { color: var(--ink); text-decoration: none; }
+.nav-ctl { display: flex; align-items: center; gap: 10px; }
+.nav-ctl select {
+  background: var(--card); color: var(--ink); border: 1px solid var(--border);
+  border-radius: 7px; padding: 5px 8px; font-size: 13px; font-family: inherit;
+}
+.icon-btn {
+  background: var(--card); border: 1px solid var(--border); border-radius: 7px;
+  width: 32px; height: 32px; cursor: pointer; color: var(--ink-2);
+  display: grid; place-items: center; font-size: 15px;
+}
+.icon-btn:hover { color: var(--ink); border-color: var(--border-strong); }
+.gh-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: var(--ink); color: var(--bg); font-size: 13px; font-weight: 600;
+  padding: 7px 14px; border-radius: 8px;
+}
+.gh-btn:hover { text-decoration: none; opacity: .88; }
+.menu-btn { display: none; }
+@media (max-width: 860px) {
+  .nav-links {
+    display: none; position: absolute; top: 60px; left: 0; right: 0;
+    background: var(--nav-bg); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    flex-direction: column; padding: 14px 24px 18px; gap: 14px; margin-left: 0;
+  }
+  .nav-links.open { display: flex; }
+  .menu-btn { display: grid; }
+}
+
+/* ============================== hero ============================== */
+.hero { padding: 110px 0 90px; text-align: center; position: relative; background: var(--glow); }
+.badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ink-2);
+  border: 1px solid var(--border-strong); border-radius: 99px; padding: 6px 16px;
+  margin-bottom: 28px; background: var(--card);
+}
+.badge .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--good); }
+.hero h1 { font-size: clamp(34px, 6vw, 62px); font-weight: 800; letter-spacing: -.03em; line-height: 1.08; }
+.hero h1 .hl { background: var(--accent-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero .sub { margin: 22px auto 0; font-size: 18px; }
+.cta-row { display: flex; gap: 14px; justify-content: center; margin-top: 36px; flex-wrap: wrap; }
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 15px; font-weight: 600; padding: 12px 26px; border-radius: 10px;
+}
+.btn:hover { text-decoration: none; }
+.btn-pri { background: var(--accent); color: #fff; box-shadow: 0 8px 24px rgba(59,130,246,.35); }
+.btn-pri:hover { filter: brightness(1.08); }
+.btn-sec { border: 1px solid var(--border-strong); color: var(--ink); background: var(--card); }
+.btn-sec:hover { border-color: var(--accent); }
+.hero-pipe {
+  display: flex; gap: 6px; justify-content: center; align-items: center;
+  flex-wrap: wrap; margin-top: 56px;
+  font-family: 'JetBrains Mono', monospace; font-size: 12.5px; font-weight: 600;
+}
+.hero-pipe .st {
+  border: 1px solid var(--border); background: var(--card); color: var(--ink-2);
+  padding: 7px 13px; border-radius: 8px; letter-spacing: .05em;
+}
+.hero-pipe .st.on { color: var(--accent-ink); border-color: var(--accent); }
+.hero-pipe .ar { color: var(--ink-3); }
+
+/* ============================== why ============================== */
+#why { background: var(--bg-raise); border-block: 1px solid var(--border); }
+.duo { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 40px; }
+@media (max-width: 800px) { .duo { grid-template-columns: 1fr; } }
+.duo-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 28px; }
+.duo-card.bad { border-top: 3px solid var(--bad); }
+.duo-card.good { border-top: 3px solid var(--good); }
+.duo-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+.duo-card ul { list-style: none; display: grid; gap: 12px; }
+.duo-card li { display: flex; gap: 10px; color: var(--ink-2); font-size: 15px; }
+.duo-card li::before { flex: none; font-weight: 700; }
+.duo-card.bad li::before { content: "✗"; color: var(--bad); }
+.duo-card.good li::before { content: "✓"; color: var(--good); }
+
+/* ============================== pipeline ============================== */
+.stage-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-top: 44px; }
+@media (max-width: 1000px) { .stage-grid { grid-template-columns: repeat(4, 1fr); } }
+@media (max-width: 640px) { .stage-grid { grid-template-columns: repeat(2, 1fr); } }
+.stage {
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 16px 14px; transition: border-color .2s, transform .2s;
+}
+.stage:hover { border-color: var(--accent); transform: translateY(-3px); }
+.stage .n { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-3); }
+.stage .nm { font-weight: 700; font-size: 15px; margin-top: 6px; }
+.stage .cmd { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--accent-ink); margin-top: 3px; }
+.stage .out { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-2); margin-top: 10px; word-break: break-word; }
+
+.io-wrap { overflow-x: auto; margin-top: 28px; border: 1px solid var(--border); border-radius: 14px; background: var(--card); }
+table.io { border-collapse: collapse; width: 100%; min-width: 760px; font-size: 14px; }
+.io th {
+  text-align: left; font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3);
+  padding: 14px 18px; border-bottom: 1px solid var(--border-strong);
+}
+.io td { padding: 13px 18px; border-bottom: 1px solid var(--border); color: var(--ink-2); vertical-align: top; }
+.io tr:last-child td { border-bottom: none; }
+.io .stg { font-family: 'JetBrains Mono', monospace; color: var(--accent-ink); font-weight: 600; white-space: nowrap; }
+.io .role { color: #a78bfa; font-weight: 700; font-size: 13px; }
+
+/* ============================== results ============================== */
+#results { background: var(--bg-raise); border-block: 1px solid var(--border); }
+.res-grid { display: grid; grid-template-columns: 1.55fr 1fr; gap: 20px; margin-top: 40px; align-items: start; }
+.res-grid > * { min-width: 0; } /* keep the scrollable chart from widening the grid column */
+@media (max-width: 900px) { .res-grid { grid-template-columns: 1fr; } }
+.chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 24px; }
+.chart-title { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); }
+.legend { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 10px; font-size: 12.5px; color: var(--ink-2); }
+.legend .k { display: inline-flex; align-items: center; gap: 7px; }
+.legend .sw { width: 12px; height: 12px; border-radius: 3px; }
+.chart-scroll { overflow-x: auto; margin-top: 14px; }
+.chart-scroll svg { width: 100%; height: auto; display: block; }
+@media (max-width: 640px) { .chart-scroll svg { min-width: 560px; } }
+.chart-note { font-size: 11.5px; color: var(--ink-3); margin-top: 10px; }
+.kpis { display: flex; flex-direction: column; gap: 16px; justify-content: center; }
+.kpi { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; }
+.kpi .n { font-size: 34px; font-weight: 800; color: var(--accent-ink); line-height: 1; letter-spacing: -.02em; }
+.kpi .d { font-size: 13.5px; color: var(--ink-2); margin-top: 8px; line-height: 1.55; }
+.kpi .t {
+  display: inline-block; margin-top: 12px; font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--accent-ink); border: 1px solid var(--border-strong); padding: 3px 9px; border-radius: 6px;
+}
+
+/* ============================== quick start ============================== */
+.steps { display: grid; gap: 16px; margin-top: 40px; }
+.step { display: grid; grid-template-columns: 52px 1fr; gap: 18px; align-items: start; }
+.step .num {
+  font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 14px;
+  color: var(--accent-ink); border: 1px solid var(--border-strong); background: var(--card);
+  width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center;
+}
+.step > div:last-child { min-width: 0; } /* let codeblocks scroll inside the grid column */
+.step h3 { font-size: 16px; font-weight: 700; }
+.step p { color: var(--ink-2); font-size: 14.5px; margin-top: 4px; }
+.codeblock {
+  background: var(--code-bg); color: #dbe2f0; border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 18px; margin-top: 12px;
+  font-family: 'JetBrains Mono', monospace; font-size: 13.5px; line-height: 1.7;
+  overflow-x: auto; white-space: pre;
+}
+.codeblock .c { color: #7b849b; }
+.codeblock .p { color: #7db2ff; }
+.plats { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 32px; }
+.plats span {
+  font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ink-2);
+  border: 1px solid var(--border); background: var(--card); border-radius: 99px; padding: 5px 13px;
+}
+
+/* ============================== faq ============================== */
+#faq { background: var(--bg-raise); border-block: 1px solid var(--border); }
+.faq-list { margin-top: 36px; display: grid; gap: 12px; max-width: 760px; }
+details {
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px;
+}
+details[open] { border-color: var(--border-strong); }
+summary { cursor: pointer; font-weight: 600; font-size: 15px; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+summary::after { content: "+"; color: var(--ink-3); font-size: 18px; }
+details[open] summary::after { content: "–"; }
+details p { color: var(--ink-2); font-size: 14.5px; margin-top: 10px; }
+
+/* ============================== footer ============================== */
+footer { padding: 56px 0 40px; }
+.foot-grid { display: flex; justify-content: space-between; gap: 32px; flex-wrap: wrap; }
+.foot-col h4 { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 12px; }
+.foot-col a { display: block; color: var(--ink-2); font-size: 14px; margin-bottom: 8px; }
+.foot-col a:hover { color: var(--ink); }
+.foot-base { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); color: var(--ink-3); font-size: 13px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+</style>
 </head>
-<body class="light">
-    <a href="#main" class="skip-link">Skip to content</a>
-    <div class="bg-glow"></div>
-    <nav class="navbar" id="navbar">
-        <div class="container">
-            <a href="#" class="navbar-brand">t<span>GD</span></a>
-            <div class="navbar-right">
-                <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
-                    <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-                    <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-                </button>
-                <select class="lang-select" onchange="setLang(this.value)">
-                    <option value="en">EN</option>
-                    <option value="zh">繁中</option>
-                    <option value="ja">日本語</option>
-                    <option value="de">DE</option>
-                </select>
-                <div class="navbar-links">
-                    <a href="#why">Why</a>
-                    <a href="#pipeline">Pipeline</a>
-                    <a href="#commands">Commands</a>
-                    <a href="#skills">Skills</a>
-                    <a href="#examples">Examples</a>
-                    <a href="#faq">FAQ</a>
-                </div>
-            </div>
-        </div>
-    </nav>
+<body>
 
-<main id="main">
-    <!-- Hero -->
-    <section class="hero">
+<nav>
+  <div class="wrap nav-in">
+    <a class="logo" href="#">t<b>GD</b></a>
+    <div class="nav-links">
+      <a href="#why" data-i18n="nav.why">Why</a>
+      <a href="#pipeline" data-i18n="nav.pipeline">Pipeline</a>
+      <a href="#results" data-i18n="nav.results">Results</a>
+      <a href="#start" data-i18n="nav.start">Quick Start</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <div class="nav-ctl">
+      <button class="icon-btn menu-btn" id="menu" aria-label="Menu" aria-expanded="false">☰</button>
+      <select id="lang" aria-label="Language">
+        <option value="en">EN</option>
+        <option value="zh">繁中</option>
+        <option value="ja">日本語</option>
+        <option value="de">DE</option>
+      </select>
+      <button class="icon-btn" id="theme" aria-label="Toggle theme">◐</button>
+      <a class="gh-btn" href="https://github.com/openclawyhwang-hub/tGD">GitHub ↗</a>
+    </div>
+  </div>
+</nav>
 
-        <div class="hero-content">
-            <div class="hero-badge">✨ Open Source • Apache 2.0 • 29 Skills</div>
-            <p class="hero-tagline">The Agentic PDLC Harness</p>
-            <h1>t<span>GD</span></h1>
-            <p class="hero-subtitle">
-                <span data-lang="en"><strong>Your PDLC was built for humans. Now agents do the work.</strong> tGD transforms your existing workflow into an agentic PDLC pipeline — same gates, same accountability, 10× the velocity.</span>
-                <span data-lang="zh"><strong>你的 PDLC 是為人類設計的。現在 agent 來做事。</strong> tGD 把你現有的工作流程轉變成 agentic PDLC pipeline — 同樣的關卡、同樣的問責，10 倍速度。</span>
-                <span data-lang="ja"><strong>あなたのPDLCは人間のために設計された。今ではエージェントが仕事をする。</strong> tGDは既存のワークフローを agentic PDLC pipeline に変換 — 同じゲート、同じ責任、10倍の速度。</span>
-                <span data-lang="de"><strong>Ihr PDLC wurde für Menschen entwickelt. Jetzt erledigen Agenten die Arbeit.</strong> tGD verwandelt Ihren bestehenden Workflow in eine agentic PDLC Pipeline — gleiche Gates, gleiche Verantwortung, 10× Geschwindigkeit.</span>
-            </p>
-            <div class="hero-cta">
-                <a href="#quick-start" class="btn btn-primary">Get Started →</a>
-                <a href="https://github.com/openclawyhwang-hub/tGD" class="btn btn-secondary" target="_blank">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                    </svg>
-                    GitHub
-                </a>
-            </div>
-        </div>
-    </section>
+<header class="hero">
+  <div class="wrap">
+    <div class="badge"><span class="dot"></span><span data-i18n="hero.badge">Open Source · Apache 2.0 · 29 skills</span></div>
+    <h1><span data-i18n="hero.t1">Your PDLC was built for humans.</span><br><span class="hl" data-i18n="hero.t2">Now agents do the work.</span></h1>
+    <p class="sub" data-i18n="hero.sub">tGD is an open-source skill pack for Claude Code, Codex, Gemini CLI, OpenCode, Pi, and Hermes. It wraps your product development lifecycle (PDLC) in the gates your team already trusts — spec before code, tests before claims, human sign-off before release.</p>
+    <div class="cta-row">
+      <a class="btn btn-pri" href="#start" data-i18n="hero.cta1">Get started →</a>
+      <a class="btn btn-sec" href="tGD-intro.html" data-i18n="hero.cta2">🎬 View the intro deck</a>
+    </div>
+    <div class="hero-pipe" aria-hidden="true">
+      <span class="st">MAP</span><span class="ar">→</span>
+      <span class="st">DEFINE</span><span class="ar">→</span>
+      <span class="st">PLAN</span><span class="ar">→</span>
+      <span class="st">DEVELOP</span><span class="ar">→</span>
+      <span class="st">VERIFY</span><span class="ar">→</span>
+      <span class="st">REVIEW</span><span class="ar">→</span>
+      <span class="st">RELEASE</span>
+    </div>
+  </div>
+</header>
 
-    <!-- Stats -->
-    <div class="container">
-        <div class="stats">
-            <div class="stat">
-                <div class="stat-number">29</div>
-                <div class="stat-label">Skills</div>
-            </div>
-            <div class="stat">
-                <div class="stat-number">7</div>
-                <div class="stat-label">Pipeline Stages</div>
-            </div>
-            <div class="stat">
-                <div class="stat-number">5</div>
-                <div class="stat-label">Supported CLIs</div>
-            </div>
-            <div class="stat">
-                <div class="stat-number">30s</div>
-                <div class="stat-label">Setup Time</div>
-            </div>
-        </div>
+<section id="why">
+  <div class="wrap">
+    <div class="kicker" data-i18n="why.kicker">The problem</div>
+    <h2 data-i18n="why.title">Agents can code. Nobody holds them accountable.</h2>
+    <div class="duo">
+      <div class="duo-card bad">
+        <h3 data-i18n="why.bad.t">Without tGD</h3>
+        <ul>
+          <li data-i18n="why.bad.1">"Should work" — the tests never ran</li>
+          <li data-i18n="why.bad.2">500 lines written before reading your codebase</li>
+          <li data-i18n="why.bad.3">Spec skipped, broken PR shipped, agent gone</li>
+        </ul>
+      </div>
+      <div class="duo-card good">
+        <h3 data-i18n="why.good.t">With tGD</h3>
+        <ul>
+          <li data-i18n="why.good.1">"34/34 pass" — with the output to prove it</li>
+          <li data-i18n="why.good.2">Reads the codebase first, ships 50 lines that pass</li>
+          <li data-i18n="why.good.3">Spec → Plan → Code → Verify — no stage skipped</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="pipeline">
+  <div class="wrap">
+    <div class="kicker" data-i18n="pipe.kicker">How it works</div>
+    <h2 data-i18n="pipe.title">Seven stages. Every one gated.</h2>
+    <p class="sub" data-i18n="pipe.sub">Each stage hands a signed-off artifact to the next. If Verify fails, the pipeline stops and the work goes back to Develop — nothing broken reaches Release.</p>
+
+    <div class="stage-grid">
+      <div class="stage"><div class="n">01</div><div class="nm">Map</div><div class="cmd">/tgd-map</div><div class="out">CONTEXT.md</div></div>
+      <div class="stage"><div class="n">02</div><div class="nm">Define</div><div class="cmd">/tgd-define</div><div class="out">PRD · SPEC · DESIGN</div></div>
+      <div class="stage"><div class="n">03</div><div class="nm">Plan</div><div class="cmd">/tgd-plan</div><div class="out">TASKS.md</div></div>
+      <div class="stage"><div class="n">04</div><div class="nm">Develop</div><div class="cmd">/tgd-develop</div><div class="out">src/ + tests/</div></div>
+      <div class="stage"><div class="n">05</div><div class="nm">Verify</div><div class="cmd">/tgd-verify</div><div class="out">TEST-REPORT.md</div></div>
+      <div class="stage"><div class="n">06</div><div class="nm">Review</div><div class="cmd">/tgd-review</div><div class="out">REVIEW.md</div></div>
+      <div class="stage"><div class="n">07</div><div class="nm">Release</div><div class="cmd">/tgd-release</div><div class="out">CHANGELOG · METRICS + deploy</div></div>
     </div>
 
-    <div class="divider"></div>
+    <div class="io-wrap">
+      <table class="io">
+        <thead><tr>
+          <th data-i18n="io.stage">Stage</th>
+          <th data-i18n="io.input">Input</th>
+          <th data-i18n="io.output">Output</th>
+          <th data-i18n="io.agent">Agent does</th>
+          <th data-i18n="io.human">Human sign-off</th>
+        </tr></thead>
+        <tbody>
+          <tr><td class="stg">01 Map</td><td><code>src/</code> + codebase</td><td><code>CONTEXT.md</code></td>
+            <td data-i18n="io.1a">Scans codebase, builds understanding</td>
+            <td><span class="role">DEV</span> — <span data-i18n="io.1h">reviews CONTEXT.md</span></td></tr>
+          <tr><td class="stg">02 Define</td><td><code>CONTEXT.md</code> + <span data-i18n="io.intent">intent</span></td><td><code>PRD</code> <code>SPEC</code> <code>DESIGN</code></td>
+            <td data-i18n="io.2a">Interviews user, drafts specs</td>
+            <td><span class="role">PM</span> — <span data-i18n="io.2h">signs off PRD + SPEC</span></td></tr>
+          <tr><td class="stg">03 Plan</td><td><code>CONTEXT</code> · <code>PRD</code> · <code>SPEC</code></td><td><code>TASKS.md</code> + BDD AC</td>
+            <td data-i18n="io.3a">Triple-source task decomposition</td>
+            <td><span class="role">DEV</span> — <span data-i18n="io.3h">signs off TASKS.md</span></td></tr>
+          <tr><td class="stg">04 Develop</td><td><code>TASKS</code> · <code>SPEC</code> + <code>src/</code></td><td><code>src/</code> + <code>tests/</code></td>
+            <td data-i18n="io.4a">TDD in a worktree sandbox</td>
+            <td><span class="role">DEV</span> — <span data-i18n="io.4h">reviews code, signs off</span></td></tr>
+          <tr><td class="stg">05 Verify</td><td><code>src/</code> · <code>tests/</code> + <code>CATALOG</code></td><td><code>TEST-REPORT.md</code></td>
+            <td data-i18n="io.5a">All tests + E2E + regression</td>
+            <td><span class="role">QA</span> — <span data-i18n="io.5h">signs off or blocks</span></td></tr>
+          <tr><td class="stg">06 Review</td><td><code>src/</code> · <code>TEST-REPORT</code></td><td><code>REVIEW.md</code></td>
+            <td data-i18n="io.6a">5-axis code quality review</td>
+            <td><span class="role">QA + DEV</span> — <span data-i18n="io.6h">sign off REVIEW.md</span></td></tr>
+          <tr><td class="stg">07 Release</td><td data-i18n="io.7i">All signed-off artifacts</td><td><code>CHANGELOG</code> · <code>METRICS</code> + deploy</td>
+            <td>Commit → CI → deploy</td>
+            <td><span class="role">PM</span> — <span data-i18n="io.7h">final sign-off gate</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
 
-    <!-- Why tGD -->
-    <section id="why">
-        <div class="container">
-            <h2 class="fade-in"><span data-lang="en">Why tGD?</span><span data-lang="zh">為什麼需要 tGD？</span>
-                <span data-lang="ja">なぜ tGD なのか？</span>
-                <span data-lang="de">Warum tGD?</span></h2>
-            <p class="section-subtitle fade-in"><span data-lang="en">The problem isn't that agents can't code. It's that nobody holds them accountable.</span><span data-lang="zh">問題不是 agent 不會寫 code，而是沒有人管得住它。</span>
-                <span data-lang="ja">問題はエージェントがコードを書けないことではない。誰も責任を持たないことだ。</span>
-                <span data-lang="de">Das Problem ist nicht, dass Agenten nicht coden können. Es ist, dass niemand sie zur Rechenschaft zieht.</span></p>
-            
-            <div class="comparison fade-in">
-                <div class="comparison-card before">
-                    <h3>❌ <span data-lang="en">Without a harness</span><span data-lang="zh">沒有 harness</span>
-                <span data-lang="ja">ハーネスなし</span>
-                <span data-lang="de">Ohne Harness</span></h3>
-                    <ul>
-                        <li><span data-lang="en">Agent says "should work" — tests never ran</span><span data-lang="zh">Agent 說「應該可以吧」——結果根本沒跑測試</span><span data-lang="ja">「動くはず」と言ってテスト実行ゼロ</span><span data-lang="de">Agent sagt "sollte funktionieren" — nie getestet</span></li>
-                        <li><span data-lang="en">Writes 500 lines before reading your codebase</span><span data-lang="zh">先寫 500 行，連 codebase 都沒看過</span><span data-lang="ja">コードベース読まずに500行書いちゃう</span><span data-lang="de">Schreibt 500 Zeilen bevor es den Codebase liest</span></li>
-                        <li><span data-lang="en">Skips spec, ships broken PR, disappears</span><span data-lang="zh">跳過 spec，丟一個壞掉的 PR 就消失</span><span data-lang="ja">Spec 飛ばして壊れた PR 送って消える</span><span data-lang="de">Überspringt Spec, liefert kaputten PR, verschwindet</span></li>
-                        <li><span data-lang="en">You debug what the agent shipped</span><span data-lang="zh">你自己 debug agent 交出來的東西</span><span data-lang="ja">君が agent のデバッグをやることになる</span><span data-lang="de">Du darfst debuggen was der Agent geliefert hat</span></li>
-                    </ul>
-                </div>
-                <div class="comparison-card after">
-                    <h3>✅ <span data-lang="en">With tGD</span><span data-lang="zh">有了 tGD</span>
-                <span data-lang="ja">tGD あり</span>
-                <span data-lang="de">Mit tGD</span></h3>
-                    <ul>
-                        <li><span data-lang="en">Agent says "34/34 pass" — shows the output</span><span data-lang="zh">Agent 說「34/34 pass」——附上實際輸出</span><span data-lang="ja">「34/34 pass」— 出力を見せてくれる</span><span data-lang="de">Agent sagt "34/34 bestanden" — zeigt den Output</span></li>
-                        <li><span data-lang="en">Reads codebase first, writes 50 lines that pass</span><span data-lang="zh">先讀 codebase，寫 50 行就能 pass</span><span data-lang="ja">まずコードベース読んで、通る50行を書く</span><span data-lang="de">Liest erst den Codebase, schreibt 50 Zeilen die bestehen</span></li>
-                        <li><span data-lang="en">Spec → Plan → Code → Verify — no stage skipped</span><span data-lang="zh">Spec → Plan → Code → Verify——每個階段都不跳過</span><span data-lang="ja">Spec → Plan → Code → Verify — ステップ飛ばしなし</span><span data-lang="de">Spec → Plan → Code → Verify — keine Stufe übersprungen</span></li>
-                        <li><span data-lang="en">You review what the agent proved</span><span data-lang="zh">你審查 agent 證明過的成果</span><span data-lang="ja">agent が証明したものをレビューするだけ</span><span data-lang="de">Du reviewst was der Agent bewiesen hat</span></li>
-                    </ul>
-                </div>
-            </div>
+<section id="results">
+  <div class="wrap">
+    <div class="kicker" data-i18n="res.kicker">Why bother</div>
+    <h2 data-i18n="res.title">What changes when you adopt it</h2>
+    <p class="sub" data-i18n="res.sub">Illustrative PDLC efficiency gains — not measured data.</p>
+
+    <div class="res-grid">
+      <div class="chart-card">
+        <div class="chart-title" data-i18n="res.chart.t">Features released per person, per sprint</div>
+        <div class="legend">
+          <span class="k"><span class="sw" style="background:var(--chart-context)"></span><span data-i18n="res.leg.pre">Before tGD</span></span>
+          <span class="k"><span class="sw" style="background:var(--chart-accent)"></span><span data-i18n="res.leg.post">With tGD</span></span>
+          <span class="k"><span class="sw" style="background:repeating-linear-gradient(45deg,var(--chart-accent) 0 2px,transparent 2px 5px)"></span><span data-i18n="res.leg.proj">Projected</span></span>
         </div>
-    </section>
-
-    <div class="divider"></div>
-
-    <!-- Who is this for -->
-    <section id="who">
-        <div class="container">
-            <h2 class="fade-in"><span data-lang="en">Who is this for?</span><span data-lang="zh">適合誰用？</span>
-                <span data-lang="ja">誰のため？</span>
-                <span data-lang="de">Für wen?</span></h2>
-            <p class="section-subtitle fade-in"><span data-lang="en">tGD works for any team size, any project stage.</span><span data-lang="zh">不管團隊大小、專案什麼階段，tGD 都能用。</span><span data-lang="ja">チームの大きさやプロジェクトの段階を問わない。</span><span data-lang="de">tGD funktioniert für jede Teamgröße und Projektphase.</span></p>
-            
-            <div class="who-grid fade-stagger">
-                <div class="who-card">
-                    <h3>🧑‍💻 <span data-lang="en">Solo Dev</span><span data-lang="zh">獨立開發者</span><span data-lang="ja">ソロ開発者</span><span data-lang="de">Solo-Entwickler</span></h3>
-                    <p><span data-lang="en">One agent, disciplined workflow. Release features while the agent handles specs, tests, and code review.</span><span data-lang="zh">一個人 + 一個 agent，紀律化工作流。agent 處理 spec、測試和 code review，你專心出功能就好。</span><span data-lang="ja">エージェント1体で規律あるワークフロー。Spec・テスト・レビューは agent に任せて、機能を出荷。</span><span data-lang="de">Ein Agent, disziplinierter Workflow. Features shippen während der Agent Specs, Tests und Review übernimmt.</span></p>
-                </div>
-                <div class="who-card">
-                    <h3>👥 <span data-lang="en">Team Lead</span><span data-lang="zh">團隊主管</span><span data-lang="ja">チームリード</span><span data-lang="de">Team Lead</span></h3>
-                    <p><span data-lang="en">Enforce standards across AI-generated code. Every PR follows the same 7-stage pipeline — no exceptions.</span><span data-lang="zh">統一管理 AI 產生的 code。每個 PR 都走同一套 7 階段 pipeline——沒有例外。</span><span data-lang="ja">AI が生成したコード全体に基準を適用。すべての PR が同じ7ステージ pipeline を通る——例外なし。</span><span data-lang="de">Standards für AI-generierten Code durchsetzen. Jeder PR durchläuft dieselbe 7-Stufen-Pipeline — keine Ausnahmen.</span></p>
-                </div>
-                <div class="who-card">
-                    <h3>🚀 <span data-lang="en">Startup</span><span data-lang="zh">新創公司</span><span data-lang="ja">スタートアップ</span><span data-lang="de">Startup</span></h3>
-                    <p><span data-lang="en">Move fast without breaking things. The harness catches agent mistakes before they reach production.</span><span data-lang="zh">快速迭代還不會壞事。harness 在 agent 犯錯到上線前就攔住了。</span><span data-lang="ja">壊さずに速く動く。エージェントのミスを本番に届く前にキャッチ。</span><span data-lang="de">Schnell sein ohne etwas zu zerstören. Der Harness fängt Agent-Fehler bevor sie Produktion erreichen.</span></p>
-                </div>
-                <div class="who-card">
-                    <h3>🏢 <span data-lang="en">Enterprise</span><span data-lang="zh">大型企業</span><span data-lang="ja">エンタープライズ</span><span data-lang="de">Enterprise</span></h3>
-                    <p><span data-lang="en">Quality gates for AI development. Security, performance, and compliance enforced by the pipeline.</span><span data-lang="zh">AI 開發品質關卡。安全性、效能、合規，pipeline 全部把關。</span><span data-lang="ja">AI 開発の品質ゲート。セキュリティ・パフォーマンス・コンプライアンスを pipeline が強制。</span><span data-lang="de">Quality Gates für KI-Entwicklung. Sicherheit, Performance und Compliance durch die Pipeline erzwungen.</span></p>
-                </div>
-            </div>
+        <div class="chart-scroll">
+        <svg viewBox="0 0 720 330" role="img" aria-label="Bar chart: features released per person per sprint. Sprints 1-4 plateau at 2-3 before tGD; sprints 5-8 climb from 5 to 13 after adoption; projected steady state 15+.">
+          <defs>
+            <pattern id="proj" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+              <rect width="6" height="6" fill="var(--chart-accent)" opacity=".55"/>
+              <line x1="0" y1="0" x2="0" y2="6" stroke="var(--card)" stroke-width="2.5"/>
+            </pattern>
+          </defs>
+          <!-- gridlines + y labels -->
+          <g font-family="JetBrains Mono,monospace" font-size="10" fill="var(--chart-ink)">
+            <line x1="56" y1="300" x2="700" y2="300" stroke="var(--chart-grid)" stroke-width="1"/>
+            <line x1="56" y1="220" x2="700" y2="220" stroke="var(--chart-grid)" stroke-width="1"/>
+            <line x1="56" y1="140" x2="700" y2="140" stroke="var(--chart-grid)" stroke-width="1"/>
+            <line x1="56" y1="60"  x2="700" y2="60"  stroke="var(--chart-grid)" stroke-width="1"/>
+            <text x="46" y="304" text-anchor="end">0</text>
+            <text x="46" y="224" text-anchor="end">5</text>
+            <text x="46" y="144" text-anchor="end">10</text>
+            <text x="46" y="64"  text-anchor="end">15</text>
+          </g>
+          <!-- milestones -->
+          <g font-family="JetBrains Mono,monospace" font-size="9.5" fill="var(--chart-ink)">
+            <line x1="342" y1="46" x2="342" y2="300" stroke="var(--chart-ink)" stroke-width="1" stroke-dasharray="3,4" opacity=".55"/>
+            <text x="342" y="38" text-anchor="middle" data-i18n="res.m1">tGD adopted</text>
+            <line x1="486" y1="46" x2="486" y2="300" stroke="var(--chart-ink)" stroke-width="1" stroke-dasharray="3,4" opacity=".55"/>
+            <text x="486" y="38" text-anchor="middle" data-i18n="res.m2">agents ramped</text>
+          </g>
+          <!-- before: context bars (rounded 4px top, flush baseline) -->
+          <g fill="var(--chart-context)">
+            <path d="M64 300 V272 Q64 268 68 268 H112 Q116 268 116 272 V300 Z"><title>Sprint 1 — 2 features</title></path>
+            <path d="M136 300 V256 Q136 252 140 252 H184 Q188 252 188 256 V300 Z"><title>Sprint 2 — 3 features</title></path>
+            <path d="M208 300 V272 Q208 268 212 268 H256 Q260 268 260 272 V300 Z"><title>Sprint 3 — 2 features</title></path>
+            <path d="M280 300 V256 Q280 252 284 252 H328 Q332 252 332 256 V300 Z"><title>Sprint 4 — 3 features</title></path>
+          </g>
+          <!-- after: accent bars -->
+          <g fill="var(--chart-accent)">
+            <path d="M352 300 V224 Q352 220 356 220 H400 Q404 220 404 224 V300 Z"><title>Sprint 5 — 5 features</title></path>
+            <path d="M424 300 V192 Q424 188 428 188 H472 Q476 188 476 192 V300 Z"><title>Sprint 6 — 7 features</title></path>
+            <path d="M496 300 V144 Q496 140 500 140 H544 Q548 140 548 144 V300 Z"><title>Sprint 7 — 10 features</title></path>
+            <path d="M568 300 V96 Q568 92 572 92 H616 Q620 92 620 96 V300 Z"><title>Sprint 8 — 13 features</title></path>
+          </g>
+          <path d="M640 300 V64 Q640 60 644 60 H688 Q692 60 692 64 V300 Z" fill="url(#proj)"><title>Steady state — 15+ features (projected)</title></path>
+          <!-- selective value labels: post-adoption story only -->
+          <g font-family="JetBrains Mono,monospace" font-size="12" font-weight="600" fill="var(--ink)">
+            <text x="378" y="210" text-anchor="middle">5</text>
+            <text x="450" y="178" text-anchor="middle">7</text>
+            <text x="522" y="130" text-anchor="middle">10</text>
+            <text x="594" y="82" text-anchor="middle">13</text>
+            <text x="666" y="50" text-anchor="middle">15+</text>
+          </g>
+          <!-- plateau annotation -->
+          <g font-family="JetBrains Mono,monospace" font-size="10" fill="var(--chart-ink)">
+            <line x1="56" y1="260" x2="332" y2="260" stroke="var(--chart-ink)" stroke-width="1" stroke-dasharray="5,4" opacity=".5"/>
+            <text x="64" y="238" data-i18n="res.plateau">plateau · ~2–3 / sprint</text>
+          </g>
+          <!-- x labels -->
+          <g font-family="JetBrains Mono,monospace" font-size="9.5" fill="var(--chart-ink)" text-anchor="middle">
+            <text x="90" y="318">S1</text><text x="162" y="318">S2</text><text x="234" y="318">S3</text><text x="306" y="318">S4</text>
+            <text x="378" y="318">S5</text><text x="450" y="318">S6</text><text x="522" y="318">S7</text><text x="594" y="318">S8</text>
+            <text x="666" y="318" data-i18n="res.steady">steady</text>
+          </g>
+        </svg>
         </div>
-    </section>
+        <div class="sr-only"><table>
+          <caption>Features released per person per sprint (illustrative)</caption>
+          <tr><th>Sprint 1</th><th>Sprint 2</th><th>Sprint 3</th><th>Sprint 4</th><th>Sprint 5</th><th>Sprint 6</th><th>Sprint 7</th><th>Sprint 8</th><th>Steady (projected)</th></tr>
+          <tr><td>2</td><td>3</td><td>2</td><td>3</td><td>5</td><td>7</td><td>10</td><td>13</td><td>15+</td></tr>
+        </table></div>
+        <div class="chart-note" data-i18n="res.note">Illustrative projection — not measured data.</div>
+      </div>
 
-    <div class="divider"></div>
+      <div class="kpis">
+        <div class="kpi"><div class="n">5×</div>
+          <div class="d" data-i18n="res.k1">More features shipped per sprint — agents handle spec → code → test → review, humans set direction and sign off.</div>
+          <span class="t" data-i18n="res.k1t">Throughput</span></div>
+        <div class="kpi"><div class="n">80%</div>
+          <div class="d" data-i18n="res.k2">Fewer regression escapes — BDD acceptance criteria + an automated regression catalog catch defects before merge.</div>
+          <span class="t" data-i18n="res.k2t">Quality</span></div>
+        <div class="kpi"><div class="n">10×</div>
+          <div class="d" data-i18n="res.k3">Faster spec-to-deploy cycle — weeks become days, with a full audit trail (PRD → TASKS → CHANGELOG).</div>
+          <span class="t" data-i18n="res.k3t">Velocity</span></div>
+      </div>
+    </div>
+  </div>
+</section>
 
-    <!-- Pipeline -->
-    <section id="pipeline">
-        <div class="container">
-            <h2 class="fade-in"><span data-lang="en">The Pipeline</span><span data-lang="zh">工作流程</span>
-                <span data-lang="ja">パイプライン</span>
-                <span data-lang="de">Pipeline</span></h2>
-            <p class="section-subtitle fade-in"><span data-lang="en">7 stages from idea to production. Each stage gates the next.</span><span data-lang="zh">7 個階段，從想法到生產環境。每個階段關卡守護下一個。</span>
-                <span data-lang="ja">アイデアから本番環境まで7つのステージ。各ステージが次のステージをゲートキープする。</span>
-                <span data-lang="de">7 Stufen von der Idee bis zur Produktion. Jede Stufe kontrolliert den Übergang zur nächsten.</span></p>
-            
-            <div class="pipeline-track fade-in">
-            <div class="pipeline">
-                <div class="pipeline-step">
-                    <div class="pipeline-step-num">STEP 01</div>
-                    <div class="pipeline-dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></div>
-                    <div class="pipeline-step-info">
-                        <div class="pipeline-label">MAP</div>
-                        <div class="pipeline-cmd">/tgd-map</div>
-                        <div class="pipeline-output"><code>CONTEXT.md</code></div>
-                    </div>
-                </div>
-                <div class="pipeline-step">
-                    <div class="pipeline-step-num">STEP 02</div>
-                    <div class="pipeline-dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
-                    <div class="pipeline-step-info">
-                        <div class="pipeline-label">DEFINE</div>
-                        <div class="pipeline-cmd">/tgd-define</div>
-                        <div class="pipeline-output"><code>PRD.md</code> <code>SPEC.md</code> <code>DESIGN.md</code></div>
-                    </div>
-                </div>
-                <div class="pipeline-step">
-                    <div class="pipeline-step-num">STEP 03</div>
-                    <div class="pipeline-dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
-                    <div class="pipeline-step-info">
-                        <div class="pipeline-label">PLAN</div>
-                        <div class="pipeline-cmd">/tgd-plan</div>
-                        <div class="pipeline-output"><code>TASKS.md</code></div>
-                    </div>
-                </div>
-                <div class="pipeline-step">
-                    <div class="pipeline-step-num">STEP 04</div>
-                    <div class="pipeline-dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
-                    <div class="pipeline-step-info">
-                        <div class="pipeline-label">DEVELOP</div>
-                        <div class="pipeline-cmd">/tgd-develop</div>
-                        <div class="pipeline-output"><code>Code</code> + <code>Tests</code></div>
-                    </div>
-                </div>
-                <div class="pipeline-step">
-                    <div class="pipeline-step-num">STEP 05</div>
-                    <div class="pipeline-dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-                    <div class="pipeline-step-info">
-                        <div class="pipeline-label">VERIFY</div>
-                        <div class="pipeline-cmd">/tgd-verify</div>
-                        <div class="pipeline-output"><code>All green ✓</code></div>
-                    </div>
-                </div>
-                <div class="pipeline-step">
-                    <div class="pipeline-step-num">STEP 06</div>
-                    <div class="pipeline-dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></div>
-                    <div class="pipeline-step-info">
-                        <div class="pipeline-label">REVIEW</div>
-                        <div class="pipeline-cmd">/tgd-review</div>
-                        <div class="pipeline-output"><code>Review report</code></div>
-                    </div>
-                </div>
-                <div class="pipeline-step">
-                    <div class="pipeline-step-num">STEP 07</div>
-                    <div class="pipeline-dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></div>
-                    <div class="pipeline-step-info">
-                        <div class="pipeline-label">RELEASE</div>
-                        <div class="pipeline-cmd">/tgd-release</div>
-                        <div class="pipeline-output"><code>PR</code> + <code>Deploy</code></div>
-                    </div>
-                </div>
-            </div>
-            </div>
+<section id="start">
+  <div class="wrap">
+    <div class="kicker" data-i18n="qs.kicker">Quick start</div>
+    <h2 data-i18n="qs.title">Thirty seconds to install. One command to start.</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="num">1</div>
+        <div>
+          <h3 data-i18n="qs.1t">Clone &amp; set up</h3>
+          <p data-i18n="qs.1d">Auto-detects your installed CLIs and links every skill and command.</p>
+          <div class="codeblock">git clone https://github.com/openclawyhwang-hub/tGD.git &amp;&amp; cd tGD
+bash setup.sh</div>
         </div>
-    </section>
-
-    <div class="divider"></div>
-
-    <section id="examples">
-        <div class="container">
-            <h2 class="fade-in"><span data-lang="en">Real-world Examples</span><span data-lang="zh">實際範例</span>
-                <span data-lang="ja">実例</span>
-                <span data-lang="de">Praxisbeispiele</span></h2>
-            <p class="section-subtitle fade-in"><span data-lang="en">See tGD in action across different scenarios.</span><span data-lang="zh">看 tGD 在不同場景的實際運作。</span>
-                <span data-lang="ja">異なるシナリオでの tGD の実際の動作。</span>
-                <span data-lang="de">Sehen Sie tGD in Aktion über verschiedene Szenarien.</span></p>
-
-            <div class="examples-grid fade-stagger">
-                <div class="example-card">
-                    <h3>🔐 <span data-lang="en">Add User Authentication</span><span data-lang="zh">加入使用者驗證</span><span data-lang="ja">ユーザー認証を追加</span><span data-lang="de">User-Authentifizierung hinzufügen</span></h3>
-                    <div class="example-flow">
-                        <span class="cmd">&gt; /tgd-define <span data-lang="en">I want JWT auth</span><span data-lang="zh">我要 JWT 驗證</span><span data-lang="ja">JWT 認証がほしい</span><span data-lang="de">Ich möchte JWT-Auth</span></span><br>
-                        <span data-lang="en">Agent interviews you:</span><span data-lang="zh">Agent 訪問你：</span><span data-lang="ja">agent がヒアリング:</span><span data-lang="de">Agent interviewt dich:</span><br>
-                        <span data-lang="en">"Session or token? OAuth provider?"</span><span data-lang="zh">「Session 還是 token？OAuth 用哪家？」</span><span data-lang="ja">「セッション？トークン？OAuth プロバイダーは？」</span><span data-lang="de">"Session oder Token? OAuth-Provider?"</span><br>
-                        <span class="output">→ PRD.md + SPEC.md <span data-lang="en">created</span><span data-lang="zh">建立完成</span><span data-lang="ja">作成完了</span><span data-lang="de">erstellt</span></span><br>
-                        <span class="cmd">&gt; /tgd-plan</span><br>
-                        <span class="output">→ <span data-lang="en">5 atomic tasks → Jira synced</span><span data-lang="zh">5 個原子任務 → Jira 同步完成</span><span data-lang="ja">5つのアトミックタスク → Jira 同期</span><span data-lang="de">5 atomare Tasks → Jira synchronisiert</span></span><br>
-                        <span class="cmd">&gt; /tgd-develop</span><br>
-                        <span class="output">→ TDD: <span data-lang="en">12 tests, all green ✅</span><span data-lang="zh">12 個測試，全綠 ✅</span><span data-lang="ja">12テスト全部グリーン ✅</span><span data-lang="de">12 Tests, alle grün ✅</span></span>
-                    </div>
-                </div>
-                <div class="example-card">
-                    <h3>🐛 <span data-lang="en">Fix a Production Bug</span><span data-lang="zh">修復上線 Bug</span><span data-lang="ja">本番バグを修正</span><span data-lang="de">Production-Bug fixen</span></h3>
-                    <div class="example-flow">
-                        <span class="cmd">&gt; /tgd-verify</span><br>
-                        <span data-lang="en">Found: failing test in auth middleware</span><span data-lang="zh">找到：auth middleware 測試失敗</span><span data-lang="ja">発見: auth ミドルウェアでテスト失敗</span><span data-lang="de">Gefunden: fehlgeschlagener Test im Auth-Middleware</span><br>
-                        <span data-lang="en">Root cause: token expiry edge case</span><span data-lang="zh">根本原因：token 過期邊界情況</span><span data-lang="ja">原因: トークン期限切れのエッジケース</span><span data-lang="de">Ursache: Token-Ablauf Edge Case</span><br>
-                        <span class="cmd">&gt; /tgd-develop <span data-lang="en">fix token refresh</span><span data-lang="zh">修復 token refresh</span><span data-lang="ja">トークンリフレッシュ修正</span><span data-lang="de">Token-Refresh fixen</span></span><br>
-                        <span class="output">→ <span data-lang="en">3 new tests, all green ✅</span><span data-lang="zh">3 個新測試，全綠 ✅</span><span data-lang="ja">新しいテスト3つ、全部グリーン ✅</span><span data-lang="de">3 neue Tests, alle grün ✅</span></span><br>
-                        <span class="cmd">&gt; /tgd-review</span><br>
-                        <span class="output">→ <span data-lang="en">Code quality: PASS</span><span data-lang="zh">程式碼品質：PASS</span><span data-lang="ja">コード品質: PASS</span><span data-lang="de">Code-Qualität: PASS</span></span><br>
-                        <span class="output">→ <span data-lang="en">Security audit: PASS</span><span data-lang="zh">資安審計：PASS</span><span data-lang="ja">セキュリティ監査: PASS</span><span data-lang="de">Security-Audit: PASS</span></span>
-                    </div>
-                </div>
-                <div class="example-card">
-                    <h3>🚀 <span data-lang="en">Release with Confidence</span><span data-lang="zh">放心上線</span><span data-lang="ja">自信を持ってシップ</span><span data-lang="de">Selbstbewusst shippen</span></h3>
-                    <div class="example-flow">
-                        <span class="cmd">&gt; /tgd-release</span><br>
-                        <span data-lang="en">Running 3 parallel reviews...</span><span data-lang="zh">執行 3 個並行審查中...</span><span data-lang="ja">3つのレビューを並列実行中...</span><span data-lang="de">3 parallele Reviews laufen...</span><br>
-                        <span class="output">🧑‍💻 code-reviewer: ✅ <span data-lang="en">Approved</span><span data-lang="zh">通過</span><span data-lang="ja">承認</span><span data-lang="de">Genehmigt</span></span><br>
-                        <span class="output">🧪 test-engineer: ✅ <span data-lang="en">87% coverage</span><span data-lang="zh">87% 覆蓋率</span><span data-lang="ja">カバレッジ87%</span><span data-lang="de">87% Coverage</span></span><br>
-                        <span class="output">🔒 security-auditor: ✅ <span data-lang="en">No vulns</span><span data-lang="zh">零漏洞</span><span data-lang="ja">脆弱性なし</span><span data-lang="de">Keine Schwachstellen</span></span><br>
-                        <span class="output">→ <span data-lang="en">PR created, CI passing, deployed 🎉</span><span data-lang="zh">PR 建好了，CI 通過，部署完成 🎉</span><span data-lang="ja">PR 作成、CI パス、デプロイ完了 🎉</span><span data-lang="de">PR erstellt, CI grün, deployed 🎉</span></span>
-                    </div>
-                </div>
-            </div>
+      </div>
+      <div class="step">
+        <div class="num">2</div>
+        <div>
+          <h3 data-i18n="qs.2t">Map your codebase</h3>
+          <p data-i18n="qs.2d">The agent scans your project and writes CONTEXT.md — context before changes.</p>
+          <div class="codeblock"><span class="p">/tgd-map</span></div>
         </div>
-    </section>
-
-    <div class="divider"></div>
-
-    <!-- Commands -->
-    <section id="commands">
-        <div class="container">
-            <h2 class="fade-in"><span data-lang="en">Commands</span><span data-lang="zh">指令</span>
-                <span data-lang="ja">コマンド</span>
-                <span data-lang="de">Befehle</span></h2>
-            <p class="section-subtitle fade-in"><span data-lang="en">7 slash commands that map to the development lifecycle.</span><span data-lang="zh">7 個 slash command 對應開發生命週期。</span>
-                <span data-lang="ja">開発ライフサイクルに対応する7つのスラッシュコマンド。</span>
-                <span data-lang="de">7 Slash Commands für den Entwicklungs-Lebenszyklus.</span></p>
-            
-                        <div class="fade-in" style="overflow-x: auto;">
-                <table class="commands-table">
-                    <thead>
-                        <tr>
-                            <th>🎯 What</th>
-                            <th>⌨️ Command</th>
-                            <th>💡 Principle</th>
-                            <th>🔧 Skills</th>
-                            <th>📄 Output</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Understand</td>
-                            <td><span class="cmd-name">/tgd-map</span></td>
-                            <td>Context first</td>
-                            <td><span class="skill-tag">tgd-context-engineering</span> <span class="skill-tag">codegraph init</span></td>
-                            <td><span class="output-tag">CONTEXT.md</span> <span class="output-tag">knowledge-graph.json</span> <span class="output-tag">dashboard</span></td>
-                        </tr>
-                        <tr>
-                            <td>Define</td>
-                            <td><span class="cmd-name">/tgd-define</span></td>
-                            <td>Spec before code</td>
-                            <td><span class="skill-tag">tgd-interview-me</span> <span class="skill-tag">tgd-idea-refine</span> <span class="skill-tag">tgd-spec-driven-development</span></td>
-                            <td><span class="output-tag">PRD.md</span> <span class="output-tag">SPEC.md</span></td>
-                        </tr>
-                        <tr>
-                            <td>Plan</td>
-                            <td><span class="cmd-name">/tgd-plan</span></td>
-                            <td>Atomic tasks</td>
-                            <td><span class="skill-tag">tgd-planning-and-task-breakdown</span> <span class="skill-tag">tgd-jira-auto-sync</span></td>
-                            <td><span class="output-tag">TASKS.md</span> <span class="output-tag">Jira issues</span></td>
-                        </tr>
-                        <tr>
-                            <td>Develop</td>
-                            <td><span class="cmd-name">/tgd-develop</span></td>
-                            <td>One slice at a time</td>
-                            <td><span class="skill-tag">tgd-source-driven-development</span> <span class="skill-tag">tgd-incremental-implementation</span> <span class="skill-tag">tgd-test-driven-development</span> <span class="skill-tag">tgd-verification-before-completion</span></td>
-                            <td><span class="output-tag">Code + Tests</span></td>
-                        </tr>
-                        <tr>
-                            <td>Verify</td>
-                            <td><span class="cmd-name">/tgd-verify</span></td>
-                            <td>Tests are proof</td>
-                            <td><span class="skill-tag">tgd-debugging-and-error-recovery</span> <span class="skill-tag">tgd-agent-browser</span> <span class="skill-tag">Regression Gate</span></td>
-                            <td><span class="output-tag">All green ✅</span></td>
-                        </tr>
-                        <tr>
-                            <td>Review</td>
-                            <td><span class="cmd-name">/tgd-review</span></td>
-                            <td>Code health</td>
-                            <td><span class="skill-tag">tgd-code-review-and-quality</span> <span class="skill-tag">tgd-code-simplification</span></td>
-                            <td><span class="output-tag">Review report</span></td>
-                        </tr>
-                        <tr>
-                            <td>Release</td>
-                            <td><span class="cmd-name">/tgd-release</span></td>
-                            <td>Faster is safer</td>
-                            <td><span class="skill-tag">tgd-git-workflow-and-versioning</span> <span class="skill-tag">tgd-shipping-and-launch</span> <span class="skill-tag">Catalog Update + Audit</span></td>
-                            <td><span class="output-tag">PR + Deploy</span> <span class="output-tag">METRICS.md</span></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+      </div>
+      <div class="step">
+        <div class="num">3</div>
+        <div>
+          <h3 data-i18n="qs.3t">Define your first feature</h3>
+          <p data-i18n="qs.3d">The agent interviews you and drafts the PRD + SPEC. The pipeline takes it from there.</p>
+          <div class="codeblock"><span class="p">/tgd-define</span> I want to add user authentication</div>
         </div>
-    </section>
+      </div>
+    </div>
+    <div class="plats">
+      <span>Claude Code</span><span>Codex CLI</span><span>Gemini CLI</span><span>OpenCode</span><span>Pi</span><span>Hermes</span>
+    </div>
+  </div>
+</section>
 
-    <div class="divider"></div>
+<section id="faq">
+  <div class="wrap">
+    <div class="kicker">FAQ</div>
+    <h2 data-i18n="faq.title">Common questions</h2>
+    <div class="faq-list">
+      <details>
+        <summary data-i18n="faq.0q">Which agents does tGD support?</summary>
+        <p data-i18n="faq.0a">Claude Code, Codex CLI, Gemini CLI, OpenCode, Pi Coding Agent, and Hermes. One bash setup.sh detects what you have installed and links the right format for each.</p>
+      </details>
+      <details>
+        <summary data-i18n="faq.5q">Does tGD send my code anywhere?</summary>
+        <p data-i18n="faq.5a">No. tGD is plain Markdown skills and shell scripts that run inside your own agent — no server, no telemetry, no account. Your code never leaves the tools you already use.</p>
+      </details>
+      <details>
+        <summary data-i18n="faq.1q">Do I need to install anything besides my agent?</summary>
+        <p data-i18n="faq.1a">No — clone the repo and run bash setup.sh. It detects your CLI, links everything, and installs the tgd command for updates.</p>
+      </details>
+      <details>
+        <summary data-i18n="faq.2q">My agent has no slash commands. Does tGD still work?</summary>
+        <p data-i18n="faq.2a">Yes. Say "plan this feature" in natural language — the router skill maps intent to the right workflow automatically.</p>
+      </details>
+      <details>
+        <summary data-i18n="faq.3q">Does it work on an existing project?</summary>
+        <p data-i18n="faq.3a">Yes — /tgd-map scans the existing codebase first, so every later stage works from real context.</p>
+      </details>
+      <details>
+        <summary data-i18n="faq.4q">Can I customize the pipeline?</summary>
+        <p data-i18n="faq.4a">Yes. Every stage is a plain-Markdown skill in skills/ — edit them to match your team's workflow.</p>
+      </details>
+    </div>
+  </div>
+</section>
 
-    <section id="skills">
-        <div class="container">
-            <h2 class="fade-in"><span data-lang="en">All 29 Skills</span><span data-lang="zh">全部 29 個 Skills</span>
-                <span data-lang="ja">全29スキル</span>
-                <span data-lang="de">Alle 29 Skills</span></h2>
-            <p class="section-subtitle fade-in"><span data-lang="en">Organized by lifecycle phase. Loaded on-demand — only what's needed.</span><span data-lang="zh">依生命週期階段組織。按需載入——只載入需要的。</span><span data-lang="ja">ライフサイクル別に整理。オンデマンドで必要なものだけロード。</span><span data-lang="de">Nach Lebenszyklus-Phase organisiert. On-Demand geladen — nur was gebraucht wird.</span></p>
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-col">
+        <a class="logo" href="#">t<b>GD</b></a>
+        <p style="color:var(--ink-3);font-size:13px;margin-top:10px;max-width:34ch" data-i18n="foot.tag">Open-source engineering discipline for AI coding agents.</p>
+        <p class="mono" style="color:var(--ink-3);font-size:10.5px;margin-top:8px;letter-spacing:.02em">Map → Define → Plan → Develop → Verify → Review → Release</p>
+      </div>
+      <div class="foot-col">
+        <h4 data-i18n="foot.docs">Documentation</h4>
+        <a href="https://github.com/openclawyhwang-hub/tGD#-all-29-skills" data-i18n="foot.skills">All 29 skills</a>
+        <a href="https://github.com/openclawyhwang-hub/tGD#-testing-strategy" data-i18n="foot.testing">Testing strategy</a>
+        <a href="https://github.com/openclawyhwang-hub/tGD/tree/main/docs" data-i18n="foot.guides">Setup guides</a>
+      </div>
+      <div class="foot-col">
+        <h4 data-i18n="foot.more">More</h4>
+        <a href="tGD-intro.html" data-i18n="foot.deck">Intro deck</a>
+        <a href="https://github.com/openclawyhwang-hub/tGD/blob/main/CONTRIBUTING.md" data-i18n="foot.contrib">Contributing</a>
+        <a href="https://github.com/openclawyhwang-hub/tGD/blob/main/CHANGELOG.md">Changelog</a>
+      </div>
+    </div>
+    <div class="foot-base">
+      <span>Apache 2.0 · CalVer</span>
+      <span data-i18n="foot.love">Built with ❤️ by the tGD community</span>
+    </div>
+  </div>
+</footer>
 
-            <div class="skills-grid fade-stagger">
-                <div class="skill-group">
-                    <h3>🧭 Meta</h3>
-                    <div class="skill-list"><span class="skill-tag">tgd-router</span><span class="skill-tag">tgd-rules</span></div>
-                </div>
-                <div class="skill-group">
-                    <h3>🗺️ Map</h3>
-                    <div class="skill-list"><span class="skill-tag">tgd-context-engineering</span><span class="skill-tag">tgd-wiki-generation</span></div>
-                </div>
-                <div class="skill-group">
-                    <h3>📋 Define</h3>
-                    <div class="skill-list"><span class="skill-tag">tgd-interview-me</span><span class="skill-tag">tgd-idea-refine</span><span class="skill-tag">tgd-spec-driven-development</span><span class="skill-tag">tgd-sketch</span></div>
-                </div>
-                <div class="skill-group">
-                    <h3>📐 Plan</h3>
-                    <div class="skill-list"><span class="skill-tag">tgd-planning-and-task-breakdown</span><span class="skill-tag">tgd-jira-auto-sync</span></div>
-                </div>
-                <div class="skill-group">
-                    <h3>⚡ Develop</h3>
-                    <div class="skill-list"><span class="skill-tag">tgd-subagent-driven-development</span><span class="skill-tag">tgd-incremental-implementation</span><span class="skill-tag">tgd-verification-before-completion</span><span class="skill-tag">tgd-test-driven-development</span><span class="skill-tag">tgd-source-driven-development</span><span class="skill-tag">tgd-doubt-driven-development</span><span class="skill-tag">tgd-frontend-ui-engineering</span><span class="skill-tag">tgd-api-and-interface-design</span></div>
-                </div>
-                <div class="skill-group">
-                    <h3>🧪 Verify</h3>
-                    <div class="skill-list"><span class="skill-tag">tgd-agent-browser</span><span class="skill-tag">tgd-debugging-and-error-recovery</span></div>
-                </div>
-                <div class="skill-group">
-                    <h3>🔎 Review</h3>
-                    <div class="skill-list"><span class="skill-tag">tgd-code-review-and-quality</span><span class="skill-tag">tgd-code-simplification</span><span class="skill-tag">tgd-security-and-hardening</span><span class="skill-tag">tgd-performance-optimization</span></div>
-                </div>
-                <div class="skill-group">
-                    <h3>🚀 Release</h3>
-                    <div class="skill-list"><span class="skill-tag">tgd-git-workflow-and-versioning</span><span class="skill-tag">tgd-ci-cd-and-automation</span><span class="skill-tag">tgd-deprecation-and-migration</span><span class="skill-tag">tgd-documentation-and-adrs</span><span class="skill-tag">tgd-shipping-and-launch</span></div>
-                </div>
-            </div>
-        </div>
-    </section>
+<script>
+/* ============================== i18n ============================== */
+const I18N = {
+  zh: {
+    "nav.why":"為什麼","nav.pipeline":"流程","nav.results":"成效","nav.start":"快速開始",
+    "hero.badge":"開源 · Apache 2.0 · 29 個 skills",
+    "hero.t1":"你的 PDLC 是為人設計的。","hero.t2":"現在讓 agent 來做。",
+    "hero.sub":"tGD 是一套開源 skill pack，支援 Claude Code、Codex、Gemini CLI、OpenCode、Pi、Hermes。它把你的產品開發生命週期（PDLC）裝進團隊本來就信任的關卡——先規格再寫程式、先測試再宣稱完成、人類簽核才放行。",
+    "hero.cta1":"開始使用 →","hero.cta2":"🎬 看介紹簡報",
+    "why.kicker":"問題","why.title":"Agent 會寫程式，但沒有人管得住它。",
+    "why.bad.t":"沒有 tGD","why.bad.1":"「應該可以了」——測試根本沒跑","why.bad.2":"還沒讀你的程式碼就先寫 500 行","why.bad.3":"跳過規格、丟出壞掉的 PR、然後消失",
+    "why.good.t":"有了 tGD","why.good.1":"「34/34 通過」——附上輸出證明","why.good.2":"先讀程式碼庫，交出 50 行能通過的程式","why.good.3":"規格 → 規劃 → 程式 → 驗證——沒有階段可以跳過",
+    "pipe.kicker":"運作方式","pipe.title":"七個階段，每一關都有守門。","pipe.sub":"每個階段把簽核過的 artifact 交給下一階段。Verify 不過，pipeline 就停下、工作退回 Develop——壞掉的東西到不了 Release。",
+    "io.stage":"階段","io.input":"輸入","io.output":"產出","io.agent":"Agent 負責","io.human":"人類簽核","io.intent":"意圖",
+    "io.1a":"掃描程式碼庫、建立理解","io.1h":"審閱 CONTEXT.md",
+    "io.2a":"訪談使用者、起草規格","io.2h":"簽核 PRD + SPEC",
+    "io.3a":"三源任務拆解","io.3h":"簽核 TASKS.md",
+    "io.4a":"在 worktree 沙盒中 TDD","io.4h":"審閱程式碼並簽核",
+    "io.5a":"全部測試 + E2E + 回歸","io.5h":"簽核或擋下",
+    "io.6a":"5 軸程式碼品質審查","io.6h":"簽核 REVIEW.md",
+    "io.7i":"所有已簽核的 artifacts","io.7h":"最終簽核關卡",
+    "res.kicker":"為什麼值得","res.title":"採用之後會改變什麼","res.sub":"PDLC 效率增益示意——非實測數據。",
+    "res.chart.t":"每人每個 sprint 釋出的功能數","res.leg.pre":"導入前","res.leg.post":"導入 tGD","res.leg.proj":"預估",
+    "res.m1":"導入 tGD","res.m2":"agent 上手","res.plateau":"高原期 · 每 sprint 約 2–3 個","res.steady":"穩定",
+    "res.note":"示意性推估——非實測數據。",
+    "res.k1":"每個 sprint 出貨更多功能——agent 包辦規格→程式→測試→審查，人類定方向、做簽核。","res.k1t":"吞吐量",
+    "res.k2":"回歸逃逸更少——BDD 驗收條件 + 自動化回歸目錄在合併前攔下缺陷。","res.k2t":"品質",
+    "res.k3":"規格到部署更快——數週縮短為數天，全程留有稽核軌跡（PRD → TASKS → CHANGELOG）。","res.k3t":"速度",
+    "qs.kicker":"快速開始","qs.title":"三十秒裝好，一個指令開跑。",
+    "qs.1t":"Clone 並安裝","qs.1d":"自動偵測你已安裝的 CLI，連結所有 skills 和指令。",
+    "qs.2t":"掃描你的程式碼庫","qs.2d":"Agent 掃描專案並寫出 CONTEXT.md——先有 context 再動手。",
+    "qs.3t":"定義第一個功能","qs.3d":"Agent 訪談你並起草 PRD + SPEC，之後交給 pipeline。",
+    "faq.title":"常見問題",
+    "faq.0q":"tGD 支援哪些工具？","faq.0a":"Claude Code、Codex CLI、Gemini CLI、OpenCode、Pi、Hermes。執行一次 bash setup.sh 會自動偵測你裝了什麼，並為每個工具連結對應的格式。",
+    "faq.5q":"tGD 會把我的程式碼傳到哪裡嗎？","faq.5a":"不會。tGD 只是純 Markdown skills 和 shell 腳本，在你自己的 agent 裡執行——沒有伺服器、沒有遙測、不用帳號。程式碼不會離開你原本使用的工具。",
+    "faq.1q":"除了 agent 還要裝什麼嗎？","faq.1a":"不用——clone 後執行 bash setup.sh，它會偵測你的 CLI、建立所有連結，並安裝 tgd 指令供日後更新。",
+    "faq.2q":"我的 agent 不支援 slash command 也能用嗎？","faq.2a":"可以。用自然語言說「規劃這個功能」——router skill 會自動把意圖對應到正確的工作流。",
+    "faq.3q":"可以用在現有專案嗎？","faq.3a":"可以——/tgd-map 會先掃描現有程式碼庫，讓之後每個階段都基於真實 context 工作。",
+    "faq.4q":"可以自訂 pipeline 嗎？","faq.4a":"可以。每個階段都是 skills/ 裡的純 Markdown skill——直接編輯來配合你團隊的工作流。",
+    "foot.tag":"給 AI coding agent 的開源工程紀律。",
+    "foot.docs":"文件","foot.skills":"全部 29 個 skills","foot.testing":"測試策略","foot.guides":"安裝指南",
+    "foot.more":"更多","foot.deck":"介紹簡報","foot.contrib":"貢獻指南","foot.love":"由 tGD 社群用 ❤️ 打造"
+  },
+  ja: {
+    "nav.why":"課題","nav.pipeline":"パイプライン","nav.results":"効果","nav.start":"クイックスタート",
+    "hero.badge":"オープンソース · Apache 2.0 · 29スキル",
+    "hero.t1":"あなたのPDLCは人間のために作られた。","hero.t2":"今はエージェントが働く。",
+    "hero.sub":"tGDはClaude Code、Codex、Gemini CLI、OpenCode、Pi、Hermes対応のオープンソース・スキルパック。製品開発ライフサイクル（PDLC）を、チームがすでに信頼しているゲートで包みます — コードの前に仕様、主張の前にテスト、リリースの前に人間のサインオフ。",
+    "hero.cta1":"はじめる →","hero.cta2":"🎬 紹介デッキを見る",
+    "why.kicker":"課題","why.title":"エージェントはコードを書ける。誰も責任を持たせていない。",
+    "why.bad.t":"tGDなし","why.bad.1":"「動くはず」— テストは一度も実行されていない","why.bad.2":"コードベースを読む前に500行書く","why.bad.3":"仕様を飛ばし、壊れたPRを出して消える",
+    "why.good.t":"tGDあり","why.good.1":"「34/34 パス」— 出力を添えて証明","why.good.2":"まずコードベースを読み、通る50行を出す","why.good.3":"仕様 → 計画 → コード → 検証 — どの段階も飛ばせない",
+    "pipe.kicker":"仕組み","pipe.title":"7つのステージ。すべてにゲート。","pipe.sub":"各ステージはサインオフ済みのアーティファクトを次へ渡します。Verifyが失敗するとパイプラインは停止し、作業はDevelopへ戻ります — 壊れたものはReleaseに到達しません。",
+    "io.stage":"ステージ","io.input":"入力","io.output":"出力","io.agent":"エージェント","io.human":"人間のサインオフ","io.intent":"意図",
+    "io.1a":"コードベースをスキャンし理解を構築","io.1h":"CONTEXT.mdをレビュー",
+    "io.2a":"ユーザーにインタビューし仕様を起草","io.2h":"PRD + SPECをサインオフ",
+    "io.3a":"三源タスク分解","io.3h":"TASKS.mdをサインオフ",
+    "io.4a":"WorktreeサンドボックスでTDD","io.4h":"コードをレビューしサインオフ",
+    "io.5a":"全テスト + E2E + リグレッション","io.5h":"サインオフまたはブロック",
+    "io.6a":"5軸コード品質レビュー","io.6h":"REVIEW.mdをサインオフ",
+    "io.7i":"全サインオフ済みアーティファクト","io.7h":"最終サインオフゲート",
+    "res.kicker":"導入する価値","res.title":"採用すると何が変わるか","res.sub":"PDLC効率向上のイメージ — 実測値ではありません。",
+    "res.chart.t":"1人あたり・スプリントあたりのリリース機能数","res.leg.pre":"導入前","res.leg.post":"tGD導入後","res.leg.proj":"予測",
+    "res.m1":"tGD導入","res.m2":"エージェント習熟","res.plateau":"停滞期 · 約2–3件/スプリント","res.steady":"安定",
+    "res.note":"イメージ図 — 実測値ではありません。",
+    "res.k1":"スプリントあたりの機能リリース数が増加 — エージェントが仕様→コード→テスト→レビューを担当、人間は方向づけとサインオフ。","res.k1t":"スループット",
+    "res.k2":"リグレッション漏れを削減 — BDD受け入れ基準＋自動リグレッションカタログがマージ前に欠陥を捕捉。","res.k2t":"品質",
+    "res.k3":"仕様からデプロイまでを短縮 — 数週間が数日に、完全な監査証跡つき（PRD → TASKS → CHANGELOG）。","res.k3t":"ベロシティ",
+    "qs.kicker":"クイックスタート","qs.title":"インストール30秒。コマンド1つで開始。",
+    "qs.1t":"Clone & セットアップ","qs.1d":"インストール済みCLIを自動検出し、全スキルとコマンドをリンクします。",
+    "qs.2t":"コードベースをマップ","qs.2d":"エージェントがプロジェクトをスキャンしCONTEXT.mdを作成 — 変更の前にコンテキスト。",
+    "qs.3t":"最初の機能を定義","qs.3d":"エージェントがインタビューしPRD + SPECを起草。あとはパイプラインが引き継ぎます。",
+    "faq.title":"よくある質問",
+    "faq.0q":"tGDはどのエージェントに対応？","faq.0a":"Claude Code、Codex CLI、Gemini CLI、OpenCode、Pi Coding Agent、Hermes。bash setup.shを1回実行すれば、インストール済みのツールを検出し、それぞれに適した形式でリンクします。",
+    "faq.5q":"tGDは私のコードをどこかへ送信する？","faq.5a":"いいえ。tGDはプレーンなMarkdownスキルとシェルスクリプトで、あなた自身のエージェント内で動作します — サーバーなし、テレメトリなし、アカウント不要。コードが今使っているツールの外に出ることはありません。",
+    "faq.1q":"エージェント以外に何かインストールが必要？","faq.1a":"不要です — リポジトリをcloneしてbash setup.shを実行するだけ。CLIを検出し、すべてをリンクし、更新用のtgdコマンドもインストールされます。",
+    "faq.2q":"スラッシュコマンド非対応のエージェントでも使える？","faq.2a":"はい。「この機能を計画して」と自然言語で言えば、routerスキルが意図を適切なワークフローにマッピングします。",
+    "faq.3q":"既存プロジェクトでも使える？","faq.3a":"はい — /tgd-mapが既存コードベースを先にスキャンするため、以降のステージは実際のコンテキストに基づいて動きます。",
+    "faq.4q":"パイプラインはカスタマイズできる？","faq.4a":"できます。各ステージはskills/内のプレーンMarkdownスキル — チームのワークフローに合わせて編集してください。",
+    "foot.tag":"AIコーディングエージェントのためのオープンソース・エンジニアリング規律。",
+    "foot.docs":"ドキュメント","foot.skills":"全29スキル","foot.testing":"テスト戦略","foot.guides":"セットアップガイド",
+    "foot.more":"その他","foot.deck":"紹介デッキ","foot.contrib":"コントリビュート","foot.love":"tGDコミュニティが❤️を込めて"
+  },
+  de: {
+    "nav.why":"Warum","nav.pipeline":"Pipeline","nav.results":"Ergebnisse","nav.start":"Schnellstart",
+    "hero.badge":"Open Source · Apache 2.0 · 29 Skills",
+    "hero.t1":"Ihr PDLC wurde für Menschen gebaut.","hero.t2":"Jetzt arbeiten Agenten.",
+    "hero.sub":"tGD ist ein Open-Source-Skill-Pack für Claude Code, Codex, Gemini CLI, OpenCode, Pi und Hermes. Es legt die Gates, denen Ihr Team bereits vertraut, um Ihren Product Development Lifecycle (PDLC) — Spec vor Code, Tests vor Behauptungen, menschliches Sign-off vor dem Release.",
+    "hero.cta1":"Loslegen →","hero.cta2":"🎬 Intro-Deck ansehen",
+    "why.kicker":"Das Problem","why.title":"Agenten können coden. Niemand zieht sie zur Verantwortung.",
+    "why.bad.t":"Ohne tGD","why.bad.1":"„Sollte funktionieren“ — die Tests liefen nie","why.bad.2":"500 Zeilen geschrieben, bevor die Codebasis gelesen wurde","why.bad.3":"Spec übersprungen, kaputter PR geliefert, Agent weg",
+    "why.good.t":"Mit tGD","why.good.1":"„34/34 bestanden“ — mit der Ausgabe als Beweis","why.good.2":"Liest zuerst die Codebasis, liefert 50 Zeilen, die bestehen","why.good.3":"Spec → Plan → Code → Verify — keine Stufe wird übersprungen",
+    "pipe.kicker":"So funktioniert es","pipe.title":"Sieben Stufen. Jede mit Gate.","pipe.sub":"Jede Stufe übergibt ein abgezeichnetes Artefakt an die nächste. Schlägt Verify fehl, stoppt die Pipeline und die Arbeit geht zurück zu Develop — nichts Kaputtes erreicht Release.",
+    "io.stage":"Stufe","io.input":"Input","io.output":"Output","io.agent":"Agent","io.human":"Mensch","io.intent":"Intention",
+    "io.1a":"Scannt die Codebasis, baut Verständnis auf","io.1h":"prüft CONTEXT.md",
+    "io.2a":"Interviewt den User, entwirft Specs","io.2h":"zeichnet PRD + SPEC ab",
+    "io.3a":"Drei-Quellen-Zerlegung","io.3h":"zeichnet TASKS.md ab",
+    "io.4a":"TDD in der Worktree-Sandbox","io.4h":"prüft Code, zeichnet ab",
+    "io.5a":"Alle Tests + E2E + Regression","io.5h":"zeichnet ab oder blockiert",
+    "io.6a":"5-Achsen-Review","io.6h":"zeichnen REVIEW.md ab",
+    "io.7i":"Alle abgezeichneten Artefakte","io.7h":"finales Sign-off-Gate",
+    "res.kicker":"Warum es sich lohnt","res.title":"Was sich mit tGD ändert","res.sub":"Illustrative PDLC-Effizienzgewinne — keine Messdaten.",
+    "res.chart.t":"Features pro Person, pro Sprint","res.leg.pre":"Vor tGD","res.leg.post":"Mit tGD","res.leg.proj":"Projiziert",
+    "res.m1":"tGD eingeführt","res.m2":"Agenten eingespielt","res.plateau":"Plateau · ~2–3 / Sprint","res.steady":"stabil",
+    "res.note":"Illustrative Projektion — keine Messdaten.",
+    "res.k1":"Mehr Features pro Sprint — Agenten übernehmen Spec → Code → Test → Review, Menschen setzen Richtung und zeichnen ab.","res.k1t":"Durchsatz",
+    "res.k2":"Weniger Regressions-Ausreißer — BDD-Akzeptanzkriterien + Regressionskatalog fangen Defekte vor dem Merge ab.","res.k2t":"Qualität",
+    "res.k3":"Schnellerer Spec-zu-Deploy-Zyklus — aus Wochen werden Tage, mit vollständigem Audit-Trail (PRD → TASKS → CHANGELOG).","res.k3t":"Tempo",
+    "qs.kicker":"Schnellstart","qs.title":"In 30 Sekunden installiert. Ein Befehl zum Start.",
+    "qs.1t":"Klonen & einrichten","qs.1d":"Erkennt Ihre installierten CLIs automatisch und verlinkt alle Skills und Commands.",
+    "qs.2t":"Codebasis mappen","qs.2d":"Der Agent scannt Ihr Projekt und schreibt CONTEXT.md — Kontext vor Änderungen.",
+    "qs.3t":"Erstes Feature definieren","qs.3d":"Der Agent interviewt Sie und entwirft PRD + SPEC. Ab da übernimmt die Pipeline.",
+    "faq.title":"Häufige Fragen",
+    "faq.0q":"Welche Agenten unterstützt tGD?","faq.0a":"Claude Code, Codex CLI, Gemini CLI, OpenCode, Pi Coding Agent und Hermes. Ein bash setup.sh erkennt, was installiert ist, und verlinkt für jedes Tool das richtige Format.",
+    "faq.5q":"Sendet tGD meinen Code irgendwohin?","faq.5a":"Nein. tGD besteht aus reinen Markdown-Skills und Shell-Skripten, die in Ihrem eigenen Agent laufen — kein Server, keine Telemetrie, kein Account. Ihr Code verlässt nie die Tools, die Sie bereits nutzen.",
+    "faq.1q":"Muss ich außer meinem Agent etwas installieren?","faq.1a":"Nein — Repository klonen und bash setup.sh ausführen. Es erkennt Ihre CLI, verlinkt alles und installiert den tgd-Befehl für Updates.",
+    "faq.2q":"Mein Agent hat keine Slash Commands. Funktioniert tGD trotzdem?","faq.2a":"Ja. Sagen Sie „plane dieses Feature“ in natürlicher Sprache — der Router-Skill mappt die Absicht automatisch auf den richtigen Workflow.",
+    "faq.3q":"Funktioniert es mit einem bestehenden Projekt?","faq.3a":"Ja — /tgd-map scannt zuerst die bestehende Codebasis, sodass jede spätere Stufe mit echtem Kontext arbeitet.",
+    "faq.4q":"Kann ich die Pipeline anpassen?","faq.4a":"Ja. Jede Stufe ist ein Plain-Markdown-Skill in skills/ — passen Sie sie an den Workflow Ihres Teams an.",
+    "foot.tag":"Open-Source-Engineering-Disziplin für KI-Coding-Agenten.",
+    "foot.docs":"Dokumentation","foot.skills":"Alle 29 Skills","foot.testing":"Test-Strategie","foot.guides":"Setup-Guides",
+    "foot.more":"Mehr","foot.deck":"Intro-Deck","foot.contrib":"Beitragen","foot.love":"Mit ❤️ von der tGD-Community"
+  }
+};
+const EN = {}; // filled from the DOM on first load, so EN restores losslessly
+document.querySelectorAll('[data-i18n]').forEach(el => { EN[el.getAttribute('data-i18n')] = el.textContent; });
+function setLang(lang) {
+  const dict = lang === 'en' ? EN : I18N[lang] || EN;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.getAttribute('data-i18n');
+    if (dict[k] !== undefined) el.textContent = dict[k];
+    else el.textContent = EN[k];
+  });
+  document.documentElement.lang = lang === 'zh' ? 'zh-Hant' : lang;
+  localStorage.setItem('tgd-lang', lang);
+  document.getElementById('lang').value = lang;
+}
+document.getElementById('lang').addEventListener('change', e => setLang(e.target.value));
 
-    <div class="divider"></div>
+/* ============================== theme ============================== */
+function setTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem('tgd-theme', t);
+  const btn = document.getElementById('theme');
+  btn.textContent = t === 'light' ? '☾' : '☀';
+  btn.setAttribute('aria-label', t === 'light' ? 'Switch to dark theme' : 'Switch to light theme');
+}
+document.getElementById('theme').addEventListener('click', () => {
+  setTheme(document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
+});
 
-    <!-- Testing -->
-    <section id="testing">
-        <div class="container">
-            <h2 class="fade-in"><span data-lang="en">Testing Strategy</span><span data-lang="zh">測試策略</span>
-                <span data-lang="ja">テスト戦略</span>
-                <span data-lang="de">Test-Strategie</span></h2>
-            <p class="section-subtitle fade-in"><span data-lang="en">Three roles, one rule: no shortcuts. No lazy agent behavior.</span><span data-lang="zh">三個角色、一條鐵律：不准抄捷徑。沒有懶 agent 行為。</span>
-                <span data-lang="ja">3つの役割、1つの鉄則：近道なし。怠けエージェントの行動なし。</span>
-                <span data-lang="de">Drei Rollen, eine Regel: keine Abkürzungen. Kein passives Agent-Verhalten.</span></p>
-            
-            <div class="test-roles fade-in">
-                <div class="test-role">
-                    <div class="test-role-icon">🔨</div>
-                    <h3><span data-lang="en">Builder</span><span data-lang="zh">建造者</span><span data-lang="ja">ビルダー</span><span data-lang="de">Builder</span></h3>
-                    <p><strong>/tgd-develop</strong></p>
-                    <p><span data-lang="en">Write tests alongside code. Red-Green-Refactor cycle. Unit tests only.</span><span data-lang="zh">邊寫 code 邊寫測試。紅-綠-重構循環。只寫 unit test。</span><span data-lang="ja">コードと同時にテストを書く。Red-Green-Refactor サイクル。ユニットテストのみ。</span><span data-lang="de">Tests zusammen mit Code schreiben. Red-Green-Refactor Zyklus. Nur Unit-Tests.</span></p>
-                </div>
-                <div class="test-role">
-                    <div class="test-role-icon">🔍</div>
-                    <h3><span data-lang="en">Inspector</span><span data-lang="zh">檢查員</span><span data-lang="ja">インスペクター</span><span data-lang="de">Inspektor</span></h3>
-                    <p><strong>/tgd-verify</strong></p>
-                    <p><span data-lang="en">Run all tests, fix failures. Integration + E2E. Debug pipeline.</span><span data-lang="zh">跑所有測試，修復失敗。Integration + E2E。Debug pipeline。</span><span data-lang="ja">全部のテスト実行、失敗を修正。結合テスト + E2E。デバッグ pipeline。</span><span data-lang="de">Alle Tests laufen lassen, Fehler fixen. Integration + E2E. Debug-Pipeline.</span></p>
-                </div>
-                <div class="test-role">
-                    <div class="test-role-icon">🕵️</div>
-                    <h3><span data-lang="en">Auditor</span><span data-lang="zh">稽核員</span><span data-lang="ja">監査担当</span><span data-lang="de">Auditor</span></h3>
-                    <p><strong>/tgd-review</strong></p>
-                    <p><span data-lang="en">Check test quality, coverage gaps. 80% unit, 15% integration, 5% E2E.</span><span data-lang="zh">檢查測試品質、覆蓋率缺口。80% unit、15% integration、5% E2E。</span><span data-lang="ja">テスト品質とカバレッジの穴をチェック。ユニット80%、結合15%、E2E 5%。</span><span data-lang="de">Test-Qualität und Coverage-Lücken prüfen. 80% Unit, 15% Integration, 5% E2E.</span></p>
-                </div>
-            </div>
-        </div>
-    </section>
+/* ============================== mobile menu ============================== */
+const menuBtn = document.getElementById('menu');
+const navLinks = document.querySelector('.nav-links');
+menuBtn.addEventListener('click', () => {
+  const open = navLinks.classList.toggle('open');
+  menuBtn.setAttribute('aria-expanded', open);
+});
+navLinks.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+  navLinks.classList.remove('open');
+  menuBtn.setAttribute('aria-expanded', 'false');
+}));
 
-    <div class="divider"></div>
-
-    <section id="personas">
-        <div class="container">
-            <h2 class="fade-in"><span data-lang="en">Agent Personas</span><span data-lang="zh">Agent 角色</span>
-                <span data-lang="ja">エージェントペルソナ</span>
-                <span data-lang="de">Agent-Personas</span></h2>
-            <p class="section-subtitle fade-in"><span data-lang="en">Three specialized reviewer personas — you (or a slash command) orchestrate them. Each has a distinct lens.</span><span data-lang="zh">三個專門審查 persona——由你（或 slash command）調度。各有不同視角。</span>
-                <span data-lang="ja">3つの専門レビュアーペルソナ — あなた（またはスラッシュコマンド）がオーケストレート。それぞれ異なる視点。</span>
-                <span data-lang="de">Drei spezialisierte Reviewer-Personas — Sie (oder ein Slash Command) orchestrieren sie. Jede mit anderer Perspektive.</span></p>
-
-            <div class="personas-grid fade-in">
-                <div class="persona-card">
-                    <div class="persona-icon">🧑‍💻</div>
-                    <h3>code-reviewer</h3>
-                    <div class="persona-tagline"><span data-lang="en">"Would a staff engineer approve this?"</span><span data-lang="zh">「資深工程師會不會 approve 這個？」</span><span data-lang="ja">「スタッフエンジニアがこれ承認するかな？」</span><span data-lang="de">"Würde ein Staff Engineer das absegnen?"</span></div>
-                    <p><span data-lang="en">Reviews code quality, architecture decisions, naming conventions, and design patterns. Ensures the code reads like it was written by a senior engineer.</span><span data-lang="zh">審查程式碼品質、架構決策、命名慣例和設計模式。確保 code 看起來像資深工程師寫的。</span><span data-lang="ja">コード品質・アーキテクチャ・命名規則・デザインパターンをレビュー。シニアエンジニアが書いたかのようにコードが読めるようにする。</span><span data-lang="de">Prüft Code-Qualität, Architektur-Entscheidungen, Namenskonventionen und Design-Patterns. Stellt sicher dass der Code liest wie von einem Senior-Engineer geschrieben.</span></p>
-                </div>
-                <div class="persona-card">
-                    <div class="persona-icon">🧪</div>
-                    <h3>test-engineer</h3>
-                    <div class="persona-tagline"><span data-lang="en">"Prove it works."</span><span data-lang="zh">「證明它能跑。」</span><span data-lang="ja">「動くことを見せろ」</span><span data-lang="de">"Beweis dass es funktioniert."</span></div>
-                    <p><span data-lang="en">QA specialist focused on test strategy, coverage gaps, edge cases, and the Prove-It pattern. Ensures 80% unit / 15% integration / 5% E2E ratio.</span><span data-lang="zh">QA 專家，專注測試策略、覆蓋率缺口、邊界情況和 Prove-It 模式。確保 80% unit / 15% integration / 5% E2E 比例。</span><span data-lang="ja">テスト戦略・カバレッジの穴・エッジケース・Prove-It パターンに特化した QA スペシャリスト。ユニット80%/結合15%/E2E 5% の比率を担保。</span><span data-lang="de">QA-Spezialist für Test-Strategie, Coverage-Lücken, Edge Cases und das Prove-It-Pattern. Sorgt für 80% Unit / 15% Integration / 5% E2E Verhältnis.</span></p>
-                </div>
-                <div class="persona-card">
-                    <div class="persona-icon">🔒</div>
-                    <h3>security-auditor</h3>
-                    <div class="persona-tagline"><span data-lang="en">"What could go wrong?"</span><span data-lang="zh">「哪裡會出問題？」</span><span data-lang="ja">「何が壊れる可能性がある？」</span><span data-lang="de">"Was könnte schiefgehen?"</span></div>
-                    <p><span data-lang="en">Vulnerability detection, OWASP compliance, dependency scanning, and threat modeling. Catches security issues before they reach production.</span><span data-lang="zh">漏洞偵測、OWASP 合規、依賴掃描和威脅建模。在上線前抓出資安問題。</span><span data-lang="ja">脆弱性検出・OWASP 準拠・依存関係スキャン・脅威モデリング。セキュリティ問題を本番に届く前にキャッチ。</span><span data-lang="de">Schwachstellen-Erkennung, OWASP-Konformität, Dependency-Scanning und Threat-Modeling. Fängt Security-Probleme bevor sie Produktion erreichen.</span></p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <div class="divider"></div>
-
-    <section id="how-skills">
-        <div class="container">
-            <h2 class="fade-in"><span data-lang="en">How Skills Work</span><span data-lang="zh">Skills 如何運作</span>
-                <span data-lang="ja">スキルの仕組み</span>
-                <span data-lang="de">So funktionieren Skills</span></h2>
-            <p class="section-subtitle fade-in"><span data-lang="en">Each skill is a 4-part contract. Progressive disclosure — agents load details only when needed.</span><span data-lang="zh">每個 skill 都是四部分合約。漸進式揭露——agent 只在需要時載入細節。</span>
-                <span data-lang="ja">各スキルは4部構成の契約。プログレッシブディスクロージャ——エージェントは必要な時だけ詳細をロード。</span>
-                <span data-lang="de">Jeder Skill ist ein Vertrag aus 4 Teilen. Progressive Disclosure – Agent lädt Details nur bei Bedarf.</span></p>
-
-            <div class="skills-anatomy fade-in">
-                <div class="anatomy-step">
-                    <div class="step-num">01</div>
-                    <h4>Frontmatter</h4>
-                    <p><span data-lang="en">Name, description, triggers. Agent decides relevance in milliseconds.</span><span data-lang="zh">名稱、描述、觸發條件。Agent 毫秒內判斷相關性。</span><span data-lang="ja">名前・説明・トリガー。エージェントがミリ秒で関連性を判断。</span><span data-lang="de">Name, Beschreibung, Trigger. Agent entscheidet Relevanz in Millisekunden.</span></p>
-                </div>
-                <div class="anatomy-step">
-                    <div class="step-num">02</div>
-                    <h4>Workflow</h4>
-                    <p><span data-lang="en">Numbered steps with exact commands. No ambiguity, no guessing.</span><span data-lang="zh">編號步驟加上精確指令。沒有模糊空間，不用猜。</span><span data-lang="ja">番号付きステップと正確なコマンド。曖昧さなし、推測なし。</span><span data-lang="de">Nummerierte Schritte mit exakten Commands. Keine Mehrdeutigkeit, kein Raten.</span></p>
-                </div>
-                <div class="anatomy-step">
-                    <div class="step-num">03</div>
-                    <h4>Verification</h4>
-                    <p><span data-lang="en">Exit criteria. The agent must prove it worked before moving on.</span><span data-lang="zh">退出標準。Agent 必須證明有效才能繼續。</span><span data-lang="ja">終了条件。エージェントは動いたことを証明してから次に進む。</span><span data-lang="de">Exit-Kriterien. Der Agent muss beweisen dass es funktioniert bevor es weitergeht.</span></p>
-                </div>
-                <div class="anatomy-step">
-                    <div class="step-num">04</div>
-                    <h4>Anti-rationalization</h4>
-                    <p><span data-lang="en">Blocks lazy shortcuts. "I'll just quickly implement this" → denied.</span><span data-lang="zh">擋住懶惰捷徑。「我快速實作一下就好」→ 不准。</span><span data-lang="ja">手抜きショートカットをブロック。「ちょっとサクッと実装するね」→ 却下。</span><span data-lang="de">Blockt faule Abkürzungen. "Ich implementier das schnell" → verweigert.</span></p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <div class="divider"></div>
-    <!-- Project Structure -->
-    <section id="structure">
-        <div class="container">
-            <h2 class="fade-in"><span data-lang="en">Project Structure</span><span data-lang="zh">專案結構</span>
-                <span data-lang="ja">プロジェクト構造</span>
-                <span data-lang="de">Projektstruktur</span></h2>
-            <p class="section-subtitle fade-in"><span data-lang="en">Clean separation: skills, agents, commands, and references.</span><span data-lang="zh">清晰分離：skills、agents、commands 和 references。</span>
-                <span data-lang="ja">明確な分離：スキル、エージェント、コマンド、リファレンス。</span>
-                <span data-lang="de">Sauber getrennt: Skills, Agents, Commands und References.</span></p>
-
-            <div class="fade-in">
-                <div class="code-block tree-block">
-<span class="dir">tGD/</span>
-  <span class="dir">skills/</span>                <span class="desc"># 29 skill definitions</span>
-    <span class="dir">tgd-incremental-implementation/</span>
-      <span class="file">SKILL.md</span>
-      <span class="dir">scripts/</span>
-    <span class="dir">tgd-test-driven-development/</span>
-    <span class="dir">...</span>
-  <span class="dir">agents/</span>                <span class="desc"># 3 persona definitions</span>
-    <span class="file">code-reviewer.md</span>
-    <span class="file">test-engineer.md</span>
-    <span class="file">security-auditor.md</span>
-  <span class="dir">.claude/commands/</span>      <span class="desc"># Claude Code commands</span>
-  <span class="dir">.opencode/commands/</span>    <span class="desc"># OpenCode commands</span>
-  <span class="dir">.gemini/commands/</span>      <span class="desc"># Gemini CLI commands</span>
-  <span class="dir">.codex/prompts/</span>        <span class="desc"># Codex CLI prompts</span>
-  <span class="dir">.pi/extensions/</span>        <span class="desc"># Pi extension</span>
-  <span class="dir">.hermes/plugins/</span>     <span class="desc"># Hermes plugin</span>
-  <span class="dir">references/</span>            <span class="desc"># Architecture docs</span>
-  <span class="dir">docs/</span>                  <span class="desc"># Landing page</span>
-  <span class="file">tgd</span>                     <span class="desc"># CLI entry point</span>
-  <span class="file">AGENTS.md</span>              <span class="desc"># Agent instructions</span>
-  <span class="file">README.md</span>              <span class="desc"># Full documentation</span>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <div class="divider"></div>
-
-    <!-- Output Structure -->
-    <section id="output-structure">
-        <div class="container">
-            <h2 class="fade-in"><span data-lang="en">Output Structure</span><span data-lang="zh">產出結構</span>
-                <span data-lang="ja">出力構造</span>
-                <span data-lang="de">Ausgabestruktur</span></h2>
-            <p class="section-subtitle fade-in"><span data-lang="en">tGD is a sibling to your project repos. Feature-first, not phase-first.</span><span data-lang="zh">tGD 是專案 repo 的同層級目錄。以功能為單位，不是以階段。</span>
-                <span data-lang="ja">tGDはプロジェクトrepoの兄弟ディレクトリ。フェーズではなく機能単位。</span>
-                <span data-lang="de">tGD ist ein Geschwister-Repo. Feature-first, nicht Phase-first.</span></p>
-
-            <div class="fade-in tree-cols">
-                <div>
-                    <h4 style="color:var(--accent);margin-bottom:8px;font-size:14px"><span data-lang="en">🗂️ Workspace</span><span data-lang="zh">🗂️ 工作區</span><span data-lang="ja">🗂️ ワークスペース</span><span data-lang="de">🗂️ Workspace</span></h4>
-                    <div class="code-block tree-block" style="font-size:13px">
-<span class="dir">workspace/</span>
-├── <span class="dir">my-project/</span>              <span class="desc"># Code repo</span>
-│   ├── <span class="file">.codegraph → ../my-project-tGD/</span>  <span class="desc"># symlink</span>
-│   ├── <span class="file">.understand-anything → ../my-project-tGD/</span>
-│   └── <span class="dir">src/</span>
-├── <span class="dir">my-project-frontend/</span>     <span class="desc"># Code repo</span>
-│
-└── <span class="dir">my-project-tGD/</span>          <span class="desc"># ← $TGD_DIR (sibling)</span>
-    ├── <span class="file">CONTEXT.md</span>             <span class="desc"># Product-level</span>
-    ├── <span class="file">CHANGELOG.md</span>           <span class="desc"># Unified version</span>
-    ├── <span class="file">REGRESSION-CATALOG.md</span>  <span class="desc"># Cumulative [R] tests</span>
-    ├── <span class="file">TRACKING-PLAN.md</span>       <span class="desc"># Event dictionary</span>
-    └── <span class="dir">.scans/</span>               <span class="desc"># Centralized data</span>
-                    </div>
-                </div>
-                <div>
-                    <h4 style="color:var(--accent);margin-bottom:8px;font-size:14px"><span data-lang="en">📁 Feature Folder</span><span data-lang="zh">📁 功能資料夾</span><span data-lang="ja">📁 フィーチャーフォルダ</span><span data-lang="de">📁 Feature-Ordner</span></h4>
-                    <div class="code-block tree-block" style="font-size:13px">
-<span class="dir">$TGD_DIR/</span>
-└── <span class="dir">&lt;feature-name&gt;/</span>         <span class="desc"># Feature-first</span>
-    ├── <span class="file">PRD.md</span>                 <span class="desc"># What & Why</span>
-    ├── <span class="file">SPEC.md</span>                <span class="desc"># How (tagged by repo)</span>
-    ├── <span class="file">DESIGN.md</span>              <span class="desc"># UI (if applicable)</span>
-    ├── <span class="dir">prototype/</span>             <span class="desc"># HTML mockups</span>
-    ├── <span class="file">TASKS.md</span>               <span class="desc"># BDD tasks (tagged)</span>
-    ├── <span class="file">TEST-REPORT.md</span>         <span class="desc"># Test evidence</span>
-    ├── <span class="file">REVIEW.md</span>              <span class="desc"># Code review</span>
-    ├── <span class="file">METRICS.md</span>             <span class="desc"># KPI handoff sheet</span>
-    └── <span class="dir">decisions/</span>             <span class="desc"># ADRs (any phase)</span>
-        └── <span class="file">ADR-001.md</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <div class="divider"></div>
-
-    <!-- Quick Start -->
-    <section id="quick-start">
-        <div class="container">
-            <h2 class="fade-in"><span data-lang="en">Quick Start</span><span data-lang="zh">快速開始</span>
-                <span data-lang="ja">クイックスタート</span>
-                <span data-lang="de">Schnellstart</span></h2>
-            <p class="section-subtitle fade-in"><span data-lang="en">Get up and running in 30 seconds.</span><span data-lang="zh">30 秒內開始使用。</span>
-                <span data-lang="ja">30秒でセットアップ完了。</span>
-                <span data-lang="de">In 30 Sekunden startklar.</span></p>
-            
-            <div class="fade-in">
-                <div class="code-block">
-                    <span class="comment"><span data-lang="en"># 1. Clone & Setup</span><span data-lang="zh"># 1. 複製 & 設定</span></span><br>
-                    <span class="cmd">$ git clone https://github.com/openclawyhwang-hub/tGD.git && cd tGD</span><br>
-                    <span class="cmd">$ tgd</span><br>
-                    <span class="output">🚀 tGD Setup Complete!</span><br>
-                    <br>
-                    <span class="comment"><span data-lang="en"># 2. Start Your Agent</span><span data-lang="zh"># 2. 啟動你的 Agent</span></span><br>
-                    <span class="cmd">$ claude</span>  <span class="comment"># Claude Code</span><br>
-                    <span class="cmd">$ codex</span>   <span class="comment"># Codex CLI</span><br>
-                    <span class="cmd">$ opencode</span> <span class="comment"># OpenCode</span><br>
-                    <span class="cmd">$ gemini</span>   <span class="comment"># Gemini CLI</span><br>
-                    <span class="cmd">$ pi</span>       <span class="comment"># Pi Coding Agent</span><br>
-                    <span class="cmd">$ hermes</span>  <span class="comment"># Hermes Agent</span><br>
-                    <br>
-                    <span class="comment"><span data-lang="en"># 3. Initialize Your Project</span><span data-lang="zh"># 3. 初始化你的專案</span></span><br>
-                    <span class="cmd">> /tgd-map</span><br>
-                    <span class="output">✅ CONTEXT.md created with project overview</span><br>
-                    <br>
-                    <span class="comment"><span data-lang="en"># 4. Build Your First Feature</span><span data-lang="zh"># 4. 建立你的第一個功能</span></span><br>
-                    <span class="cmd">> /tgd-define I want to add user authentication</span><br>
-                    <span class="output">✅ PRD.md + SPEC.md created</span><br>
-                    <span class="output">→ Ready for /tgd-plan</span>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <div class="divider"></div>
-
-    <!-- FAQ -->
-    <section id="faq">
-        <div class="container">
-            <h2 class="fade-in"><span data-lang="en">FAQ</span><span data-lang="zh">常見問題</span>
-                <span data-lang="ja">よくある質問</span>
-                <span data-lang="de">FAQ</span></h2>
-            <p class="section-subtitle fade-in"><span data-lang="en">Common questions about tGD.</span><span data-lang="zh">關於 tGD 的常見問題。</span>
-                <span data-lang="ja">tGDに関するよくある質問。</span>
-                <span data-lang="de">Häufig gestellte Fragen zu tGD.</span></p>
-            
-            <div class="fade-in" style="max-width: 800px;">
-                <div class="faq-item">
-                    <div class="faq-question"><span data-lang="en">Do I need to install anything besides the agent?</span><span data-lang="zh">除了 agent 之外還需要裝什麼嗎？</span><span data-lang="ja">agent 以外に何かインストールする必要ある？</span><span data-lang="de">Muss ich noch etwas installieren außer dem Agent?</span></div>
-                    <div class="faq-answer"><span data-lang="en">Just run <code>tgd</code>. It auto-detects your CLI and configures everything. tgd-agent-browser dependencies installed automatically.</span><span data-lang="zh">跑 <code>tgd</code> 就搞定。自動偵測你的 CLI 並完成所有設定。tgd-agent-browser 的依賴也會自動安裝。</span><span data-lang="ja"><code>tgd</code> だけで OK。CLI を自動検出して全部設定してくれる。tgd-agent-browser の依存関係も自動インストール。</span><span data-lang="de">Einfach <code>tgd</code> ausführen. Erkennt deine CLI automatisch und konfiguriert alles. agent-browser-Abhängigkeiten werden automatisch installiert.</span></div>
-                </div>
-                <div class="faq-item">
-                    <div class="faq-question"><span data-lang="en">What if my agent doesn't support slash commands?</span><span data-lang="zh">如果我的 agent 不支援 slash command 呢？</span><span data-lang="ja">agent がスラッシュコマンドに対応してない場合は？</span><span data-lang="de">Was wenn mein Agent keine Slash-Commands unterstützt?</span></div>
-                    <div class="faq-answer"><span data-lang="en">Say "Plan this feature" in natural language — tGD maps intent to skills automatically.</span><span data-lang="zh">用自然語言說「規劃這個功能」就好——tGD 會自動把意圖對應到 skill。</span><span data-lang="ja">「この機能を計画して」と自然言葉で言えば OK——tGD が自動的にスキルにマッピング。</span><span data-lang="de">Sag einfach "Plane dieses Feature" in natürlicher Sprache — tGD mappt Intent automatisch zu Skills.</span></div>
-                </div>
-                <div class="faq-item">
-                    <div class="faq-question"><span data-lang="en">Can I skip stages?</span><span data-lang="zh">可以跳過階段嗎？</span><span data-lang="ja">ステップ飛ばせる？</span><span data-lang="de">Kann ich Stufen überspringen?</span></div>
-                    <div class="faq-answer"><span data-lang="en">Each stage has pre-flight checks. If you skip, the next stage will block you.</span><span data-lang="zh">每個階段都有預檢。跳過的話，下一個階段會擋住你。</span><span data-lang="ja">各ステージにプリフライトチェックがある。飛ばすと次のステージでブロックされる。</span><span data-lang="de">Jede Stufe hat Pre-Flight-Checks. Wenn du überspringst, blockiert dich die nächste Stufe.</span></div>
-                </div>
-                <div class="faq-item">
-                    <div class="faq-question"><span data-lang="en">Does this work with existing projects?</span><span data-lang="zh">既有的專案也能用嗎？</span><span data-lang="ja">既存プロジェクトでも使える？</span><span data-lang="de">Funktioniert das mit bestehenden Projekten?</span></div>
-                    <div class="faq-answer"><span data-lang="en">Yes! <code>/tgd-map</code> scans your existing codebase first.</span><span data-lang="zh">當然！<code>/tgd-map</code> 會先掃描你現有的 codebase。</span><span data-lang="ja">もちろん！<code>/tgd-map</code> がまず既存のコードベースをスキャンしてくれる。</span><span data-lang="de">Ja! <code>/tgd-map</code> scannt zuerst deinen bestehenden Codebase.</span></div>
-                </div>
-                <div class="faq-item">
-                    <div class="faq-question"><span data-lang="en">How is this different from just using Cursor/Copilot?</span><span data-lang="zh">跟只用 Cursor/Copilot 有什麼不同？</span><span data-lang="ja">Cursor/Copilot だけ使うのと何が違うの？</span><span data-lang="de">Wie unterscheidet sich das von Cursor/Copilot?</span></div>
-                    <div class="faq-answer"><span data-lang="en">Those tools write code. tGD enforces a workflow — specs, plans, tests, reviews — before code ships.</span><span data-lang="zh">那些工具負責寫 code。tGD 強制執行工作流——spec、規劃、測試、review，全部通過才能出貨。</span><span data-lang="ja">あちらはコードを書くツール。tGD はワークフローを強制する——Spec・計画・テスト・レビューをコード出荷前に通す。</span><span data-lang="de">Diese Tools schreiben Code. tGD erzwingt einen Workflow — Specs, Pläne, Tests, Reviews — bevor Code shipped wird.</span></div>
-                </div>
-                <div class="faq-item">
-                    <div class="faq-question"><span data-lang="en">Can I customize the pipeline?</span><span data-lang="zh">可以自訂 pipeline 嗎？</span><span data-lang="ja">pipeline をカスタマイズできる？</span><span data-lang="de">Kann ich die Pipeline anpassen?</span></div>
-                    <div class="faq-answer"><span data-lang="en">Yes! Edit the skill files in <code>skills/</code> to match your team's workflow.</span><span data-lang="zh">當然！編輯 <code>skills/</code> 裡的 skill 檔案，配合你團隊的工作流。</span><span data-lang="ja">もちろん！<code>skills/</code> のスキルファイルをチームのワークフローに合わせて編集しよう。</span><span data-lang="de">Ja! Bearbeite die Skill-Dateien in <code>skills/</code> um sie an deinen Workflow anzupassen.</span></div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-question"><span data-lang="en">Will this slow down my agent?</span><span data-lang="zh">會不會讓 agent 變慢？</span><span data-lang="ja">agent が遅くなる？</span><span data-lang="de">Wird mein Agent dadurch langsamer?</span></div>
-                    <div class="faq-answer"><span data-lang="en">No. Skills load on-demand — only the relevant skill enters context. ~5% overhead per skill. Most of the time, your agent works at full speed.</span><span data-lang="zh">不會。skill 按需載入——只有相關 skill 進入 context。每個 skill 約 5% 開銷。大部分時間 agent 全速運作。</span><span data-lang="ja">ならない。スキルはオンデマンドでロード——関連スキルだけがコンテキストに入る。スキルあたり約5%のオーバーヘッド。基本的にフルスピードで動く。</span><span data-lang="de">Nein. Skills werden on-demand geladen — nur der relevante Skill kommt in den Kontext. ~5% Overhead pro Skill. Die meiste Zeit arbeitet dein Agent in voller Geschwindigkeit.</span></div>
-                </div>
-                <div class="faq-item">
-                    <div class="faq-question"><span data-lang="en">Does it work offline?</span><span data-lang="zh">離線也能用嗎？</span><span data-lang="ja">オフラインでも使える？</span><span data-lang="de">Funktioniert es offline?</span></div>
-                    <div class="faq-answer"><span data-lang="en">Core skills work without internet. E2E testing with tgd-agent-browser needs a browser, but spec writing, planning, code review, and TDD are all offline-capable.</span><span data-lang="zh">核心 skill 不需要網路就能運作。tgd-agent-browser 的 E2E 測試需要瀏覽器，但 Spec 撰寫、規劃、code review、TDD 全部支援離線。</span><span data-lang="ja">コアスキルはネットなしで動く。tgd-agent-browser の E2E テストにはブラウザが必要だけど、Spec 書き・計画・コードレビュー・TDD は全部オフライン対応。</span><span data-lang="de">Kern-Skills funktionieren ohne Internet. E2E-Testing mit tgd-agent-browser braucht einen Browser, aber Spec-Writing, Planning, Code-Review und TDD sind alle offline-fähig.</span></div>
-                </div>
-                <div class="faq-item">
-                    <div class="faq-question"><span data-lang="en">Can I use multiple CLIs?</span><span data-lang="zh">可以同時用多個 CLI 嗎？</span><span data-lang="ja">複数の CLI を使える？</span><span data-lang="de">Kann ich mehrere CLIs verwenden?</span></div>
-                    <div class="faq-answer"><span data-lang="en">Yes. The same 29 skills work across Claude Code, Codex, Gemini CLI, OpenCode, Pi, and Hermes Agent. Commands auto-detect your platform.</span><span data-lang="zh">可以。同樣 29 個 skill 在 Claude Code、Codex、Gemini CLI、OpenCode、Pi、Hermes Agent 上都能用。command 自動偵測你的平台。</span><span data-lang="ja">使える。同じ29スキルが Claude Code・Codex・Gemini CLI・OpenCode・Pi・Hermes Agent で全部動く。コマンドがプラットフォームを自動検出。</span><span data-lang="de">Ja. Dieselben 29 Skills funktionieren mit Claude Code, Codex, Gemini CLI, OpenCode, Pi und Hermes Agent. Commands erkennen deine Plattform automatisch.</span></div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <div class="divider"></div>
-
-    <section id="whats-next">
-        <div class="container">
-            <h2 class="fade-in"><span data-lang="en">What’s Next</span><span data-lang="zh">下一步</span>
-                <span data-lang="ja">次のステップ</span>
-                <span data-lang="de">Nächste Schritte</span></h2>
-            <p class="section-subtitle fade-in"><span data-lang="en">After your first feature is shipped, keep going.</span><span data-lang="zh">第一個功能出貨之後，繼續前進。</span>
-                <span data-lang="ja">最初の機能を出荷したら、さらに進もう。</span>
-                <span data-lang="de">Nach dem ersten Feature ist vor dem nächsten.</span></p>
-
-            <div class="next-steps fade-in">
-                <div class="next-step">
-                    <div class="step-num">1</div>
-                    <h4><span data-lang="en">Add to CI</span><span data-lang="zh">整合 CI</span><span data-lang="ja">CI に追加</span><span data-lang="de">CI integrieren</span></h4>
-                    <p><span data-lang="en">Run <code>/tgd-verify</code> in your CI pipeline. Catch regressions automatically.</span><span data-lang="zh">在 CI pipeline 裡跑 <code>/tgd-verify</code>，自動抓回歸問題。</span><span data-lang="ja">CI pipeline で <code>/tgd-verify</code> を実行。リグレッションを自動検出。</span><span data-lang="de"><code>/tgd-verify</code> in deiner CI-Pipeline laufen lassen. Regressionen automatisch abfangen.</span></p>
-                </div>
-                <div class="next-step">
-                    <div class="step-num">2</div>
-                    <h4><span data-lang="en">Custom Skills</span><span data-lang="zh">自訂 Skill</span><span data-lang="ja">カスタムスキル</span><span data-lang="de">Custom Skills</span></h4>
-                    <p><span data-lang="en">Add team-specific skills. Coding standards, deployment targets, domain rules.</span><span data-lang="zh">加入團隊專屬的 skill。程式碼規範、部署目標、領域規則。</span><span data-lang="ja">チーム専用のスキルを追加。コーディング規約・デプロイ先・ドメインルール。</span><span data-lang="de">Team-spezifische Skills hinzufügen. Coding-Standards, Deployment-Targets, Domain-Regeln.</span></p>
-                </div>
-                <div class="next-step">
-                    <div class="step-num">3</div>
-                    <h4><span data-lang="en">Jira Integration</span><span data-lang="zh">Jira 串接</span><span data-lang="ja">Jira 連携</span><span data-lang="de">Jira-Integration</span></h4>
-                    <p><span data-lang="en">Enable <code>tgd-jira-auto-sync</code> for automatic ticket creation from plans.</span><span data-lang="zh">啟用 <code>tgd-jira-auto-sync</code>，從規劃自動建立 Jira ticket。</span><span data-lang="ja"><code>tgd-jira-auto-sync</code> を有効にして、計画から自動でチケット作成。</span><span data-lang="de"><code>tgd-jira-auto-sync</code> aktivieren für automatische Ticket-Erstellung aus Plänen.</span></p>
-                </div>
-                <div class="next-step">
-                    <div class="step-num">4</div>
-                    <h4><span data-lang="en">Multi-Agent</span><span data-lang="zh">多 Agent</span><span data-lang="ja">マルチエージェント</span><span data-lang="de">Multi-Agent</span></h4>
-                    <p><span data-lang="en">Use Release's parallel personas for every PR, not just releases.</span><span data-lang="zh">不只 release，每個 PR 都用 Release 的並行 persona 審查。</span><span data-lang="ja">リリースだけでなく、すべての PR で Release の並列ペルソナを使う。</span><span data-lang="de">Releases parallele Personas für jeden PR nutzen, nicht nur für Releases.</span></p>
-                </div>
-                <div class="next-step">
-                    <div class="step-num">5</div>
-                    <h4><span data-lang="en">Share &amp; Contribute</span><span data-lang="zh">分享 &amp; 貢獻</span><span data-lang="ja">共有 &amp; コントリビュート</span><span data-lang="de">Teilen &amp; Mitmachen</span></h4>
-                    <p><span data-lang="en">Star the repo. Open issues. Submit PRs. Build the community.</span><span data-lang="zh">幫 repo 按星星。開 issue。送 PR。一起打造社群。</span><span data-lang="ja">リポジトリにスター。Issue を立てる。PR を送る。コミュニティを一緒に作ろう。</span><span data-lang="de">Repo sternen. Issues eröffnen. PRs einreichen. Community mitaufbauen.</span></p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <div class="divider"></div>
-
-    <!-- Footer -->
-    <footer>
-        <div class="container">
-            <div class="footer-links">
-                <a href="https://github.com/openclawyhwang-hub/tGD" target="_blank">GitHub</a>
-                <a href="#quick-start">Quick Start</a>
-                <a href="#commands">Commands</a>
-                <a href="#faq">FAQ</a>
-            </div>
-            <p>Apache 2.0 License • Built with ❤️ by the tGD community</p>
-        </div>
-    </footer>
-
-</main>
-    <script>
-        // FAQ Toggle (accessible)
-        document.querySelectorAll('.faq-question').forEach(question => {
-            question.setAttribute('role', 'button');
-            question.setAttribute('tabindex', '0');
-            question.setAttribute('aria-expanded', 'false');
-            question.addEventListener('click', () => {
-                const item = question.parentElement;
-                const isActive = item.classList.toggle('active');
-                question.setAttribute('aria-expanded', isActive);
-            });
-            question.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    question.click();
-                }
-            });
-        });
-
-        // Fade in on scroll
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('visible');
-                }
-            });
-        }, { threshold: 0.1 });
-
-        document.querySelectorAll('.fade-in').forEach(el => {
-            observer.observe(el);
-        });
-
-        // Pipeline animation on scroll
-        const pipelineObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('animate');
-                    pipelineObserver.unobserve(entry.target);
-                }
-            });
-        }, { threshold: 0.3 });
-        document.querySelectorAll('.pipeline-track').forEach(el => {
-            pipelineObserver.observe(el);
-        });
-
-        // Stagger grid animation
-        const staggerObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('visible');
-                    staggerObserver.unobserve(entry.target);
-                }
-            });
-        }, { threshold: 0.1 });
-        document.querySelectorAll('.fade-stagger').forEach(el => {
-            staggerObserver.observe(el);
-        });
-
-        
-        
-        // Language switcher
-        function setLang(lang) {
-            document.body.classList.remove('lang-zh', 'lang-ja', 'lang-de');
-            if (lang !== 'en') document.body.classList.add('lang-' + lang);
-            localStorage.setItem('tgd-lang', lang);
-            document.querySelector('.lang-select').value = lang;
-        }
-        // Restore preference
-        const savedLang = localStorage.getItem('tgd-lang');
-        if (savedLang && savedLang !== 'en') {
-            document.body.classList.add('lang-' + savedLang);
-        }
-        document.addEventListener('DOMContentLoaded', () => {
-            const sel = document.querySelector('.lang-select');
-            if (sel) sel.value = localStorage.getItem('tgd-lang') || 'en';
-        });
-
-        // Theme toggle
-        function toggleTheme() {
-            document.body.classList.toggle('light');
-            const isLight = document.body.classList.contains('light');
-            localStorage.setItem('tgd-theme', isLight ? 'light' : 'dark');
-        }
-        // Restore theme (default: light)
-        (function() {
-            const savedTheme = localStorage.getItem('tgd-theme');
-            if (savedTheme === 'dark') {
-                document.body.classList.remove('light');
-            }
-        })();
-
-        // Sticky navbar
-        let lastScroll = 0;
-        const navbar = document.getElementById('navbar');
-        window.addEventListener('scroll', () => {
-            const currentScroll = window.pageYOffset;
-            if (currentScroll > 100) {
-                navbar.classList.add('visible');
-            } else {
-                navbar.classList.remove('visible');
-            }
-            lastScroll = currentScroll;
-        });
-
-        // Smooth scroll
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                document.querySelector(this.getAttribute('href')).scrollIntoView({
-                    behavior: 'smooth'
-                });
-            });
-        });
-    </script>
+/* ============================== init ============================== */
+setTheme(localStorage.getItem('tgd-theme') ||
+  (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'));
+const saved = localStorage.getItem('tgd-lang');
+if (saved && saved !== 'en') setLang(saved);
+else {
+  const nav = (navigator.language || 'en').toLowerCase();
+  if (!saved) {
+    if (nav.startsWith('zh')) setLang('zh');
+    else if (nav.startsWith('ja')) setLang('ja');
+    else if (nav.startsWith('de')) setLang('de');
+  }
+}
+</script>
 </body>
 </html>

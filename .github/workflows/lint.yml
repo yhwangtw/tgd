@@ -80,6 +80,9 @@ jobs:
       - name: Check translations against skills/ and README.md
         run: node scripts/check-readme-parity.js
 
+      - name: Check landing page i18n dictionaries
+        run: node scripts/check-i18n.js
+
   links:
     name: Link check
     runs-on: ubuntu-latest
