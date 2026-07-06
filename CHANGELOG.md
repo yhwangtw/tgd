@@ -4,6 +4,15 @@ All notable changes to tGD will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/). Versions follow [CalVer](https://calver.org/) (YYYY.MM.DD).
 
+## v2026.07.06.1
+
+### ✨ Features
+- rebuild the intro deck as a 12-slide narrative (`f62918d`)
+### 🐛 Bug Fixes
+- ship pi commands as native prompt templates, not a sendUserMessage extension (`e490f08`)
+- stop /tgd-map from skipping UA when it cannot spawn a subagent (`b5bcd85`)
+
+
 ## v2026.07.06
 
 ### ✨ Features
