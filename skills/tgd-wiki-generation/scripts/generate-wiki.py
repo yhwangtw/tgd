@@ -1143,6 +1143,19 @@ def build_repo_manifest(model: WikiModel) -> Dict[str, Any]:
         )
     add("diagrams", f"wiki/docs/repos/{slug}/diagrams/index.md", "diagrams",
         "Architecture and dependency diagrams")
+    # Comprehensive per-file reference — the "complete coverage" tree. Listed
+    # here so agents reading the manifest can discover every explained file.
+    add("files", f"wiki/docs/repos/{slug}/files.md", "files-index",
+        "Every source file, explained")
+    for sf in model.source_files:
+        path = sf["path"]
+        add(
+            f"files/{path}",
+            f"wiki/docs/repos/{slug}/files/{slugify(path)}.md",
+            "file",
+            resolve_file_summary(model, path),
+            related=[path],
+        )
 
     return {
         "generator": {
