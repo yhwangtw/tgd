@@ -841,8 +841,8 @@ ln -sf "$(pwd)/.opencode/commands"/* ~/.config/opencode/commands/
 ```
 
 ### Pi Coding Agent
-Piは**TypeScript extension**（`.pi/extensions/`）経由で `/tgd-*` コマンドを利用できます。
+Piはネイティブの **prompt templates**（`.pi/prompts/`）経由で `/tgd-*` コマンドを利用できます。
 ```bash
-ln -sf "$(pwd)/.pi/extensions/tgd-commands.ts" ~/.pi/agent/extensions/tgd-commands.ts
+mkdir -p ~/.pi/agent/prompts && ln -sf "$(pwd)"/.pi/prompts/*.md ~/.pi/agent/prompts/
 ln -sf "$(pwd)/skills" ~/.pi/agent/skills/tGD
 ```

@@ -161,7 +161,8 @@ if [[ "$MODE" == "uninstall" ]]; then
     remove_tgd_items "$HOME/.config/opencode/skills" "OpenCode skill" "tgd"
     remove_tgd_items "$HOME/.gemini/skills" "Gemini skill" "tgd"
     remove_tgd_items "$HOME/.pi/agent/skills" "Pi skill" "tgd"
-    remove_tgd_items "$HOME/.pi/agent/extensions" "Pi extension" "tgd"
+    remove_tgd_items "$HOME/.pi/agent/prompts" "Pi prompt template" "tgd"
+    remove_tgd_items "$HOME/.pi/agent/extensions" "Pi extension" "tgd"  # legacy: remove old TS extension
     remove_tgd_items "$HOME/.claude/rules" "Claude rule" "tgd"
     while IFS= read -r hermes_home; do
         [[ -n "$hermes_home" ]] || continue
@@ -476,7 +477,8 @@ if [[ "$MODE" == "upgrade" ]]; then
     purge_stale_symlinks "$HOME/.config/opencode/skills" "OpenCode skills"
     purge_stale_symlinks "$HOME/.gemini/skills" "Gemini CLI skills"
     purge_stale_symlinks "$HOME/.pi/agent/skills" "Pi skills"
-    purge_stale_symlinks "$HOME/.pi/agent/extensions" "Pi extensions"
+    purge_stale_symlinks "$HOME/.pi/agent/prompts" "Pi prompt templates"
+    purge_stale_symlinks "$HOME/.pi/agent/extensions" "Pi extensions (legacy)"
     purge_stale_skills "$HOME/.claude/rules" "Claude Code rules"
     # v2026.07.x migration: remove pre-prefix tGD symlinks (now tgd-<name>)
     echo "🔄 Migrating tGD skills to tgd- prefix (v2026.07.x)..."
@@ -758,11 +760,17 @@ fi
 # Pi Coding Agent
 if command -v pi &> /dev/null; then
     echo "   📂 Pi Coding Agent detected."
-    # Install extension and instructions to ~/.pi/agent/
-    mkdir -p "$HOME/.pi/agent/extensions"
-    if [ -f "$TGD_REPO_ROOT/.pi/extensions/tgd-commands.ts" ]; then
-        ln -sf "$TGD_REPO_ROOT/.pi/extensions/tgd-commands.ts" "$HOME/.pi/agent/extensions/tgd-commands.ts" 2>/dev/null || true
-        echo "   ✅ Extension installed to ~/.pi/agent/extensions/tgd-commands.ts"
+    # Install prompt templates + instructions to ~/.pi/agent/. tGD commands are
+    # native pi prompt templates (.pi/prompts/*.md → /tgd-map etc.), NOT a
+    # TypeScript extension — an extension had to call pi.sendUserMessage(body),
+    # which injected each command as a wall of user-authored text.
+    if [ -d "$TGD_REPO_ROOT/.pi/prompts" ]; then
+        mkdir -p "$HOME/.pi/agent/prompts"
+        for prompt in "$TGD_REPO_ROOT"/.pi/prompts/*.md; do
+            [ -e "$prompt" ] || continue
+            ln -sf "$prompt" "$HOME/.pi/agent/prompts/$(basename "$prompt")" 2>/dev/null || true
+        done
+        echo "   ✅ Prompt templates installed to ~/.pi/agent/prompts/ (/tgd-* commands)."
     fi
     if [ -f "$TGD_REPO_ROOT/.pi/instructions.md" ]; then
         ln -sf "$TGD_REPO_ROOT/.pi/instructions.md" "$HOME/.pi/agent/instructions.md" 2>/dev/null || true

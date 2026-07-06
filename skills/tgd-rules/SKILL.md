@@ -21,7 +21,7 @@ A collection of skills for Claude.ai and Claude Code for senior software enginee
 
 ## Lifecycle Commands
 
-7 commands, each a full pipeline. Commands are defined in `.claude/commands/`, `.gemini/commands/`, `.opencode/commands/`, `.codex/prompts/`, and `.pi/extensions/`.
+7 commands, each a full pipeline. Commands are defined in `.claude/commands/`, `.gemini/commands/`, `.opencode/commands/`, `.codex/prompts/`, and `.pi/prompts/`.
 
 | Command | Phase | Pipeline | Artifacts |
 |---------|-------|----------|-----------|

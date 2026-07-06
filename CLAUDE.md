@@ -40,6 +40,6 @@ docs/         → Setup guides for different tools
 
 - Always: Follow the skill-anatomy.md format for new skills
 - Always: Edit lifecycle commands in `.claude/commands/` only, then run `python3 scripts/generate-mirrors.py`
-- Never: Hand-edit the platform mirrors (`.codex/prompts/`, `.opencode/commands/`, `.gemini/commands/`, `.pi/extensions/tgd-commands.ts`) — they are generated
+- Never: Hand-edit the platform mirrors (`.codex/prompts/`, `.opencode/commands/`, `.gemini/commands/`, `.pi/prompts/`) — they are generated
 - Never: Add skills that are vague advice instead of actionable processes
 - Never: Duplicate content between skills — reference other skills instead
