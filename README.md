@@ -828,8 +828,8 @@ ln -sf "$(pwd)/.opencode/commands"/* ~/.config/opencode/commands/
 ```
 
 ### Pi Coding Agent
-Pi gets `/tgd-*` commands via a **TypeScript extension** (`.pi/extensions/`).
+Pi gets `/tgd-*` commands via native **prompt templates** (`.pi/prompts/`).
 ```bash
-ln -sf "$(pwd)/.pi/extensions/tgd-commands.ts" ~/.pi/agent/extensions/tgd-commands.ts
+mkdir -p ~/.pi/agent/prompts && ln -sf "$(pwd)"/.pi/prompts/*.md ~/.pi/agent/prompts/
 ln -sf "$(pwd)/skills" ~/.pi/agent/skills/tGD
 ```

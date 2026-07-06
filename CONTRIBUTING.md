@@ -37,7 +37,7 @@ of truth: **`.claude/commands/*.md`**. The other four are generated mirrors:
 | `.codex/prompts/*.md` | 🤖 Generated — do not edit |
 | `.opencode/commands/*.md` | 🤖 Generated — do not edit |
 | `.gemini/commands/*.toml` | 🤖 Generated — do not edit |
-| `.pi/extensions/tgd-commands.ts` | 🤖 Generated — do not edit |
+| `.pi/prompts/*.md` | 🤖 Generated — do not edit |
 
 Workflow:
 

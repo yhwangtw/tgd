@@ -1,0 +1,108 @@
+---
+description: Verify — prove it works with debugging and test pyramid
+---
+
+**🛑 Pre-flight: Environment Check**
+- [ ] `$TGD_DIR/CONTEXT.md` exists (or `.codegraph/` is present).
+- **If missing:** STOP. Tell user: "Project context not mapped. Please run `/tgd-map` first."
+- **$TGD_DIR:** Check env var `$TGD_DIR` first. If not set, check sibling `../<project-name>-tGD/`. If neither exists: STOP — run `/tgd-map` first.
+
+**🔑 Step 0: Feature Name Resolution**
+1. Scan `$TGD_DIR/` for **feature directories**: subdirectories containing `SPEC.md` or `PRD.md` (e.g., `$TGD_DIR/user-login/`). Infrastructure dirs (`.scans/`, `wiki/`, and any dot-directories) are NOT features — always exclude them.
+2. If none found: 🛑 STOP. "No features defined. Run `/tgd-define` first."
+3. If exactly one found: Lock it as `<feature-name>`.
+4. If multiple found: List them and ask user to specify.
+5. **Verify**: `$TGD_DIR/<feature-name>/SPEC.md` exists (defines scope).
+
+**🔒 Pre-flight: Artifact Check**
+- [ ] The feature branch has source changes: `git diff main...feature/<feature-name> --stat` is non-empty.
+- [ ] Test files exist for the feature — use the project's actual test layout from `CONTEXT.md` (`tests/`, `spec/`, `*_test.go`, `__tests__/`, …). Do NOT assume a `src/`+`tests/` layout.
+- **If missing:** STOP. Tell user: "No source code or tests found. Please run `/tgd-develop` first."
+
+**🌳 Worktree:** If `../project-<feature-name>` exists (created by `/tgd-develop`), run all commands in this phase inside that worktree — the feature branch is not on `main` yet.
+
+Run the `tgd-debugging-and-error-recovery` skill. This is the VERIFY phase. The full pipeline is:
+
+**Core flow:**
+1. `tgd-debugging-and-error-recovery` — five-step triage: reproduce → localize → reduce → fix → guard
+2. `tgd-test-driven-development` — verify with the test pyramid (80% unit, 15% integration, 5% E2E)
+   - Use `codegraph affected <changed-files>` to identify which tests to prioritize based on actual dependency paths.
+
+**Conditional (Frontend Mandatory):**
+- **Frontend/UI/DOM?** → **MUST run `tgd-agent-browser`**. Unit tests are NOT sufficient for UI verification.
+  - Use `tgd-agent-browser` (preferred) to open the browser, perform the user action, and verify the DOM state.
+  - **Verification Gate Failure**: If the feature touches frontend code but `tgd-agent-browser` did not run, the verification is FAILED.
+
+Verify that the feature works correctly before proceeding to review. Tests are proof — "seems right" is never sufficient.
+
+Run the test-output capture first — this is the raw evidence that backs the report.
+
+The gate scripts live in the **tGD repo itself** (`$TGD_REPO_ROOT/scripts/`), NOT in `$TGD_DIR` (the artifacts directory contains no scripts). Resolve `$TGD_REPO_ROOT` to the cloned tGD repo (typically `~/tGD/`), same as `/tgd-map` does for wiki generation.
+
+```bash
+# Run from the WORKTREE (../project-<feature-name>/ — that's where the feature
+# branch's code and tests live; fall back to the repo root only if no worktree
+# exists). Creates the report file if needed, runs the suite, appends a
+# "## Raw Test Output" section + meta-comment with real pass/fail counts.
+bash "$TGD_REPO_ROOT/scripts/capture-test-output.sh" "$TGD_DIR/<feature-name>/TEST-REPORT.md"
+```
+
+- **Exit 0** = tests passed, raw output captured. Use the real numbers from the meta-comment in the Summary table below — do NOT invent counts.
+- **Exit 1** = tests failed, raw output still captured. Fix the failures, re-run, only then proceed.
+
+The script **creates the TEST-REPORT.md skeleton if it doesn't exist** (sections: Test Summary, Coverage, Failures & Root Causes, Flaky Tests, Regression Status, Sign-off — the skeleton in the script is the single source of the template). Fill in the tables using ONLY the numbers from the appended meta-comment.
+
+For the Coverage table, run the coverage gate first:
+
+```bash
+bash "$TGD_REPO_ROOT/scripts/coverage-check.sh"
+```
+
+Exit 0 = all floors met, use the printed numbers. Exit 1 = gate failed, do not proceed. Floors default to 80/60/90 (lines/branches/functions); overrides via `COVERAGE_*_FLOOR` env vars MUST be documented in a "## Coverage Exceptions" section with a ramp-up plan.
+
+**🎯 AC Traceability Gate (MANDATORY)**
+
+Line coverage is not requirement coverage — verify every acceptance criterion has a test:
+
+```bash
+python3 "$TGD_REPO_ROOT/scripts/ac-trace.py" "$TGD_DIR/<feature-name>/" .
+```
+
+- **Exit 0** = every `AC-<task>.<n>` id in TASKS.md is referenced by at least one test, and every `[R]` criterion names an existing test file. Proceed.
+- **Exit 1** = untraced criteria or `[R]` entries without valid `Test:` files — the output lists exactly which. 🛑 Write the missing tests (or tag the existing ones with the AC id), re-run, only then proceed.
+- **Exit 2** = TASKS.md missing or carries no AC ids. A plan without AC ids fails closed — fix TASKS.md (see `tgd-planning-and-task-breakdown`).
+
+**📡 Event Test Check (only if `$TGD_DIR/TRACKING-PLAN.md` has entries for this feature)**
+
+For each event whose **Platforms** field includes the platform this worktree implements: at least one test must reference the event name and assert it fires with the expected property keys. A mis-firing event is worse than a missing one — a wrong number gets trusted. Check with a plain search (e.g. `grep -r "sign_up_completed" <test-dirs>`); the instrumentation task's AC id is already covered by `ac-trace.py`, so this check is specifically about the payload assertion. If no test asserts the payload: write it before proceeding — same standard as any other AC.
+
+Run the machine gate — do NOT manually walk the catalog:
+
+```bash
+# args: <client-repo> <artifacts-dir>. Pass the WORKTREE as the client repo —
+# the catalog's tests must run against the feature branch. The catalog lives in
+# the ARTIFACTS dir (../<project>-tGD/REGRESSION-CATALOG.md), not in the tGD repo.
+bash "$TGD_REPO_ROOT/scripts/regression-gate.sh" ../project-<feature-name> "$TGD_DIR"
+```
+
+The gate executes **every catalog entry individually** (jest/vitest/npm/pytest/go per-file) — full-suite green is not accepted as proof, because a file can exist yet be excluded by runner config. Flaky policy: a failing entry is retried once; pass-on-retry counts as a pass but is reported as FLAKY and MUST be recorded in TEST-REPORT.md "## Flaky Tests" with a follow-up.
+
+- **Exit 0** = all catalog entries executed and passed. Record any FLAKY entries, then proceed.
+- **Exit 1** = an entry failed twice, is stale, or lacks a `Test:` reference. 🛑 STOP. Do NOT proceed to review. Report which prior feature's regression broke.
+- **Exit 2** = configuration failure (artifacts dir unresolvable, no test runner). Fix the configuration — this is NOT a pass.
+- **Exit 3** = no catalog file yet. Legitimate only before the first `/tgd-release`.
+
+**Why machine-gated**: Manually walking the catalog is exactly the failure mode this gate prevents — agents skip entries, run the wrong file, or trust stale references. The script enforces "every entry runs" without exception.
+
+**Verification Gate Failure**: A broken regression test means your feature broke a previously shipped critical path. This is a hard fail — no exceptions.
+
+**Verification Gate:**
+- [ ] Tests pass for the implemented feature
+- [ ] `capture-test-output.sh` ran and appended raw output + meta-comment to TEST-REPORT.md
+- [ ] Summary table counts match the meta-comment (no fabrication)
+- [ ] `coverage-check.sh` exits 0 (or exceptions documented in "## Coverage Exceptions")
+- [ ] `ac-trace.py` exits 0 — every acceptance criterion traced to a test
+- [ ] If TRACKING-PLAN.md has entries for this feature: each event owned by this platform has a test asserting it fires with the expected properties
+- [ ] `regression-gate.sh` exits 0 (or 3 = no catalog yet); FLAKY entries recorded in "## Flaky Tests"
+
+If verification passes, suggest the next step: `/tgd-review` to review the code quality.

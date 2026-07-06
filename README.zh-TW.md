@@ -678,7 +678,7 @@ tGD/
 ├── .gemini/commands/                  # Gemini CLI 指令
 ├── .opencode/commands/                # OpenCode 指令
 ├── .codex/prompts/                    # Codex CLI prompts
-├── .pi/extensions/                    # Pi Coding Agent 指令
+├── .pi/prompts/                       # Pi Coding Agent 指令
 ├── scripts/                           # 安裝 & 驗證
 └── docs/                              # 平台指南
 ```
@@ -842,8 +842,8 @@ ln -sf "$(pwd)/.opencode/commands"/* ~/.config/opencode/commands/
 ```
 
 ### Pi Coding Agent
-Pi 透過 **TypeScript extension**（`.pi/extensions/`）取得 `/tgd-*` 指令。
+Pi 透過原生 **prompt templates**（`.pi/prompts/`）取得 `/tgd-*` 指令。
 ```bash
-ln -sf "$(pwd)/.pi/extensions/tgd-commands.ts" ~/.pi/agent/extensions/tgd-commands.ts
+mkdir -p ~/.pi/agent/prompts && ln -sf "$(pwd)"/.pi/prompts/*.md ~/.pi/agent/prompts/
 ln -sf "$(pwd)/skills" ~/.pi/agent/skills/tGD
 ```
