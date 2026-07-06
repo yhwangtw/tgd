@@ -132,17 +132,36 @@ Record every dashboard URL for the final report and the CONTEXT.md `## See Also`
 Load and execute the `tgd-wiki-generation` skill.
 
 This compiles the CodeGraph + Understand-Anything outputs into a
-**single self-contained HTML file** with a uniform DeepWiki-style layout —
-the same page structure (home, overview, architecture, modules, flows,
-onboarding, source browser, search) for every project; only the data varies.
+**single self-contained HTML file** (curated overview) plus a **Markdown docs
+tree** (complete per-file reference). Same page structure for every project;
+only the data varies.
 
-**Command:**
+**Step 6a — Synthesize prose (do this BEFORE running the generator).**
+The generator is a formatter — its prose quality comes from what you write here.
+Read each repo's `knowledge-graph.json` + the actual source and write
+`$TGD_DIR/wiki/wiki-prose.json` following the schema in the `tgd-wiki-generation`
+skill. Cover, per repo:
+- `overview` / `architecture` / `onboarding` — a paragraph each
+- `layers` / `modules` / `flows` — one line of responsibility each
+- `files` — **every source file** gets a 1-2 sentence `summary`; explain
+  **public / entry-reachable symbols** (skip trivial private one-liners — a
+  paragraph restating a 3-line helper is noise, per `tgd-documentation-and-adrs`)
+
+Coverage rules and cost control:
+- **Complete but altitude-appropriate.** Every file explained; deep symbol prose only for public API. Don't invent filler — an accurate one-liner beats a padded paragraph.
+- **Batch with subagents** for large repos (Step 4 already permits subagent delegation) — one batch of files per subagent, each returns its slice of the `files` map.
+- **Incremental**: store each file's content `hash` in the sidecar; on re-run, only re-synthesize files whose hash changed.
+- **Optional & degradable**: if you cannot synthesize (weak budget, huge repo), skip it — the generator falls back to descriptions derived from graph structure, so the wiki still builds. Never block wiki generation on prose.
+
+**Step 6b — Run the generator:**
 
 ```bash
 python3 "$TGD_REPO_ROOT/skills/tgd-wiki-generation/scripts/generate-wiki.py" "$TGD_DIR"
 ```
 
-Resolve `$TGD_REPO_ROOT` to the cloned tGD repo (typically `~/tGD/`).
+Resolve `$TGD_REPO_ROOT` to the cloned tGD repo (typically `~/tGD/`). The
+generator merges your prose with the graph (prose wins; blanks derive) and
+emits `wiki.html` + the `docs/` tree.
 
 **Outputs (all under `$TGD_DIR/wiki/`):**
 
@@ -153,6 +172,7 @@ Resolve `$TGD_REPO_ROOT` to the cloned tGD repo (typically `~/tGD/`).
 - `docs/manifest.json` — top-level manifest listing every scanned repo
 - `docs/repos/<slug>/` — the SAME Markdown tree per scanned repo:
   - `index.md`, `overview.md`, `architecture.md`, `onboarding.md`
+  - `files.md` + `files/<path>.md` — **every source file, explained** (the complete reference)
   - `modules/<layer>.md` — one page per architectural layer
   - `flows/<step>.md` — one page per tour step
   - `diagrams/{index.md,architecture.mmd,dependencies.mmd}` — Mermaid source

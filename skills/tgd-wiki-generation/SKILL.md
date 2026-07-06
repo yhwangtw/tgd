@@ -46,6 +46,7 @@ Required:
 Optional:
 
 - `$TGD_DIR/.scans/<repo>/.codegraph/` (used if `codegraph` CLI is available)
+- `$TGD_DIR/wiki/wiki-prose.json` — LLM-authored prose sidecar (see below). Absent or unreadable → the generator derives descriptions from graph structure instead. It **never hard-depends** on this file, so it still runs standalone, in CI, and offline.
 - `--primary <slug>` (defaults to first scan), `--dashboard-url URL`,
   `--max-source-lines N` (default 1500; caps per-file source embedding)
 
@@ -56,7 +57,9 @@ $TGD_DIR/
 ├── CONTEXT.md                    ← tGD core (untouched)
 ├── .scans/                       ← tGD core (untouched)
 └── wiki/
-    ├── wiki.html                 ← THE human-facing wiki (single file, ~3.5MB+data)
+    ├── wiki.html                 ← THE human-facing wiki: a CURATED overview
+    │                               (system/module/flow prose + diagrams + search)
+    ├── wiki-prose.json           ← LLM prose sidecar (input; see below)
     └── docs/
         ├── index.md              ← home: repo table
         ├── sources.md            ← source inventory
@@ -66,6 +69,8 @@ $TGD_DIR/
             ├── overview.md
             ├── architecture.md   ← Mermaid fenced blocks (GitHub renders)
             ├── onboarding.md
+            ├── files.md          ← COMPREHENSIVE index: every source file, explained
+            ├── files/*.md        ← one page PER FILE: explanation + symbols + source
             ├── modules/*.md      ← one per architectural layer
             ├── flows/*.md        ← one per tour step
             ├── diagrams/
@@ -74,6 +79,39 @@ $TGD_DIR/
             │   └── dependencies.mmd
             └── manifest.json     ← per-repo manifest
 ```
+
+**Division of labor** (deliberate): `wiki.html` is the light, shareable, single-file **overview** — you open it, land on home, navigate. The `docs/` Markdown tree is the **complete reference** — the `files/` sub-tree has one explained page per source file, so "all of the code, explained" lives there (multi-file, GitHub-rendered, scales to any repo size) rather than bloating the single HTML file.
+
+## Prose sidecar (`wiki-prose.json`)
+
+Every page's prose resolves in this precedence: **Understand-Anything field → `wiki-prose.json` → deterministic derivation from graph structure**. So a description is never blank: if UA left it empty and no sidecar entry exists, the generator writes a true sentence computed from counts and edges (e.g. "2 files; depends on Data; used by Routes.").
+
+`/tgd-map` Step 6 has the agent synthesize the sidecar (read the knowledge graph + source, write explanatory prose). Schema:
+
+```json
+{
+  "version": 1,
+  "repos": {
+    "<repo-slug>": {
+      "overview": "1-2 paragraph: what this repo does and how the layers fit",
+      "architecture": "paragraph: the layering and dominant dependency direction",
+      "onboarding": "narrative: where a new engineer should start",
+      "layers":  { "<layer-name>": "what this layer is responsible for" },
+      "modules": { "<module-slug>": "responsibility prose" },
+      "flows":   { "<flow-slug>": "narrative of the sequence" },
+      "files": {
+        "<file-path>": {
+          "summary": "1-2 sentences: what this file is for",
+          "hash": "<content-hash>",
+          "symbols": { "<symbol-name>": "purpose + gotchas" }
+        }
+      }
+    }
+  }
+}
+```
+
+Every key is optional — supply what you have, the rest derives. The `hash` per file lets a re-run skip re-synthesizing unchanged files (incremental). Keep it out of the code repo; it lives under `$TGD_DIR/wiki/`.
 
 Entry points:
 
@@ -161,6 +199,8 @@ After running this skill:
 - [ ] `$TGD_DIR/wiki/docs/manifest.json` exists with a `repos` array (one entry per scan) and `wikiHtml` key
 - [ ] For each repo scanned:
   - [ ] `docs/repos/<slug>/index.md`, `overview.md`, `architecture.md`, `onboarding.md` exist
+  - [ ] `docs/repos/<slug>/files.md` exists and `files/` has one page per source file
+  - [ ] No description cell is blank — prose came from the sidecar or was derived
   - [ ] `docs/repos/<slug>/modules/` contains one page per layer
   - [ ] `docs/repos/<slug>/flows/` contains one page per tour step (or is empty if no tour)
   - [ ] `docs/repos/<slug>/diagrams/architecture.mmd` and `dependencies.mmd` exist
