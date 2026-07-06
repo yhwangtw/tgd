@@ -11,17 +11,24 @@
 <link rel="stylesheet" href="html-ppt/tgd-light.css" id="theme-link">
 </head>
 <body class="tpl-tgd-pitch" data-theme="tgd-light">
+<script>
+/* match the landing page: dark by default when the OS prefers dark */
+if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+  document.body.setAttribute('data-theme', 'tgd-dark');
+  document.getElementById('theme-link').setAttribute('href', 'html-ppt/tgd-dark.css');
+}
+</script>
 <div class="deck">
 
   <!-- ==================== 1. Cover ==================== -->
-  <section class="slide" data-title="Cover">
+  <section class="slide center" data-title="Cover">
     <div class="cover-bg"></div>
     <div class="cover-blob"></div>
     <div class="brand-mark"><span class="brand-dot"></span><span class="brand">tGD</span></div>
     <p class="kicker">AI-Driven PDLC · 2026</p>
     <h1 class="h1 anim-fade-up" data-anim="fade-up">The Agentic<br><span class="gradient-text">PDLC Harness</span></h1>
-    <p class="lede mt-m"><b>Your PDLC was built for humans. Now agents do the work.</b><br>tGD transforms your existing workflow into an agentic PDLC pipeline — same gates, same accountability, 10× the velocity.</p>
-    <div class="pipeline">
+    <p class="lede mt-m"><b>Your PDLC was built for humans. Now agents do the work.</b><br>tGD wraps your product development lifecycle in the gates your team already trusts — spec before code, tests before claims, human sign-off before release.</p>
+    <div class="pipeline" style="justify-content:center">
       <div class="step"><span class="icon">🗺️</span><span class="name">Map</span></div>
       <span class="arrow">→</span>
       <div class="step"><span class="icon">📋</span><span class="name">Define</span></div>
@@ -36,7 +43,7 @@
       <span class="arrow">→</span>
       <div class="step"><span class="icon">🚀</span><span class="name">Release</span></div>
     </div>
-    <div class="row mt-l" style="gap:8px">
+    <div class="row mt-l" style="gap:8px;justify-content:center">
       <span class="pill pill-accent">Claude Code</span>
       <span class="pill pill-accent">Codex CLI</span>
       <span class="pill pill-accent">Gemini CLI</span>
@@ -58,7 +65,7 @@
     </div>
     <div class="quote-box mt-l">
       <div class="quote">The harness matters as much as the model.</div>
-      <div class="source">— Anthropic, "How Claude Code Works in Large Codebases" (2025)</div>
+      <div class="source">— the principle behind tGD</div>
     </div>
     <div class="deck-footer"><span>Problem</span><span class="slide-number" data-current="2" data-total="16"></span></div>
   </section>
@@ -306,7 +313,7 @@ Agent: Scanning project...
         <div class="stack" style="font-size:13px">
           <div class="tag">tgd-debugging-and-error-recovery</div>
           <div class="tag">tgd-test-driven-development</div>
-          <div class="tag tag-danger">tgd-agent-browser (mandatory)</div>
+          <div class="tag tag-danger">tgd-agent-browser (mandatory for UI)</div>
         </div>
         <h4 style="color:var(--accent);margin:16px 0 8px">🔒 Pre-flight</h4>
         <div class="stack" style="font-size:13px;color:var(--text-2)">
@@ -485,7 +492,7 @@ Agent: Scanning project...
       <div class="phase"><div class="p-icon">⚡</div><div><div class="p-name">4. DEVELOP</div><div class="p-desc">Worktree → src/ + tests/</div><div class="p-skills">source-driven → TDD</div></div></div>
       <div class="phase gate"><div class="p-icon">🧪</div><div><div class="p-name">5. VERIFY</div><div class="p-desc">Tests + browser → TEST-REPORT.md</div><div class="p-skills">debugging → regression gate</div></div></div>
       <div class="phase"><div class="p-icon">🔎</div><div><div class="p-name">6. REVIEW</div><div class="p-desc">5-axis → REVIEW.md</div><div class="p-skills">code-review → simplification</div></div></div>
-      <div class="phase"><div class="p-icon">🚀</div><div><div class="p-name">7. RELEASE</div><div class="p-desc">Commit + CI + catalog → CHANGELOG.md</div><div class="p-skills">git-workflow → catalog</div></div></div>
+      <div class="phase"><div class="p-icon">🚀</div><div><div class="p-name">7. RELEASE</div><div class="p-desc">Commit + CI + catalog → CHANGELOG + METRICS</div><div class="p-skills">git-workflow → catalog</div></div></div>
     </div>
     <div class="deck-footer"><span>Full Pipeline</span><span class="slide-number" data-current="11" data-total="16"></span></div>
   </section>
@@ -557,7 +564,7 @@ Agent: Scanning project...
             <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>Terminal</span></div>
 <pre><span style="color:var(--text-3)"># 3 commands to ship</span>
 $ git clone .../tGD.git
-$ cd tGD && <span style="color:var(--accent)">tgd</span>
+$ cd tGD && <span style="color:var(--accent)">bash setup.sh</span>
 $ <span style="color:var(--accent)">/tgd-map</span> → <span style="color:var(--accent)">/tgd-define</span> → ... → <span style="color:var(--accent)">/tgd-release</span></pre>
           </div>
           <div class="stack mt-s" style="font-size:13px;color:var(--text-2)">
@@ -580,13 +587,15 @@ $ <span style="color:var(--accent)">/tgd-map</span> → <span style="color:var(-
 <pre><span style="color:var(--text-3)"># Clone & install</span>
 $ git clone https://github.com/\
   openclawyhwang-hub/tGD.git
-$ cd tGD && <span style="color:var(--accent)">tgd</span>
+$ cd tGD && <span style="color:var(--accent)">bash setup.sh</span>
 
 <span style="color:var(--text-3)"># Start your agent</span>
 $ claude   <span style="color:var(--text-3)"># Claude Code</span>
 $ codex    <span style="color:var(--text-3)"># Codex CLI</span>
+$ gemini   <span style="color:var(--text-3)"># Gemini CLI</span>
 $ opencode <span style="color:var(--text-3)"># OpenCode</span>
-$ hermes  <span style="color:var(--text-3)"># Hermes Agent</span>
+$ pi       <span style="color:var(--text-3)"># Pi Coding Agent</span>
+$ hermes   <span style="color:var(--text-3)"># Hermes Agent</span>
 
 <span style="color:var(--text-3)"># Initialize</span>
 $ <span style="color:var(--accent)">/tgd-map</span>
@@ -619,12 +628,12 @@ $ <span style="color:var(--accent)">/tgd-define</span> add user auth</pre>
     <p class="lede mt-m">tGD turns your AI agent from a code generator<br>into a disciplined engineering partner.</p>
     <div class="ask-box mt-l" style="display:inline-block;text-align:left">
       <pre style="background:transparent;border:none;padding:0;color:rgba(255,255,255,.9);font-size:15px;margin:0">git clone https://github.com/openclawyhwang-hub/tGD.git
-cd tGD && tgd
+cd tGD && bash setup.sh
 claude  # then: /tgd-map</pre>
     </div>
     <div class="row mt-l" style="gap:16px;justify-content:center">
       <a href="https://github.com/openclawyhwang-hub/tGD" class="pill pill-accent" style="text-decoration:none;font-size:15px">⭐ Star on GitHub</a>
-      <span class="pill" style="font-size:15px">MIT License</span>
+      <span class="pill" style="font-size:15px">Apache 2.0</span>
       <span class="pill" style="font-size:15px">6 Platforms</span>
     </div>
     <div class="deck-footer"><span>openclawyhwang-hub/tGD</span><span class="slide-number" data-current="16" data-total="16"></span></div>
