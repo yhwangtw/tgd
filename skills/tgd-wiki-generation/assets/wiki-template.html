@@ -268,7 +268,7 @@ function viewOverview(repo) {
   $main.innerHTML = `
     ${crumbs([[`/r/${repo.slug}`, repo.name], [null, "Overview"]])}
     <h1 class="page">📋 Overview</h1>
-    <p class="sub">${esc(repo.description)}</p>
+    <p class="sub">${esc(repo.overview || repo.description)}</p>
     ${kpis([[repo.kpi.files, "Files"], [repo.modules.length, "Modules"], [repo.flows.length, "Flows"], [repo.kpi.edges, "Dependencies"]])}
     <h2>Tech</h2>
     <table><tr><th>Languages</th><td>${(repo.languages || []).map(esc).join(", ") || "—"}</td></tr>
@@ -290,6 +290,7 @@ function viewArchitecture(repo) {
   $main.innerHTML = `
     ${crumbs([[`/r/${repo.slug}`, repo.name], [null, "Architecture"]])}
     <h1 class="page">🏛️ Architecture</h1>
+    ${repo.architecture ? `<p class="sub">${esc(repo.architecture)}</p>` : ""}
     <h2>Layer Diagram</h2>${diagram(repo.architecture_mermaid)}
     <h2>Dependency Graph (top nodes)</h2>${diagram(repo.dependency_mermaid)}
     <h2>Layers</h2>
@@ -304,7 +305,7 @@ function viewOnboarding(repo) {
   $main.innerHTML = `
     ${crumbs([[`/r/${repo.slug}`, repo.name], [null, "Onboarding"]])}
     <h1 class="page">🧭 Onboarding</h1>
-    <p class="sub">Suggested reading path through the codebase.</p>
+    <p class="sub">${esc(repo.onboarding || "Suggested reading path through the codebase.")}</p>
     ${repo.tour.length ? repo.tour.map((t, i) => `
       <div class="tour-step"><h3>Step ${i + 1}: ${esc(t.title)}</h3>
         <p>${esc(t.description)}</p>
@@ -357,10 +358,11 @@ function viewSourceIndex(repo) {
   $main.innerHTML = `
     ${crumbs([[`/r/${repo.slug}`, repo.name], [null, "Source"]])}
     <h1 class="page">📄 Source Browser</h1>
-    <p class="sub">${repo.sources.length} files captured from the knowledge graph.</p>
-    <table><tr><th>File</th><th>Lang</th><th>Lines</th></tr>
+    <p class="sub">${repo.sources.length} files captured from the knowledge graph — each explained.</p>
+    <table><tr><th>File</th><th>Summary</th><th>Lang</th><th>Lines</th></tr>
       ${repo.sources.map(s => `<tr>
         <td>${s.available ? `<a href="#${srcHref(repo, s.path)}"><code>${esc(s.path)}</code></a>` : `<code>${esc(s.path)}</code>`}</td>
+        <td>${esc((repo.fileSummaries || {})[s.path] || "")}</td>
         <td>${esc(s.language)}</td><td>${s.available ? s.line_count : "<i>unavailable</i>"}</td></tr>`).join("")}
     </table>${footer()}`;
 }
@@ -380,6 +382,7 @@ function viewSourceFile(repo, rawPath) {
   $main.innerHTML = `
     ${crumbs([[`/r/${repo.slug}`, repo.name], [`/r/${repo.slug}/source`, "Source"], [null, path]])}
     <h1 class="page">📄 ${esc(path)}</h1>
+    ${(repo.fileSummaries || {})[path] ? `<p class="sub">${esc(repo.fileSummaries[path])}</p>` : ""}
     <p class="sub">${s.line_count} lines · ${esc(s.language)}${s.truncated ? " · <b>truncated</b>" : ""}</p>
     <div class="srcview">${s.lines.map((tx, i) => {
       const n = i + 1;

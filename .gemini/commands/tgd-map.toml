@@ -60,8 +60,7 @@ command -v node && command -v npm && echo "node/npm: OK" || echo "node/npm: MISS
 | Tier | Steps | Runs when | Output |
 |------|-------|-----------|--------|
 | **Tier 1 — Core** (always) | 1, 2, 7, 8 | Every `/tgd-map` run, no dependencies | `CONTEXT.md` |
-| **Tier 2 — Deep scan + wiki** | 3, 4, 6 | `codegraph` CLI / `understand` skill available | `.scans/<repo>/` symbol index + knowledge graph + `wiki/wiki.html` (single-file, python3-only, ~1s) |
-| **Tier 3 — Live dashboard** (opt-in) | 5 | User explicitly asks for the dashboard AND Tier 2 completed AND `node`/`npm` present | Interactive localhost dashboard |
+| **Tier 2 — Deep scan + wiki + dashboards** | 3, 4, 5, 6 | `codegraph` CLI / `understand` skill available; Step 5 dashboards additionally need `node`/`npm` | `.scans/<repo>/` symbol index + knowledge graph + `wiki/wiki.html` (single-file, python3-only, ~1s) + one live localhost dashboard per repo |
 
 **Degradation rule:** If a tier cannot run, you MUST record it in `CONTEXT.md` under `## Degraded Mode` — which steps were skipped, why (missing tool), and how to enable them later. A skipped step that is not logged is a verification failure. Silent skipping is the failure mode this rule exists to prevent.
 
@@ -111,18 +110,20 @@ For each repo to map (primary + all additional repos from Step 1):
 3. This produces `$TGD_DIR/.scans/<repo-name>/.understand-anything/knowledge-graph.json`
 4. If unfamiliar with any repo, load the `understand-onboard` skill for a guided tour
 
-## Step 5: Launch Dashboard (Tier 3 — opt-in)
+## Step 5: Launch Dashboards (Tier 2 — auto-launch, one per repo, requires `node`/`npm`)
 
-**Run condition:** user explicitly asked for the live dashboard, AND Step 4 completed, AND `node`/`npm` present. Otherwise skip (no Degraded Mode entry needed — Tier 3 is opt-in, not degraded).
+**Skip condition:** `node`/`npm` not on PATH, OR Step 4 produced no knowledge graph → skip, log in `## Degraded Mode`, continue. This is **not** opt-in — when its dependencies are present, the dashboard launches automatically, the same as the wiki.
 
-The live dashboard serves **humans**, not the agent — `CONTEXT.md` and the knowledge graph are what downstream `/tgd-*` commands consume. For a browsable wiki, Step 6 already produces `wiki.html` at near-zero cost; only launch the localhost dashboard when someone asked for it.
+The live dashboard serves **humans**, not the agent — `CONTEXT.md` and the knowledge graph are what downstream `/tgd-*` commands consume. Launch **one dashboard per repo** (primary + every additional repo from Step 1); each repo's knowledge graph gets its own dashboard on its own port.
 
-When it runs, for each repo (primary + all additional repos from Step 1):
+For each repo:
 
 1. cd into the repo
-2. Load the `understand-dashboard` skill to launch the dashboard
-3. Verify the dashboard is running (check for localhost URL in output)
-4. Report the dashboard URL to the user
+2. Load the `understand-dashboard` skill to launch the dashboard **in the background** — it must not block the rest of `/tgd-map`.
+3. Capture the localhost URL from the skill's output (each repo lands on a distinct port). If it did not come up, log the failure in `## Degraded Mode` and continue with the other repos.
+4. **Open it in the browser** — best-effort, per-OS: `open <url>` (macOS) · `xdg-open <url>` (Linux) · `start "" <url>` (Windows). If no display is available (headless / remote / CI session), skip the open silently — the URL is still captured and reported.
+
+Record every dashboard URL for the final report and the CONTEXT.md `## See Also` section.
 
 ## Step 6: Generate tGD Wiki (Tier 2 — runs automatically after Step 4)
 
@@ -131,17 +132,36 @@ When it runs, for each repo (primary + all additional repos from Step 1):
 Load and execute the `tgd-wiki-generation` skill.
 
 This compiles the CodeGraph + Understand-Anything outputs into a
-**single self-contained HTML file** with a uniform DeepWiki-style layout —
-the same page structure (home, overview, architecture, modules, flows,
-onboarding, source browser, search) for every project; only the data varies.
+**single self-contained HTML file** (curated overview) plus a **Markdown docs
+tree** (complete per-file reference). Same page structure for every project;
+only the data varies.
 
-**Command:**
+**Step 6a — Synthesize prose (do this BEFORE running the generator).**
+The generator is a formatter — its prose quality comes from what you write here.
+Read each repo's `knowledge-graph.json` + the actual source and write
+`$TGD_DIR/wiki/wiki-prose.json` following the schema in the `tgd-wiki-generation`
+skill. Cover, per repo:
+- `overview` / `architecture` / `onboarding` — a paragraph each
+- `layers` / `modules` / `flows` — one line of responsibility each
+- `files` — **every source file** gets a 1-2 sentence `summary`; explain
+  **public / entry-reachable symbols** (skip trivial private one-liners — a
+  paragraph restating a 3-line helper is noise, per `tgd-documentation-and-adrs`)
+
+Coverage rules and cost control:
+- **Complete but altitude-appropriate.** Every file explained; deep symbol prose only for public API. Don't invent filler — an accurate one-liner beats a padded paragraph.
+- **Batch with subagents** for large repos (Step 4 already permits subagent delegation) — one batch of files per subagent, each returns its slice of the `files` map.
+- **Incremental**: store each file's content `hash` in the sidecar; on re-run, only re-synthesize files whose hash changed.
+- **Optional & degradable**: if you cannot synthesize (weak budget, huge repo), skip it — the generator falls back to descriptions derived from graph structure, so the wiki still builds. Never block wiki generation on prose.
+
+**Step 6b — Run the generator:**
 
 ```bash
 python3 "$TGD_REPO_ROOT/skills/tgd-wiki-generation/scripts/generate-wiki.py" "$TGD_DIR"
 ```
 
-Resolve `$TGD_REPO_ROOT` to the cloned tGD repo (typically `~/tGD/`).
+Resolve `$TGD_REPO_ROOT` to the cloned tGD repo (typically `~/tGD/`). The
+generator merges your prose with the graph (prose wins; blanks derive) and
+emits `wiki.html` + the `docs/` tree.
 
 **Outputs (all under `$TGD_DIR/wiki/`):**
 
@@ -152,6 +172,7 @@ Resolve `$TGD_REPO_ROOT` to the cloned tGD repo (typically `~/tGD/`).
 - `docs/manifest.json` — top-level manifest listing every scanned repo
 - `docs/repos/<slug>/` — the SAME Markdown tree per scanned repo:
   - `index.md`, `overview.md`, `architecture.md`, `onboarding.md`
+  - `files.md` + `files/<path>.md` — **every source file, explained** (the complete reference)
   - `modules/<layer>.md` — one page per architectural layer
   - `flows/<step>.md` — one page per tour step
   - `diagrams/{index.md,architecture.mmd,dependencies.mmd}` — Mermaid source
@@ -164,10 +185,12 @@ Resolve `$TGD_REPO_ROOT` to the cloned tGD repo (typically `~/tGD/`).
 - GitHub renders the `docs/*.md` tree (including Mermaid) natively if
   committed anywhere.
 
-**Report to the user:**
+**Open and report to the user:**
 
-- Wiki: `$TGD_DIR/wiki/wiki.html` — open directly in a browser
-- Manifest path: `$TGD_DIR/wiki/docs/manifest.json`
+- **Open** `$TGD_DIR/wiki/wiki.html` in the browser — best-effort, per-OS: `open` (macOS) · `xdg-open` (Linux) · `start ""` (Windows). If headless / remote / CI, skip the open silently.
+- Report it as **the one page the user opens** — there is no "which page": `wiki.html` is a single self-contained file that lands on the home view (repo grid / repo home) with everything else (overview, architecture, modules, flows, onboarding, source browser, search) as navigation inside it. Works offline, opens by double-clicking:
+  > 👉 Wiki: `$TGD_DIR/wiki/wiki.html`
+- Do NOT list `docs/manifest.json` or the `docs/` Markdown tree in the user-facing report — those are the **agent / GitHub** entry point, not something the user opens. Keep them out of the human's line of sight.
 
 ## Step 7: Produce CONTEXT.md
 
@@ -176,7 +199,7 @@ Resolve `$TGD_REPO_ROOT` to the cloned tGD repo (typically `~/tGD/`).
 - `.scans/<repo>/.codegraph/codegraph.db` — symbol index (via symlink)
 - `.scans/<repo>/.understand-anything/knowledge-graph.json` — full knowledge graph (via symlink)
 - `.scans/<repo>/.understand-anything/config.json` — UA configuration
-- **Interactive dashboard** — launched via the `understand-dashboard` skill (localhost)
+- **Interactive dashboards** — one per repo, launched via the `understand-dashboard` skill (localhost); present only when `node`/`npm` are available (else logged under `## Degraded Mode`)
 
 **CONTEXT.md Structure:**
 When writing `CONTEXT.md`, DO NOT rely solely on visual inspection of code.
@@ -230,7 +253,10 @@ Synthesize data from the tools:
 - Step 3 (CodeGraph): skipped — `codegraph` not installed. Enable: install codegraph, re-run `/tgd-map`.
 
 ## See Also
-- Interactive Dashboard: http://localhost:<port> (only if Tier 3 ran)
+- Wiki: $TGD_DIR/wiki/wiki.html
+- Interactive Dashboards (one per repo; only when node/npm present):
+  - <primary-repo-name>: http://localhost:<port>
+  - <additional-repo-name>: http://localhost:<port>
 ```
 
 ## Step 8: Verification Gate (tier-conditional)
@@ -246,9 +272,7 @@ Synthesize data from the tools:
 - [ ] `$TGD_DIR/.scans/<repo>/.understand-anything/knowledge-graph.json` exists
 - [ ] `$TGD_DIR/wiki/wiki.html` exists (single-file wiki)
 - [ ] `$TGD_DIR/wiki/docs/index.md` and `$TGD_DIR/wiki/docs/manifest.json` exist
-
-**Tier 3 (required only if the user opted in):**
-- [ ] **Dashboard is running** (localhost URL confirmed)
+- [ ] If `node`/`npm` present: a dashboard was launched for **each** repo and its localhost URL is recorded in `## See Also` (or the skip/failure is logged in `## Degraded Mode`)
 
 **Gate integrity rule:** a Tier 2 checkbox may only be marked N/A if Step 0.5 proved the tool missing AND the skip is logged in Degraded Mode. "Tool probably missing" is not evidence — show the `command -v` output.
 
