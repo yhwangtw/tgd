@@ -168,8 +168,9 @@ Resolve `$TGD_REPO_ROOT` to the cloned tGD repo (typically `~/tGD/`).
 **Open and report to the user:**
 
 - **Open** `$TGD_DIR/wiki/wiki.html` in the browser — best-effort, per-OS: `open` (macOS) · `xdg-open` (Linux) · `start ""` (Windows). If headless / remote / CI, skip the open silently.
-- Report the path regardless: `$TGD_DIR/wiki/wiki.html` — single file, works offline, opens by double-clicking.
-- Manifest path: `$TGD_DIR/wiki/docs/manifest.json`
+- Report it as **the one page the user opens** — there is no "which page": `wiki.html` is a single self-contained file that lands on the home view (repo grid / repo home) with everything else (overview, architecture, modules, flows, onboarding, source browser, search) as navigation inside it. Works offline, opens by double-clicking:
+  > 👉 Wiki: `$TGD_DIR/wiki/wiki.html`
+- Do NOT list `docs/manifest.json` or the `docs/` Markdown tree in the user-facing report — those are the **agent / GitHub** entry point, not something the user opens. Keep them out of the human's line of sight.
 
 ## Step 7: Produce CONTEXT.md
 
