@@ -4,6 +4,19 @@ All notable changes to tGD will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/). Versions follow [CalVer](https://calver.org/) (YYYY.MM.DD).
 
+## v2026.07.06
+
+### ✨ Features
+- prose coverage report + sidecar typo detection (`43bf23f`)
+- wiki prose synthesis + deterministic fallback + per-file docs (`90c543c`)
+- auto-launch the UA dashboard per repo in /tgd-map, open wiki + dashboards (`62b39ee`)
+### 🐛 Bug Fixes
+- list the per-file docs tree in the repo manifest (`34b55ff`)
+- correct intro deck facts and align it with the landing page (`f6af833`)
+### 📝 Documentation
+- make the wiki report a single unambiguous human entry point (`4a177e6`)
+
+
 ## v2026.07.05
 
 ### ✨ Features
