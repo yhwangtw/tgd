@@ -113,6 +113,8 @@ Every page's prose resolves in this precedence: **Understand-Anything field → 
 
 Every key is optional — supply what you have, the rest derives. The `hash` per file lets a re-run skip re-synthesizing unchanged files (incremental). Keep it out of the code repo; it lives under `$TGD_DIR/wiki/`.
 
+The generator prints a **coverage line** per repo so the sidecar's effect is never silent — e.g. `[tGD] prose: 8 slot(s) authored; 3/12 files summarized; rest derived from graph.` A repo key in the sidecar that matches no scanned repo (a typo) is reported as ignored rather than swallowed. If prose was written but the line says "no prose sidecar", the file is in the wrong place or the JSON is malformed.
+
 Entry points:
 
 | Audience | Entry point | Purpose |

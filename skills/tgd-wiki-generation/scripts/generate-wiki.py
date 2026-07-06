@@ -1010,6 +1010,35 @@ def build_search_index(models: List[WikiModel]) -> List[Dict[str, Any]]:
     return items
 
 
+def report_prose_coverage(
+    models: List[WikiModel], all_prose: Dict[str, Any], *, quiet: bool = False
+) -> None:
+    """Make the prose sidecar's effect visible instead of silently falling back.
+    Counts, per repo, how many descriptions came from the sidecar vs were
+    derived from the graph, and warns about sidecar repo keys that match no
+    scanned repo (a typo there means the whole block is silently ignored)."""
+    scanned = {m.repo_slug for m in models}
+    for key in all_prose:
+        if key not in scanned:
+            log(f"⚠️  wiki-prose.json has repo '{key}' which was not scanned — "
+                f"that block is ignored. Scanned: {', '.join(sorted(scanned)) or '(none)'}",
+                quiet=False)
+    for m in models:
+        p = m.prose or {}
+        applied = sum(bool(p.get(k)) for k in ("overview", "architecture", "onboarding"))
+        applied += len(p.get("layers") or {}) + len(p.get("modules") or {}) + len(p.get("flows") or {})
+        files_p = p.get("files") or {}
+        applied += sum(1 for f in files_p.values() if f.get("summary"))
+        total_files = len(m.source_files)
+        if p:
+            log(f"[{m.repo_slug}] prose: {applied} slot(s) authored; "
+                f"{sum(1 for f in files_p.values() if f.get('summary'))}/{total_files} files summarized; "
+                f"rest derived from graph.", quiet=quiet)
+        else:
+            log(f"[{m.repo_slug}] no prose sidecar — all descriptions derived from graph structure.",
+                quiet=quiet)
+
+
 def build_payload(
     models: List[WikiModel],
     primary_slug: str,
@@ -1337,6 +1366,8 @@ def main() -> int:
     if not models:
         sys.stderr.write("Error: no repos could be compiled.\n")
         return 2
+
+    report_prose_coverage(models, all_prose, quiet=args.quiet)
 
     # Markdown tree (agents + GitHub)
     for model in models:
