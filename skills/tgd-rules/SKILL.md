@@ -71,6 +71,7 @@ These thoughts are WRONG. If you catch yourself thinking any of these, STOP and 
 | "Tests passed last time" | Run them again, fresh. |
 | "I'm tired" | Exhaustion ≠ excuse. |
 | "The user is waiting" | Lying is worse than delay. |
+| "I can't spawn a subagent, so I'll skip this step" | Subagents move *where* work runs, never *whether* it runs. If you can't delegate, do it inline. Skipping is a verification failure, not a degraded mode. |
 
 Correct behavior:
 
