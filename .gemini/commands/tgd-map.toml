@@ -97,11 +97,13 @@ For each repo to map (primary + all additional repos from Step 1):
 
 ## Step 4: Understand-Anything (Tier 2 — requires the `understand` skill)
 
-**Skip condition:** `understand` skill not loadable in this session → skip, log in `## Degraded Mode`, continue.
+**Skip condition (the ONLY one):** the `understand` skill is not loadable in this session → skip, log in `## Degraded Mode`, continue. Nothing else qualifies.
 
 When the skill IS available, this step is **required**, not optional.
 
-**You MAY use subagent delegation to execute this step.** If context is getting long, spawn a fresh subagent to run the `understand` skill on each repo.
+**Subagents are an optional optimization, never a prerequisite.** If context is getting long you MAY spawn a fresh subagent per repo to run the `understand` skill. But if you cannot spawn one — the platform doesn't support subagents, or you are yourself a subagent and cannot nest (Claude Code forbids nested subagents) — **run the `understand` skill inline in this context instead.**
+
+> 🚫 **"I can't launch a subagent" is NOT a skip reason.** It is a rationalization the tGD rules exist to catch. The deliverable is the knowledge graph; it gets built inline just as well as in a subagent — delegation only moves *where* the work runs, never *whether* it runs. Skipping UA because delegation is unavailable is a verification failure, not a degraded mode.
 
 For each repo to map (primary + all additional repos from Step 1):
 
@@ -149,7 +151,7 @@ skill. Cover, per repo:
 
 Coverage rules and cost control:
 - **Complete but altitude-appropriate.** Every file explained; deep symbol prose only for public API. Don't invent filler — an accurate one-liner beats a padded paragraph.
-- **Batch with subagents** for large repos (Step 4 already permits subagent delegation) — one batch of files per subagent, each returns its slice of the `files` map.
+- **Batch with subagents** for large repos *if you can* — one batch of files per subagent, each returns its slice of the `files` map. If subagents are unavailable (no platform support, or you are already a subagent), synthesize inline in this context; inability to delegate is not a reason to skip prose.
 - **Incremental**: store each file's content `hash` in the sidecar; on re-run, only re-synthesize files whose hash changed.
 - **Optional & degradable**: if you cannot synthesize (weak budget, huge repo), skip it — the generator falls back to descriptions derived from graph structure, so the wiki still builds. Never block wiki generation on prose.
 
