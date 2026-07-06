@@ -25,10 +25,10 @@ if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
     <div class="cover-bg"></div>
     <div class="cover-blob"></div>
     <div class="brand-mark"><span class="brand-dot"></span><span class="brand">tGD</span></div>
-    <p class="kicker">AI-Driven PDLC · 2026</p>
+    <p class="kicker">AI-DRIVEN PDLC · 2026</p>
     <h1 class="h1 anim-fade-up" data-anim="fade-up">The Agentic<br><span class="gradient-text">PDLC Harness</span></h1>
     <p class="lede mt-m"><b>Your PDLC was built for humans. Now agents do the work.</b><br>tGD wraps your product development lifecycle in the gates your team already trusts — spec before code, tests before claims, human sign-off before release.</p>
-    <div class="pipeline" style="justify-content:center">
+    <div class="pipeline mt-l" style="justify-content:center">
       <div class="step"><span class="icon">🗺️</span><span class="name">Map</span></div>
       <span class="arrow">→</span>
       <div class="step"><span class="icon">📋</span><span class="name">Define</span></div>
@@ -51,583 +51,251 @@ if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
       <span class="pill pill-accent">Pi</span>
       <span class="pill pill-accent">Hermes</span>
     </div>
-    <div class="deck-footer"><span>Press <b>T</b> to toggle dark/light</span><span class="slide-number" data-current="1" data-total="16"></span></div>
+    <div class="deck-footer"><span>Press <b>T</b> to toggle dark/light · ← → to navigate</span><span class="slide-number" data-current="1" data-total="12"></span></div>
   </section>
 
   <!-- ==================== 2. Problem ==================== -->
   <section class="slide" data-title="Problem">
-    <p class="num-tag">PROBLEM</p>
+    <p class="num-tag">THE PROBLEM</p>
     <h2 class="h2 mt-s">AI agents can write code.<br><span style="color:#ef4444">Nobody holds them accountable.</span></h2>
-    <div class="grid g3 mt-l">
-      <div class="card"><h4>"Should work"</h4><p>Agent claims success — tests never ran. No evidence, no proof.</p></div>
-      <div class="card"><h4>500 lines before reading</h4><p>Writes a novel before understanding your codebase.</p></div>
-      <div class="card"><h4>Skips spec, ships broken PR</h4><p>No spec, no plan, no tests. Releases garbage and disappears.</p></div>
+    <div class="grid g3 mt-xl">
+      <div class="card"><h4>💬 "Should work"</h4><p>The agent claims success — but the tests never ran. No evidence, no proof, no accountability.</p></div>
+      <div class="card"><h4>📝 500 lines before reading</h4><p>It writes a novel before it has understood a single file of your codebase.</p></div>
+      <div class="card"><h4>💥 Broken PR, agent gone</h4><p>No spec, no plan, no tests. It ships garbage and moves on to the next prompt.</p></div>
     </div>
-    <div class="quote-box mt-l">
+    <div class="quote-box mt-xl">
       <div class="quote">The harness matters as much as the model.</div>
       <div class="source">— the principle behind tGD</div>
     </div>
-    <div class="deck-footer"><span>Problem</span><span class="slide-number" data-current="2" data-total="16"></span></div>
+    <div class="deck-footer"><span>Problem</span><span class="slide-number" data-current="2" data-total="12"></span></div>
   </section>
 
   <!-- ==================== 3. Solution ==================== -->
   <section class="slide" data-title="Solution">
-    <p class="num-tag">SOLUTION</p>
+    <p class="num-tag">THE SOLUTION</p>
     <h2 class="h2 mt-s">tGD is <span class="gradient-text">the harness</span><br>for AI-driven development.</h2>
-    <p class="lede mt-m">A 7-stage pipeline that forces agents to: read before writing, spec before coding, test before claiming done.</p>
-    <div class="stat-row mt-l">
+    <p class="lede mt-m">A seven-stage pipeline that forces agents to read before writing, spec before coding, and test before claiming done — with a human sign-off at every gate.</p>
+    <div class="stat-row mt-xl">
       <div class="stat"><div class="n">29</div><div class="l">Skills</div></div>
       <div class="stat"><div class="n">7</div><div class="l">Stages</div></div>
       <div class="stat"><div class="n">6</div><div class="l">Platforms</div></div>
       <div class="stat"><div class="n">3</div><div class="l">Personas</div></div>
     </div>
-    <div class="deck-footer"><span>Solution</span><span class="slide-number" data-current="3" data-total="16"></span></div>
+    <p class="dim mt-l" style="font-size:15px">Open source · Apache 2.0 · plain Markdown skills — no server, no telemetry, your code never leaves your tools.</p>
+    <div class="deck-footer"><span>Solution</span><span class="slide-number" data-current="3" data-total="12"></span></div>
   </section>
 
-  <!-- ==================== 4. /tgd-map ==================== -->
-  <section class="slide" data-title="tgd-map">
-    <p class="kicker">COMMAND 1 / 7</p>
-    <h2 class="h2"><span class="gradient-text">/tgd-map</span> — Map</h2>
-    <p class="lede">Scan and understand the existing project context before making changes.</p>
-    <div class="grid g2 mt-l" style="align-items:start">
-      <div>
-        <h4 style="color:var(--accent);margin-bottom:8px">⚙️ Triggers</h4>
-        <div class="stack" style="font-size:13px">
-          <div class="tag">tgd-context-engineering</div>
-          <div class="tag">codegraph init</div>
-        </div>
-        <h4 style="color:var(--accent);margin:16px 0 8px">🔒 Pre-flight</h4>
-        <div style="font-size:13px;color:var(--text-2)">None — this is the entry point. Can run on any project.</div>
-        <h4 style="color:var(--accent);margin:16px 0 8px">📋 Process</h4>
-        <div class="stack" style="font-size:13px;color:var(--text-2)">
-          <div>1. Analyze tech stack, architecture, dependencies</div>
-          <div>2. Map code organization and existing patterns</div>
-          <div>3. Initialize CodeGraph (offline knowledge graph)</div>
-          <div>4. Create symlinks for graph DB storage</div>
-        </div>
-      </div>
-      <div>
-        <h4 style="color:var(--accent);margin-bottom:8px">📦 Output</h4>
-        <div class="terminal">
-          <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>Output Structure</span></div>
-<pre>$TGD_DIR/                   ← Sibling to project repos
-├── CONTEXT.md             ← Product-level context
-│   - Tech stack
-│   - Architecture
-│   - Repo inventory
-│   - Dependencies
-└── .scans/                ← Scan data (centralized)
-    └── &lt;repo&gt;/
-        ├── .codegraph/    ← Knowledge graph DB
-        └── .understand-anything/</pre>
-        </div>
-        <h4 style="color:var(--accent);margin:16px 0 8px">💡 Usage</h4>
-        <div class="terminal">
-          <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>Terminal</span></div>
-<pre>$ <span style="color:var(--accent)">/tgd-map</span>
-Agent: Scanning project...
-→ Tech stack: Next.js 15, TypeScript, Prisma
-→ 47 source files, 12 test files
-→ Architecture: App Router + API routes
-→ $TGD_DIR/CONTEXT.md created ✓</pre>
-        </div>
-      </div>
-    </div>
-    <div class="deck-footer"><span>MAP — Context before changes</span><span class="slide-number" data-current="4" data-total="16"></span></div>
-  </section>
-
-  <!-- ==================== 5. /tgd-define ==================== -->
-  <section class="slide" data-title="tgd-define">
-    <p class="kicker">COMMAND 2 / 7</p>
-    <h2 class="h2"><span class="gradient-text">/tgd-define</span> — Define</h2>
-    <p class="lede">Extract intent, name the feature, write PRD + SPEC before any code.</p>
-    <div class="grid g2 mt-l" style="align-items:start">
-      <div>
-        <h4 style="color:var(--accent);margin-bottom:8px">⚙️ Triggers</h4>
-        <div class="stack" style="font-size:13px">
-          <div class="tag">tgd-interview-me</div>
-          <div class="tag">tgd-idea-refine</div>
-          <div class="tag">tgd-spec-driven-development</div>
-        </div>
-        <h4 style="color:var(--accent);margin:16px 0 8px">🔒 Pre-flight</h4>
-        <div style="font-size:13px;color:var(--text-2)">Requires <code>$TGD_DIR/CONTEXT.md</code> — run <code>/tgd-map</code> first.</div>
-        <h4 style="color:var(--accent);margin:16px 0 8px">📋 Process</h4>
-        <div class="stack" style="font-size:13px;color:var(--text-2)">
-          <div>1. <b>3-Option Naming</b> — propose 3 kebab-case names, user picks one</div>
-          <div>2. <b>Git Branch</b> — create <code>feature/&lt;name&gt;</code> from main</div>
-          <div>3. <b>Interview</b> — extract intent if underspecified</div>
-          <div>4. <b>Idea Refine</b> — stress-test if concept is vague</div>
-          <div>5. <b>PRD + SPEC</b> — write structured requirements</div>
-          <div>6. <b>UI Gate</b> — ask if DESIGN.md is needed</div>
-        </div>
-      </div>
-      <div>
-        <h4 style="color:var(--accent);margin-bottom:8px">📦 Output</h4>
-        <div class="terminal">
-          <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>Output Structure</span></div>
-<pre>$TGD_DIR/
-└── &lt;feature-name&gt;/
-    ├── PRD.md         ← Product Requirements
-    │   - Objectives
-    │   - User stories
-    │   - Scope & boundaries
-    ├── SPEC.md        ← Technical Spec
-    │   - API contracts
-    │   - Data models
-    │   - Error handling
-    │   - Test strategy
-    ├── DESIGN.md      ← (optional) UI Design
-    │   - Component tree
-    │   - Visual specs
-    │   - Responsive rules
-    └── prototype/     ← (optional) HTML mockups
-        ├── variant-a.html
-        └── variant-b.html
-
-<span style="color:var(--text-3)">Sign-off:</span>
-  - [ ] <b>PM</b>: (pending)</pre>
-        </div>
-      </div>
-    </div>
-    <div class="deck-footer"><span>DEFINE — Spec before code</span><span class="slide-number" data-current="5" data-total="16"></span></div>
-  </section>
-
-  <!-- ==================== 6. /tgd-plan ==================== -->
-  <section class="slide" data-title="tgd-plan">
-    <p class="kicker">COMMAND 3 / 7</p>
-    <h2 class="h2"><span class="gradient-text">/tgd-plan</span> — Plan</h2>
-    <p class="lede">Decompose specs into small, verifiable tasks with acceptance criteria.</p>
-    <div class="grid g2 mt-l" style="align-items:start">
-      <div>
-        <h4 style="color:var(--accent);margin-bottom:8px">⚙️ Triggers</h4>
-        <div class="stack" style="font-size:13px">
-          <div class="tag">tgd-planning-and-task-breakdown</div>
-          <div class="tag">tgd-jira-auto-sync <span style="color:var(--text-3)">(conditional)</span></div>
-        </div>
-        <h4 style="color:var(--accent);margin:16px 0 8px">🔒 Pre-flight</h4>
-        <div class="stack" style="font-size:13px;color:var(--text-2)">
-          <div>✓ <code>$TGD_DIR/CONTEXT.md</code> exists</div>
-          <div>✓ <code>$TGD_DIR/&lt;feature&gt;/PRD.md</code> exists</div>
-          <div>✓ <code>$TGD_DIR/&lt;feature&gt;/SPEC.md</code> exists</div>
-        </div>
-        <h4 style="color:var(--accent);margin:16px 0 8px">📋 Process</h4>
-        <div class="stack" style="font-size:13px;color:var(--text-2)">
-          <div>1. Read <b>CONTEXT.md</b> — project structure</div>
-          <div>2. Read <b>PRD.md</b> — business goals</div>
-          <div>3. Read <b>SPEC.md</b> — technical requirements</div>
-          <div>4. Decompose into atomic, testable tasks</div>
-          <div>5. Add acceptance criteria per task</div>
-          <div>6. Optional: sync to Jira</div>
-        </div>
-      </div>
-      <div>
-        <h4 style="color:var(--accent);margin-bottom:8px">📦 Output</h4>
-        <div class="terminal">
-          <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>Output Structure</span></div>
-<pre>$TGD_DIR/
-└── &lt;feature-name&gt;/
-    └── TASKS.md       ← Task breakdown (BDD)
-        ## Task 1: Setup auth middleware
-        - Given valid JWT → When API call → Then 200  [R]
-        - Files: src/middleware/auth.ts
-        - Tests: tests/auth.test.ts
-
-        ## Task 2: Login endpoint
-        - Given valid creds → When POST /login → Then 200 + token  [R]
-        - Given wrong pwd → When POST /login → Then 401  [R]
-        - Files: src/routes/auth.ts
-        - Tests: tests/login.test.ts
-
-<span style="color:var(--text-3)">[R] = regression marker (acceptance-level test)</span>
-
-<span style="color:var(--text-3)">Sign-off:</span>
-  - [ ] <b>DEV</b>: (pending)</pre>
-        </div>
-      </div>
-    </div>
-    <div class="deck-footer"><span>PLAN — Triple-source task breakdown</span><span class="slide-number" data-current="6" data-total="16"></span></div>
-  </section>
-
-  <!-- ==================== 7. /tgd-develop ==================== -->
-  <section class="slide" data-title="tgd-develop">
-    <p class="kicker">COMMAND 4 / 7</p>
-    <h2 class="h2"><span class="gradient-text">/tgd-develop</span> — Develop</h2>
-    <p class="lede">Implement with mandatory worktree isolation and smart execution routing.</p>
-    <div class="grid g2 mt-l" style="align-items:start">
-      <div>
-        <h4 style="color:var(--accent);margin-bottom:8px">⚙️ Triggers</h4>
-        <div class="stack" style="font-size:13px">
-          <div class="tag">tgd-source-driven-development</div>
-          <div class="tag">tgd-subagent-driven-development</div>
-          <div class="tag">tgd-incremental-implementation</div>
-          <div class="tag">tgd-test-driven-development</div>
-          <div class="tag">tgd-context-engineering</div>
-        </div>
-        <h4 style="color:var(--accent);margin:16px 0 8px">🔒 Pre-flight</h4>
-        <div class="stack" style="font-size:13px;color:var(--text-2)">
-          <div>✓ CONTEXT.md + PRD.md + SPEC.md all exist</div>
-          <div>✓ <code>$TGD_DIR/&lt;feature&gt;/TASKS.md</code> exists</div>
-        </div>
-        <h4 style="color:var(--accent);margin:16px 0 8px">📋 Smart Routing</h4>
-        <div class="stack" style="font-size:13px;color:var(--text-2)">
-          <div><b>&lt; 3 tasks</b> → ⚡ Fast: direct implementation</div>
-          <div><b>≥ 3 tasks</b> → 🔀 Parallel: subagents + 2-stage review</div>
-        </div>
-        <h4 style="color:var(--accent);margin:16px 0 8px">🏖️ Worktree</h4>
-        <div style="font-size:13px;color:var(--text-2)">Auto-creates Git Worktree sandbox. Failed? Just remove it.</div>
-      </div>
-      <div>
-        <h4 style="color:var(--accent);margin-bottom:8px">📦 Output</h4>
-        <div class="terminal">
-          <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>Output Structure</span></div>
-<pre>&lt;project&gt;/
-├── src/                 ← Implementation code
-│   ├── middleware/auth.ts
-│   ├── models/user.ts
-│   └── routes/auth.ts
-├── tests/               ← TDD test files
-│   ├── auth.test.ts
-│   ├── user.test.ts
-│   └── login.test.ts
-└── .git/worktrees/      ← Isolated sandbox
-    └── feat-user-auth/
-
-<span style="color:var(--text-3)">Per task:</span>
-  1. Read SPEC → implement → write test
-  2. Red → Green → Refactor
-  3. Two-stage review (if subagent mode)</pre>
-        </div>
-      </div>
-    </div>
-    <div class="deck-footer"><span>DEVELOP — Mandatory worktree + smart routing</span><span class="slide-number" data-current="7" data-total="16"></span></div>
-  </section>
-
-  <!-- ==================== 8. /tgd-verify ==================== -->
-  <section class="slide" data-title="tgd-verify">
-    <p class="kicker">COMMAND 5 / 7</p>
-    <h2 class="h2"><span class="gradient-text">/tgd-verify</span> — Verify</h2>
-    <p class="lede"><b>Hard Gate.</b> Tests are proof. No exceptions.</p>
-    <div class="grid g2 mt-l" style="align-items:start">
-      <div>
-        <h4 style="color:#ef4444;margin-bottom:8px">⚙️ Triggers (Hard Gate)</h4>
-        <div class="stack" style="font-size:13px">
-          <div class="tag">tgd-debugging-and-error-recovery</div>
-          <div class="tag">tgd-test-driven-development</div>
-          <div class="tag tag-danger">tgd-agent-browser (mandatory for UI)</div>
-        </div>
-        <h4 style="color:var(--accent);margin:16px 0 8px">🔒 Pre-flight</h4>
-        <div class="stack" style="font-size:13px;color:var(--text-2)">
-          <div>✓ Source code exists in <code>src/</code></div>
-          <div>✓ Test files exist in <code>tests/</code></div>
-        </div>
-        <h4 style="color:var(--accent);margin:16px 0 8px">📋 Process</h4>
-        <div class="stack" style="font-size:13px;color:var(--text-2)">
-          <div>1. Run <b>ALL</b> tests (unit + integration + E2E)</div>
-          <div>2. Debug any failures: reproduce → localize → fix → guard</div>
-          <div>3. Launch <b>tgd-agent-browser</b> for UI E2E verification</div>
-          <div>4. Capture screenshot as visual evidence</div>
-          <div>5. <b>Cross-Feature Regression Gate</b> — read <code>REGRESSION-CATALOG.md</code>, re-run ALL prior entries</div>
-          <div>6. <b>BLOCK</b> if anything fails</div>
-        </div>
-      </div>
-      <div>
-        <h4 style="color:var(--accent);margin-bottom:8px">📦 Output</h4>
-        <div class="terminal">
-          <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>Output Structure</span></div>
-<pre>$TGD_DIR/
-└── &lt;feature-name&gt;/
-    └── TEST-REPORT.md    ← Auto-generated test results
-        ## Summary
-        Total: 12  Passed: 12  Failed: 0
-        Regression: 5/5 ✓
-        Catalog: 19/19 ✓ (cross-feature gate)
-
-        ## All Test Cases
-        [R] test_valid_jwt         ✅
-        [R] test_valid_login       ✅
-        [R] test_wrong_password    ✅
-        test_empty_password        ✅
-        ...
-
-<span style="color:var(--text-3)">Code Repo:</span> tests/ (all passing)
-
-<span style="color:var(--text-3)">Sign-off:</span>
-  - [ ] <b>QA</b>: (pending)</pre>
-        </div>
-        <div style="margin-top:12px;padding:12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;font-size:13px">
-          <b style="color:#ef4444">🚫 Hard Gate Rule:</b> <span style="color:var(--text-2)">If ANY test fails, the pipeline stops. No merge, no ship, no exceptions.</span>
-        </div>
-      </div>
-    </div>
-    <div class="deck-footer"><span>VERIFY — Tests are proof</span><span class="slide-number" data-current="8" data-total="16"></span></div>
-  </section>
-
-  <!-- ==================== 9. /tgd-review ==================== -->
-  <section class="slide" data-title="tgd-review">
-    <p class="kicker">COMMAND 6 / 7</p>
-    <h2 class="h2"><span class="gradient-text">/tgd-review</span> — Review</h2>
-    <p class="lede">Five-axis code quality review before merge.</p>
-    <div class="grid g2 mt-l" style="align-items:start">
-      <div>
-        <h4 style="color:var(--accent);margin-bottom:8px">⚙️ Triggers</h4>
-        <div class="stack" style="font-size:13px">
-          <div class="tag">tgd-code-review-and-quality</div>
-          <div class="tag">tgd-code-simplification</div>
-          <div class="tag">tgd-security-and-hardening</div>
-          <div class="tag">tgd-performance-optimization</div>
-        </div>
-        <h4 style="color:var(--accent);margin:16px 0 8px">🔒 Pre-flight</h4>
-        <div class="stack" style="font-size:13px;color:var(--text-2)">
-          <div>✓ Test files exist in <code>tests/</code></div>
-          <div>✓ All tests pass (verified by <code>/tgd-verify</code>)</div>
-        </div>
-        <h4 style="color:var(--accent);margin:16px 0 8px">📋 Five Axes</h4>
-        <div class="stack" style="font-size:13px;color:var(--text-2)">
-          <div>1. <b>Correctness</b> — Does it do what SPEC says?</div>
-          <div>2. <b>Maintainability</b> — Can someone else understand it?</div>
-          <div>3. <b>Security</b> — OWASP + secrets management</div>
-          <div>4. <b>Performance</b> — No N+1, no unnecessary re-renders</div>
-          <div>5. <b>Test Coverage</b> — 80% unit, 15% integration, 5% E2E</div>
-        </div>
-      </div>
-      <div>
-        <h4 style="color:var(--accent);margin-bottom:8px">📦 Output</h4>
-        <div class="terminal">
-          <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>Output Structure</span></div>
-<pre>$TGD_DIR/
-└── &lt;feature-name&gt;/
-    └── REVIEW.md          ← Review report
-        ## Code Review (5-axis)
-        ✅ Correctness: Matches SPEC
-        ✅ Maintainability: Clear naming
-        ⚠️ Security: Missing rate limit
-        ✅ Performance: No issues
-        ✅ Coverage: 87%
-
-        ## Issues Found
-        - [MEDIUM] /api/login: no rate limit
-        - [LOW] user.ts: unused import
-
-        ## Recommendation
-        Fix rate limit, then ready to ship.
-
-<span style="color:var(--text-3)">Sign-off:</span>
-  - [ ] <b>QA</b>: (pending)
-  - [ ] <b>DEV</b>: (pending)</pre>
-        </div>
-      </div>
-    </div>
-    <div class="deck-footer"><span>REVIEW — Five-axis quality check</span><span class="slide-number" data-current="9" data-total="16"></span></div>
-  </section>
-
-  <!-- ==================== 10. /tgd-release ==================== -->
-  <section class="slide" data-title="tgd-release">
-    <p class="kicker">COMMAND 7 / 7</p>
-    <h2 class="h2"><span class="gradient-text">/tgd-release</span> — Release</h2>
-    <p class="lede">Faster is safer. Commit, CI, rollout, monitor.</p>
-    <div class="grid g2 mt-l" style="align-items:start">
-      <div>
-        <h4 style="color:var(--accent);margin-bottom:8px">⚙️ Triggers</h4>
-        <div class="stack" style="font-size:13px">
-          <div class="tag">tgd-git-workflow-and-versioning</div>
-          <div class="tag">tgd-shipping-and-launch</div>
-          <div class="tag">tgd-ci-cd-and-automation</div>
-          <div class="tag">tgd-documentation-and-adrs</div>
-        </div>
-        <h4 style="color:var(--accent);margin:16px 0 8px">🔒 Pre-flight</h4>
-        <div class="stack" style="font-size:13px;color:var(--text-2)">
-          <div>✓ Review passed (no critical issues)</div>
-          <div>✓ <code>$TGD_DIR/&lt;feature&gt;/REVIEW.md</code> exists</div>
-          <div>✓ All tests pass</div>
-        </div>
-        <h4 style="color:var(--accent);margin:16px 0 8px">📋 Process</h4>
-        <div class="stack" style="font-size:13px;color:var(--text-2)">
-          <div>1. <b>Atomic commits</b> — one logical change per commit</div>
-          <div>2. <b>CI/CD</b> — ensure pipeline passes</div>
-          <div>3. <b>ADR</b> — document architectural decisions</div>
-          <div>4. <b>Regression Catalog</b> — write <code>[R]</code> tests to catalog, audit stale entries</div>
-          <div>5. <b>Rollout</b> — staged deployment strategy</div>
-          <div>6. <b>Monitoring</b> — post-deploy health checks</div>
-        </div>
-      </div>
-      <div>
-        <h4 style="color:var(--accent);margin-bottom:8px">📦 Output</h4>
-        <div class="terminal">
-          <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>Output Structure</span></div>
-<pre>$TGD_DIR/
-├── CHANGELOG.md             ← Unified release notes
-│   v2026.06.15 - auth feature shipped
-├── REGRESSION-CATALOG.md    ← Cumulative regression tests
-│   ### [auth] valid JWT token
-│   - Test: tests/auth.test.ts
-│   - Released: v2026.06.15
-└── &lt;feature-name&gt;/
-    ├── METRICS.md           ← KPI handoff (Actual: blank)
-    └── decisions/
-        └── ADR.md           ← Architecture Decision
-
-<span style="color:var(--text-3)">Release Gate (all must be [x]):</span>
-  PRD.md        → - [x] PM ✓
-  TASKS.md      → - [x] DEV ✓
-  TEST-REPORT   → - [x] QA ✓ (regression 5/5)
-  REVIEW.md     → - [x] QA + DEV ✓
-
-<span style="color:var(--text-3)">Git:</span>
-  feat(auth): add JWT middleware
-  test(auth): add integration tests</pre>
-        </div>
-      </div>
-    </div>
-    <div class="deck-footer"><span>RELEASE — Faster is safer</span><span class="slide-number" data-current="10" data-total="16"></span></div>
-  </section>
-
-  <!-- ==================== 12. Pipeline Overview ==================== -->
+  <!-- ==================== 4. Pipeline ==================== -->
   <section class="slide" data-title="Pipeline">
-    <p class="num-tag">FULL PIPELINE</p>
-    <h2 class="h2 mt-s">7 stages. Every output feeds the next.</h2>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px">
-      <div class="phase"><div class="p-icon">🗺️</div><div><div class="p-name">1. MAP</div><div class="p-desc">Scan → CONTEXT.md</div><div class="p-skills">tgd-context-engineering + codegraph</div></div></div>
-      <div class="phase"><div class="p-icon">📋</div><div><div class="p-name">2. DEFINE</div><div class="p-desc">Interview → PRD + SPEC</div><div class="p-skills">tgd-interview-me → spec-driven</div></div></div>
-      <div class="phase"><div class="p-icon">📐</div><div><div class="p-name">3. PLAN</div><div class="p-desc">Triple-source → TASKS.md</div><div class="p-skills">planning → jira-sync</div></div></div>
-      <div class="phase"><div class="p-icon">⚡</div><div><div class="p-name">4. DEVELOP</div><div class="p-desc">Worktree → src/ + tests/</div><div class="p-skills">source-driven → TDD</div></div></div>
-      <div class="phase gate"><div class="p-icon">🧪</div><div><div class="p-name">5. VERIFY</div><div class="p-desc">Tests + browser → TEST-REPORT.md</div><div class="p-skills">debugging → regression gate</div></div></div>
-      <div class="phase"><div class="p-icon">🔎</div><div><div class="p-name">6. REVIEW</div><div class="p-desc">5-axis → REVIEW.md</div><div class="p-skills">code-review → simplification</div></div></div>
-      <div class="phase"><div class="p-icon">🚀</div><div><div class="p-name">7. RELEASE</div><div class="p-desc">Commit + CI + catalog → CHANGELOG + METRICS</div><div class="p-skills">git-workflow → catalog</div></div></div>
+    <p class="num-tag">HOW IT WORKS</p>
+    <h2 class="h2 mt-s">Seven stages. Every output feeds the next.</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:28px">
+      <div class="phase"><div class="p-icon">🗺️</div><div><div class="p-name">1 · MAP</div><div class="p-desc">Scan the codebase → <b>CONTEXT.md</b></div><div class="p-skills">tgd-context-engineering + codegraph</div></div></div>
+      <div class="phase"><div class="p-icon">📋</div><div><div class="p-name">2 · DEFINE</div><div class="p-desc">Interview → <b>PRD + SPEC + DESIGN</b></div><div class="p-skills">tgd-interview-me → spec-driven</div></div></div>
+      <div class="phase"><div class="p-icon">📐</div><div><div class="p-name">3 · PLAN</div><div class="p-desc">Triple-source breakdown → <b>TASKS.md</b></div><div class="p-skills">planning → jira-sync</div></div></div>
+      <div class="phase"><div class="p-icon">⚡</div><div><div class="p-name">4 · DEVELOP</div><div class="p-desc">Worktree + TDD → <b>src/ + tests/</b></div><div class="p-skills">source-driven → TDD</div></div></div>
+      <div class="phase gate"><div class="p-icon">🧪</div><div><div class="p-name">5 · VERIFY</div><div class="p-desc">All tests + regression → <b>TEST-REPORT.md</b></div><div class="p-skills">debugging → regression gate</div></div></div>
+      <div class="phase"><div class="p-icon">🔎</div><div><div class="p-name">6 · REVIEW</div><div class="p-desc">Five-axis review → <b>REVIEW.md</b></div><div class="p-skills">code-review → simplification</div></div></div>
+      <div class="phase"><div class="p-icon">🚀</div><div><div class="p-name">7 · RELEASE</div><div class="p-desc">Commit + CI → <b>CHANGELOG + METRICS</b></div><div class="p-skills">git-workflow → catalog</div></div></div>
+      <div class="phase" style="border:1px dashed var(--border-strong);background:transparent"><div class="p-icon">🔁</div><div><div class="p-name">THE LOOP</div><div class="p-desc">Verify fails? Work goes back to Develop.<br>Nothing broken reaches Release.</div></div></div>
     </div>
-    <div class="deck-footer"><span>Full Pipeline</span><span class="slide-number" data-current="11" data-total="16"></span></div>
+    <div class="deck-footer"><span>Pipeline — every stage gated</span><span class="slide-number" data-current="4" data-total="12"></span></div>
   </section>
 
-  <!-- ==================== 13. Testing Strategy ==================== -->
+  <!-- ==================== 5. Human Gates ==================== -->
+  <section class="slide" data-title="Human Gates">
+    <p class="num-tag">HUMAN GATES</p>
+    <h2 class="h2 mt-s">Agents do the work.<br><span class="gradient-text">Humans hold the keys.</span></h2>
+    <p class="lede mt-m">Every stage produces an artifact with a sign-off section. The next stage will not start until the right person checks the box.</p>
+    <div class="grid g3 mt-l">
+      <div class="card" style="border-top:3px solid #60a5fa"><h4>PM — Product</h4><p>Owns direction and acceptance.<br>Signs <b>PRD.md</b> and the final <b>Release</b>.</p></div>
+      <div class="card" style="border-top:3px solid #34d399"><h4>DEV — Implementation</h4><p>Owns code quality.<br>Signs <b>TASKS.md</b>, the code, and <b>REVIEW.md</b>.</p></div>
+      <div class="card" style="border-top:3px solid #fbbf24"><h4>QA — Evidence</h4><p>Owns test quality and coverage.<br>Signs <b>TEST-REPORT.md</b> and <b>REVIEW.md</b>.</p></div>
+    </div>
+    <div class="terminal mt-l" style="max-width:640px">
+      <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>Release gate — all must be [x]</span></div>
+<pre>PRD.md         → - [x] <b>PM</b>  ✓
+TASKS.md       → - [x] <b>DEV</b> ✓
+TEST-REPORT.md → - [x] <b>QA</b>  ✓   (regression 100%)
+REVIEW.md      → - [x] <b>QA + DEV</b> ✓
+<span class="dim-t">One person can hold multiple roles — git is the only coordination tool.</span></pre>
+    </div>
+    <div class="deck-footer"><span>Human gates — sign-off before the next stage</span><span class="slide-number" data-current="5" data-total="12"></span></div>
+  </section>
+
+  <!-- ==================== 6. Act I: Define the work ==================== -->
+  <section class="slide" data-title="Define the work">
+    <p class="kicker">COMMANDS 1–3 · DEFINE THE WORK</p>
+    <h2 class="h2">Context first. <span class="gradient-text">Spec before code.</span></h2>
+    <div class="grid g3 mt-xl">
+      <div class="card">
+        <h4><span class="cmd-name">/tgd-map</span></h4>
+        <p class="mt-s">Scans your codebase — tech stack, architecture, patterns — and builds an offline knowledge graph.</p>
+        <div class="artifact mt-m">→ CONTEXT.md</div>
+      </div>
+      <div class="card">
+        <h4><span class="cmd-name">/tgd-define</span></h4>
+        <p class="mt-s">Proposes three feature names, interviews you for intent, then drafts the requirements and the technical spec.</p>
+        <div class="artifact mt-m">→ PRD.md · SPEC.md · DESIGN.md</div>
+      </div>
+      <div class="card">
+        <h4><span class="cmd-name">/tgd-plan</span></h4>
+        <p class="mt-s">Reads CONTEXT + PRD + SPEC and decomposes the work into atomic tasks with BDD acceptance criteria.</p>
+        <div class="artifact mt-m">→ TASKS.md <span class="dim-t">(Given/When/Then, [R] markers)</span></div>
+      </div>
+    </div>
+    <div class="callout mt-xl">💡 Each command refuses to run until the previous stage's artifact exists and is signed off — that's the pre-flight check.</div>
+    <div class="deck-footer"><span>Define the work — Map · Define · Plan</span><span class="slide-number" data-current="6" data-total="12"></span></div>
+  </section>
+
+  <!-- ==================== 7. Act II: Build it ==================== -->
+  <section class="slide" data-title="Build it">
+    <p class="kicker">COMMAND 4 · BUILD IT</p>
+    <h2 class="h2"><span class="gradient-text">/tgd-develop</span> — isolated, routed, test-driven.</h2>
+    <div class="grid g2 mt-xl" style="align-items:start">
+      <div class="stack" style="gap:14px">
+        <div class="card"><h4>🏖️ Mandatory worktree isolation</h4><p>Code is written in a Git worktree sandbox. A failed experiment? Delete the worktree — your plans are untouched.</p></div>
+        <div class="card"><h4>🔀 Smart execution routing</h4><p><b>&lt; 3 tasks</b> → the main agent implements directly.<br><b>≥ 3 tasks</b> → parallel subagents with two-stage review: spec compliance, then code quality.</p></div>
+        <div class="card"><h4>🔴🟢 TDD, not tests-after</h4><p>Red → Green → Refactor for every task. The BDD criteria from TASKS.md become the tests.</p></div>
+      </div>
+      <div class="terminal">
+        <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>Worktree</span></div>
+<pre>&lt;project&gt;-jwt-auth/          <span class="dim-t">← sandbox</span>
+├── src/
+│   ├── middleware/auth.ts
+│   └── routes/auth.ts
+└── tests/
+    ├── auth.test.ts         <span class="dim-t">[R]</span>
+    └── login.test.ts        <span class="dim-t">[R]</span>
+
+<span class="dim-t">Per task:</span>
+  1. test first (red)
+  2. implement (green)
+  3. refactor — tests stay green</pre>
+      </div>
+    </div>
+    <div class="deck-footer"><span>Build it — mandatory worktree + smart routing</span><span class="slide-number" data-current="7" data-total="12"></span></div>
+  </section>
+
+  <!-- ==================== 8. Act III: Prove it ==================== -->
+  <section class="slide" data-title="Prove it">
+    <p class="kicker">COMMAND 5 · PROVE IT</p>
+    <h2 class="h2"><span class="gradient-text">/tgd-verify</span> — <span style="color:#ef4444">the hard gate.</span></h2>
+    <p class="lede mt-s">Tests are proof. Not confidence, not "looks right" — output.</p>
+    <div class="grid g2 mt-l" style="align-items:start">
+      <div class="stack" style="gap:14px">
+        <div class="card"><h4>1 · Run everything</h4><p>Unit, integration, and E2E. UI features get real browser verification with a screenshot as evidence.</p></div>
+        <div class="card"><h4>2 · Cross-feature regression</h4><p>Reads <b>REGRESSION-CATALOG.md</b> and re-runs every <span class="cmd-name">[R]</span> test from every previously shipped feature.</p></div>
+        <div class="card" style="border-top:3px solid #ef4444"><h4>3 · Block on failure</h4><p>Any red test stops the pipeline. Work goes back to Develop. No merge, no ship, no exceptions.</p></div>
+      </div>
+      <div class="terminal">
+        <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>TEST-REPORT.md</span></div>
+<pre>## Summary
+Total: 12   Passed: 12   Failed: 0
+Regression: 5/5 ✓
+Catalog:   19/19 ✓  <span class="dim-t">(cross-feature)</span>
+
+## Evidence
+[R] test_valid_jwt        ✅
+[R] test_wrong_password   ✅
+    test_empty_password   ✅
+    screenshot: login-e2e.png ✅
+
+Sign-off:
+  - [ ] <b>QA</b>: (pending)</pre>
+      </div>
+    </div>
+    <div class="deck-footer"><span>Prove it — tests are proof</span><span class="slide-number" data-current="8" data-total="12"></span></div>
+  </section>
+
+  <!-- ==================== 9. Act IV: Ship it ==================== -->
+  <section class="slide" data-title="Ship it">
+    <p class="kicker">COMMANDS 6–7 · SHIP IT</p>
+    <h2 class="h2">Review the health. <span class="gradient-text">Release with a trail.</span></h2>
+    <div class="grid g2 mt-xl" style="align-items:start">
+      <div class="card">
+        <h4><span class="cmd-name">/tgd-review</span> — five axes</h4>
+        <div class="stack mt-m body-list">
+          <div>1 · <b>Correctness</b> — does it do what SPEC says?</div>
+          <div>2 · <b>Maintainability</b> — can someone else read it?</div>
+          <div>3 · <b>Security</b> — OWASP + secrets management</div>
+          <div>4 · <b>Performance</b> — no N+1, no waste</div>
+          <div>5 · <b>Test coverage</b> — 80% unit · 15% integration · 5% E2E</div>
+        </div>
+        <div class="artifact mt-m">→ REVIEW.md <span class="dim-t">(QA + DEV sign)</span></div>
+      </div>
+      <div class="card">
+        <h4><span class="cmd-name">/tgd-release</span> — faster is safer</h4>
+        <div class="stack mt-m body-list">
+          <div>· Atomic commits, CI green, staged rollout</div>
+          <div>· <b>Regression catalog</b> updated with this feature's [R] tests — the safety net grows</div>
+          <div>· <b>ADRs</b> for architectural decisions</div>
+          <div>· <b>METRICS.md</b> — KPI handoff for post-launch tracking</div>
+        </div>
+        <div class="artifact mt-m">→ CHANGELOG.md · METRICS.md <span class="dim-t">(PM signs)</span></div>
+      </div>
+    </div>
+    <div class="callout mt-xl">🤖 Backed by three reviewer personas — <b>code-reviewer</b> · <b>test-engineer</b> · <b>security-auditor</b> — you (or the command) orchestrate them.</div>
+    <div class="deck-footer"><span>Ship it — Review · Release</span><span class="slide-number" data-current="9" data-total="12"></span></div>
+  </section>
+
+  <!-- ==================== 10. Testing Strategy ==================== -->
   <section class="slide" data-title="Testing">
     <p class="num-tag">TESTING STRATEGY</p>
     <h2 class="h2 mt-s">Three roles. One rule:<br><span style="color:#ef4444">no shortcuts.</span></h2>
-    <div class="grid g3 mt-l">
-      <div class="card" style="border-top:3px solid #60a5fa"><h4>🔨 Builder</h4><p class="dim" style="font-size:12px">/tgd-develop</p><p>Write tests alongside code. Red → Green → Refactor.</p></div>
-      <div class="card" style="border-top:3px solid #fbbf24"><h4>🔍 Inspector</h4><p class="dim" style="font-size:12px">/tgd-verify</p><p>Run ALL tests. Reproduce → Localize → Fix → Guard.</p></div>
-      <div class="card" style="border-top:3px solid #a78bfa"><h4>🕵️ Auditor</h4><p class="dim" style="font-size:12px">/tgd-review</p><p>Audit test quality. 80% unit, 15% integration, 5% E2E.</p></div>
+    <div class="grid g3 mt-xl">
+      <div class="card" style="border-top:3px solid #60a5fa"><h4>🔨 Builder</h4><p class="dim cmd-sub">/tgd-develop</p><p class="mt-s">Writes tests alongside code.<br>Red → Green → Refactor.</p></div>
+      <div class="card" style="border-top:3px solid #fbbf24"><h4>🔍 Inspector</h4><p class="dim cmd-sub">/tgd-verify</p><p class="mt-s">Runs ALL tests + browser E2E.<br>Reproduce → Localize → Fix → Guard.</p></div>
+      <div class="card" style="border-top:3px solid #a78bfa"><h4>🕵️ Auditor</h4><p class="dim cmd-sub">/tgd-review</p><p class="mt-s">Audits test quality.<br>80% unit · 15% integration · 5% E2E.</p></div>
     </div>
-    <p class="lede mt-l"><b>Why separate roles?</b> Separation prevents "lazy agent" behavior.</p>
-    <div class="deck-footer"><span>Testing Strategy</span><span class="slide-number" data-current="12" data-total="16"></span></div>
+    <p class="lede mt-xl"><b>Why separate roles?</b> The one who writes the code never gets to be the only one who judges it — separation is what prevents "lazy agent" behavior.</p>
+    <div class="deck-footer"><span>Testing strategy — builder, inspector, auditor</span><span class="slide-number" data-current="10" data-total="12"></span></div>
   </section>
 
-  <!-- ==================== 14. Agent Personas ==================== -->
-  <section class="slide" data-title="Personas">
-    <p class="num-tag">AGENT PERSONAS</p>
-    <h2 class="h2 mt-s">Three specialists. You orchestrate.</h2>
-    <div class="grid g3 mt-l">
-      <div class="persona" style="border-top-color:#60a5fa"><div class="icon">👨‍💻</div><h4>code-reviewer</h4><div class="role">Senior Staff Engineer</div><p>"Would a staff engineer approve this?"</p></div>
-      <div class="persona" style="border-top-color:#fbbf24"><div class="icon">🧪</div><h4>test-engineer</h4><div class="role">QA Specialist</div><p>"Prove it works."</p></div>
-      <div class="persona" style="border-top-color:#ef4444"><div class="icon">🔒</div><h4>security-auditor</h4><div class="role">Security Engineer</div><p>"What can go wrong?"</p></div>
-    </div>
-    <div class="quote-box mt-l">
-      <div class="quote">Personas do not invoke other personas — the user (or slash command) is the orchestrator.</div>
-    </div>
-    <div class="deck-footer"><span>Agent Personas</span><span class="slide-number" data-current="13" data-total="16"></span></div>
-  </section>
-
-  <!-- ==================== 15. Summary ==================== -->
-  <section class="slide" data-title="Summary">
-    <p class="num-tag">AT A GLANCE</p>
-    <h2 class="h2 mt-s">Everything you need to know about tGD.</h2>
-    <div class="grid g2 mt-l" style="align-items:start">
-      <div>
-        <div class="card" style="border-left:3px solid var(--accent);margin-bottom:12px">
-          <h4>🎯 Core Value</h4>
-          <div class="stack" style="font-size:13px;color:var(--text-2)">
-            <div>7-stage pipeline: <b>Map → Define → Plan → Develop → Verify → Review → Release</b></div>
-            <div>Forces agents to follow disciplined workflow</div>
-            <div>No more "should work" — only evidence</div>
-          </div>
-        </div>
-        <div class="card" style="border-left:3px solid #60a5fa;margin-bottom:12px">
-          <h4>⚡ Key Features</h4>
-          <div class="stack" style="font-size:13px;color:var(--text-2)">
-            <div>🏖️ <b>Worktree Isolation</b> — failed experiments? Just remove</div>
-            <div>🔀 <b>Smart Routing</b> — &lt;3 tasks fast, ≥3 tasks parallel subagents</div>
-            <div>🚦 <b>Regression Gate</b> — Verify blocks if ANY test fails</div>
-            <div>📋 <b>Triple-Source Planning</b> — CONTEXT + PRD + SPEC → TASKS.md</div>
-          </div>
-        </div>
-      </div>
-      <div>
-        <div class="card" style="border-left:3px solid #fbbf24;margin-bottom:12px">
-          <h4>🧪 Testing Strategy</h4>
-          <div class="stack" style="font-size:13px;color:var(--text-2)">
-            <div>🔨 <b>Builder</b> — Write tests alongside code (Red-Green-Refactor)</div>
-            <div>🔍 <b>Inspector</b> — Run ALL tests + browser E2E</div>
-            <div>🕵️ <b>Auditor</b> — Audit quality (80% unit / 15% integration / 5% E2E)</div>
-          </div>
-        </div>
-        <div class="card" style="border-left:3px solid #a78bfa">
-          <h4>🚀 Quick Start</h4>
-          <div class="terminal" style="margin-top:8px">
-            <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>Terminal</span></div>
-<pre><span style="color:var(--text-3)"># 3 commands to ship</span>
-$ git clone .../tGD.git
-$ cd tGD && <span style="color:var(--accent)">bash setup.sh</span>
-$ <span style="color:var(--accent)">/tgd-map</span> → <span style="color:var(--accent)">/tgd-define</span> → ... → <span style="color:var(--accent)">/tgd-release</span></pre>
-          </div>
-          <div class="stack mt-s" style="font-size:13px;color:var(--text-2)">
-            <div>6 platforms: Claude Code · Codex · Gemini · OpenCode · Pi · Hermes</div>
-            <div>29 skills · 3 personas · 30s setup</div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="deck-footer"><span>Summary — Everything at a glance</span><span class="slide-number" data-current="14" data-total="16"></span></div>
-  </section>
-
-  <!-- ==================== 16. Quick Start ==================== -->
+  <!-- ==================== 11. Quick Start ==================== -->
   <section class="slide" data-title="Quick Start">
     <p class="num-tag">GETTING STARTED</p>
-    <h2 class="h2 mt-s">Up and running in 30 seconds.</h2>
-    <div class="grid g2 mt-l" style="align-items:start">
+    <h2 class="h2 mt-s">Thirty seconds to install.<br>One command to start.</h2>
+    <div class="grid g2 mt-xl" style="align-items:start">
       <div class="terminal">
         <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>Terminal</span></div>
-<pre><span style="color:var(--text-3)"># Clone & install</span>
+<pre><span class="dim-t"># Clone &amp; install (30s)</span>
 $ git clone https://github.com/\
   openclawyhwang-hub/tGD.git
-$ cd tGD && <span style="color:var(--accent)">bash setup.sh</span>
+$ cd tGD &amp;&amp; <span class="acc">bash setup.sh</span>
 
-<span style="color:var(--text-3)"># Start your agent</span>
-$ claude   <span style="color:var(--text-3)"># Claude Code</span>
-$ codex    <span style="color:var(--text-3)"># Codex CLI</span>
-$ gemini   <span style="color:var(--text-3)"># Gemini CLI</span>
-$ opencode <span style="color:var(--text-3)"># OpenCode</span>
-$ pi       <span style="color:var(--text-3)"># Pi Coding Agent</span>
-$ hermes   <span style="color:var(--text-3)"># Hermes Agent</span>
+<span class="dim-t"># Start any agent</span>
+$ claude · codex · gemini
+$ opencode · pi · hermes
 
-<span style="color:var(--text-3)"># Initialize</span>
-$ <span style="color:var(--accent)">/tgd-map</span>
-
-<span style="color:var(--text-3)"># Build your first feature</span>
-$ <span style="color:var(--accent)">/tgd-define</span> add user auth</pre>
+<span class="dim-t"># Initialize, then build</span>
+$ <span class="acc">/tgd-map</span>
+$ <span class="acc">/tgd-define</span> add user auth</pre>
       </div>
-      <div>
-        <div class="card"><h4>Platform Support</h4>
-          <div class="stack mt-s" style="font-size:13px;color:var(--text-2)">
-            <div>Claude Code — Native commands + skills</div>
-            <div>Codex CLI — Prompt-based integration</div>
-            <div>Gemini CLI — Native commands</div>
-            <div>OpenCode — Auto-detect skills</div>
-            <div>Pi — TypeScript extension</div>
-            <div>Hermes Agent — Python plugin + hooks</div>
-          </div>
+      <div class="card"><h4>Platform support</h4>
+        <div class="stack mt-m body-list">
+          <div><b>Claude Code</b> — native commands + skills</div>
+          <div><b>Codex CLI</b> — prompt-based integration</div>
+          <div><b>Gemini CLI</b> — native commands</div>
+          <div><b>OpenCode</b> — auto-detected skills</div>
+          <div><b>Pi</b> — TypeScript extension</div>
+          <div><b>Hermes Agent</b> — Python plugin + hooks</div>
         </div>
+        <p class="mt-m dim" style="font-size:14px">One <span class="cmd-name">setup.sh</span> detects what you have and links the right format for each.</p>
       </div>
     </div>
-    <div class="deck-footer"><span>Quick Start</span><span class="slide-number" data-current="15" data-total="16"></span></div>
+    <div class="deck-footer"><span>Quick start</span><span class="slide-number" data-current="11" data-total="12"></span></div>
   </section>
 
-  <!-- ==================== 16. CTA ==================== -->
+  <!-- ==================== 12. CTA ==================== -->
   <section class="slide center" data-title="CTA">
     <div class="cover-bg"></div>
     <div class="cover-blob"></div>
-    <p class="kicker">Ready to ship?</p>
+    <p class="kicker">READY TO SHIP?</p>
     <h1 class="h1 anim-fade-up" data-anim="fade-up">Stop vibe-coding.<br><span class="gradient-text">Start shipping.</span></h1>
     <p class="lede mt-m">tGD turns your AI agent from a code generator<br>into a disciplined engineering partner.</p>
     <div class="ask-box mt-l" style="display:inline-block;text-align:left">
-      <pre style="background:transparent;border:none;padding:0;color:rgba(255,255,255,.9);font-size:15px;margin:0">git clone https://github.com/openclawyhwang-hub/tGD.git
+      <pre style="background:transparent;border:none;padding:0;color:rgba(255,255,255,.92);font-size:16px;margin:0">git clone https://github.com/openclawyhwang-hub/tGD.git
 cd tGD && bash setup.sh
 claude  # then: /tgd-map</pre>
     </div>
@@ -636,7 +304,7 @@ claude  # then: /tgd-map</pre>
       <span class="pill" style="font-size:15px">Apache 2.0</span>
       <span class="pill" style="font-size:15px">6 Platforms</span>
     </div>
-    <div class="deck-footer"><span>openclawyhwang-hub/tGD</span><span class="slide-number" data-current="16" data-total="16"></span></div>
+    <div class="deck-footer"><span>openclawyhwang-hub/tGD</span><span class="slide-number" data-current="12" data-total="12"></span></div>
   </section>
 
 </div>

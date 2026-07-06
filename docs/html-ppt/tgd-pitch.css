@@ -13,12 +13,12 @@
 .tpl-tgd-pitch .kicker{font-weight:700;font-size:14px;letter-spacing:.08em;text-transform:uppercase}
 .tpl-tgd-pitch .h1{font-size:72px;line-height:1.05;font-weight:900;letter-spacing:-.04em}
 .tpl-tgd-pitch .h2{font-size:48px;font-weight:800;letter-spacing:-.03em;line-height:1.15}
-.tpl-tgd-pitch .lede{font-size:18px;max-width:56ch;line-height:1.6}
-.tpl-tgd-pitch .card{border-radius:12px;padding:24px;transition:all .2s}
+.tpl-tgd-pitch .lede{font-size:19px;max-width:62ch;line-height:1.65}
+.tpl-tgd-pitch .card{border-radius:12px;padding:26px 28px;transition:all .2s}
 .tpl-tgd-pitch .card:hover{transform:translateY(-2px)}
-.tpl-tgd-pitch .card h4{margin-bottom:8px}
-.tpl-tgd-pitch .card p{font-size:14px;line-height:1.5}
-.tpl-tgd-pitch .pill{display:inline-block;padding:4px 12px;border-radius:99px;font-size:13px;font-weight:600}
+.tpl-tgd-pitch .card h4{margin-bottom:10px;font-size:17.5px}
+.tpl-tgd-pitch .card p{font-size:15px;line-height:1.6}
+.tpl-tgd-pitch .pill{display:inline-block;padding:5px 14px;border-radius:99px;font-size:14px;font-weight:600}
 .tpl-tgd-pitch .tag{display:inline-block;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:600;font-family:'SF Mono','Menlo',monospace}
 .tpl-tgd-pitch .gradient-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
 .tpl-tgd-pitch .num-tag{font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
@@ -30,7 +30,7 @@
 .tpl-tgd-pitch .brand-dot{display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--grad);margin-right:8px;vertical-align:middle}
 .tpl-tgd-pitch .brand{font-weight:800;font-size:20px;letter-spacing:-.02em}
 .tpl-tgd-pitch code{font-family:'SF Mono','Menlo',monospace;font-size:13px;border-radius:4px;padding:2px 6px}
-.tpl-tgd-pitch pre{border-radius:8px;padding:16px;font-family:'SF Mono','Menlo',monospace;font-size:13px;overflow-x:auto;line-height:1.6}
+.tpl-tgd-pitch pre{border-radius:8px;padding:18px;font-family:'SF Mono','Menlo',monospace;font-size:14px;overflow-x:auto;line-height:1.7}
 .tpl-tgd-pitch .terminal{border-radius:10px;overflow:hidden}
 .tpl-tgd-pitch .terminal .bar{padding:8px 12px;display:flex;align-items:center;gap:6px;font-size:12px}
 .tpl-tgd-pitch .terminal .bar .dot{width:10px;height:10px;border-radius:50%}
@@ -56,26 +56,26 @@
 .tpl-tgd-pitch .stat-row{display:flex;gap:16px;margin-top:24px;flex-wrap:wrap}
 .tpl-tgd-pitch .stat{border-radius:10px;padding:20px;text-align:center;flex:1;min-width:120px}
 .tpl-tgd-pitch .stat .n{font-size:40px;font-weight:900;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;line-height:1}
-.tpl-tgd-pitch .stat .l{font-size:12px;margin-top:4px}
+.tpl-tgd-pitch .stat .l{font-size:14px;margin-top:6px}
 
 /* Quote */
 .tpl-tgd-pitch .quote-box{border-radius:12px;padding:24px 32px;margin-top:16px}
-.tpl-tgd-pitch .quote-box .quote{font-size:17px;font-style:italic;line-height:1.6}
-.tpl-tgd-pitch .quote-box .source{font-size:13px;margin-top:8px}
+.tpl-tgd-pitch .quote-box .quote{font-size:19px;font-style:italic;line-height:1.6}
+.tpl-tgd-pitch .quote-box .source{font-size:14px;margin-top:8px}
 
 /* Phase */
 .tpl-tgd-pitch .phase{display:grid;grid-template-columns:48px 1fr;gap:12px;align-items:start;padding:12px 16px;border-radius:8px;margin-bottom:8px}
 .tpl-tgd-pitch .phase .p-icon{font-size:1.4rem;text-align:center}
-.tpl-tgd-pitch .phase .p-name{font-weight:700;font-size:14px}
-.tpl-tgd-pitch .phase .p-desc{font-size:13px;line-height:1.4}
-.tpl-tgd-pitch .phase .p-skills{font-size:11px;font-family:'SF Mono','Menlo',monospace;margin-top:4px}
+.tpl-tgd-pitch .phase .p-name{font-weight:700;font-size:15.5px}
+.tpl-tgd-pitch .phase .p-desc{font-size:15px;line-height:1.5}
+.tpl-tgd-pitch .phase .p-skills{font-size:12px;font-family:'SF Mono','Menlo',monospace;margin-top:5px}
 
 /* Persona */
 .tpl-tgd-pitch .persona{border-radius:12px;padding:24px;text-align:center}
 .tpl-tgd-pitch .persona .icon{font-size:2rem;margin-bottom:8px}
 .tpl-tgd-pitch .persona h4{margin-bottom:4px}
 .tpl-tgd-pitch .persona .role{font-size:13px;margin-bottom:8px}
-.tpl-tgd-pitch .persona p{font-size:13px}
+.tpl-tgd-pitch .persona p{font-size:15px}
 
 /* Mobile: the deck is a fixed 16:9 stage and unusable on phones — degrade
    to a plain scrollable document: every slide stacked, chrome inline. */
@@ -93,3 +93,16 @@
   .tpl-tgd-pitch .cover-blob{width:280px;height:280px;right:-80px;top:-80px}
   .progress-bar,.notes-overlay,.overview{display:none!important}
 }
+
+/* rebuilt-deck utilities */
+.tpl-tgd-pitch .mt-xl{margin-top:40px}
+.tpl-tgd-pitch .cmd-name{font-family:'SF Mono','Menlo',monospace;font-weight:600;color:var(--accent);font-size:.95em}
+.tpl-tgd-pitch .cmd-sub{font-family:'SF Mono','Menlo',monospace;font-size:13px;margin-top:2px}
+.tpl-tgd-pitch .artifact{font-family:'SF Mono','Menlo',monospace;font-size:13.5px;color:var(--accent);
+  border:1px solid var(--border);border-radius:8px;padding:9px 13px;background:var(--surface-2)}
+.tpl-tgd-pitch .callout{border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:10px;
+  padding:14px 20px;font-size:15px;color:var(--text-2);background:var(--surface);max-width:900px}
+.tpl-tgd-pitch .body-list{font-size:15px;color:var(--text-2);line-height:1.55}
+.tpl-tgd-pitch .body-list>*+*{margin-top:9px}
+.tpl-tgd-pitch .dim-t{color:var(--text-3)}
+.tpl-tgd-pitch .acc{color:var(--accent)}
