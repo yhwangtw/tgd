@@ -13,11 +13,22 @@ $TGD_DIR is where ALL tGD artifacts live. It is a **sibling directory** outside 
 **Step 0b: Confirm $TGD_DIR with user:**
 
 - **$TGD_DIR already set (env var)** → Inform user: "📂 Using $TGD_DIR: `$TGD_DIR`" and proceed. No need to block.
-- **First-time setup** (no env var) → **MUST ask:**
+- **No env var → MUST ask. Always.** This is not only for first-time setup — an env var does not persist between sessions, so ask at the start of every `/tgd-map` run that has no env var. **The candidate directory already existing is NOT permission to skip the question** — an existing dir changes the wording, not the requirement:
+
+  If `<candidate path>` does **not** exist yet:
 
   > 📂 tGD artifacts will be stored at: `<candidate path>`
   >
   > 1. Use this path (Enter)
+  > 2. Use a different path (enter an absolute path)
+  >
+  > Choose one (default 1):
+
+  If `<candidate path>` **already exists** (from a previous run):
+
+  > 📂 Found existing tGD artifacts at: `<candidate path>` (CONTEXT.md: yes/no · features: N)
+  >
+  > 1. Reuse it (Enter)
   > 2. Use a different path (enter an absolute path)
   >
   > Choose one (default 1):
@@ -30,7 +41,7 @@ $TGD_DIR is where ALL tGD artifacts live. It is a **sibling directory** outside 
     export TGD_DIR="$TGD_DIR"
     ```
 
-- **Non-interactive mode** (CI, subagent delegation, no TTY) → Skip confirmation, proceed with candidate. Log: "📂 Using $TGD_DIR: `<candidate path>` (non-interactive)"
+- **Non-interactive mode** (CI, subagent delegation, no TTY) → Skip confirmation, proceed with candidate. Log: "📂 Using $TGD_DIR: `<candidate path>` (non-interactive)". This branch is for environments where asking is *impossible* — an interactive session with an existing dir does not qualify.
 
 Result:
 ```
