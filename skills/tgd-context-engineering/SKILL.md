@@ -19,10 +19,16 @@ Feed agents the right information at the right time. Context is the single bigge
 
 ## Context Discovery (First Step)
 
-**Inside the tGD lifecycle** (invoked from `/tgd-develop` or any command whose
-pre-flight found `$TGD_DIR/CONTEXT.md`): the repo scope was already established
-by `/tgd-map` Step 1 — **read CONTEXT.md's repo list instead of re-asking the
-user**. Asking "還有其他 repo 嗎" again on every task is noise.
+**Inside a DOWNSTREAM lifecycle command** (`/tgd-develop`, `/tgd-verify`, or any
+command whose pre-flight found `$TGD_DIR/CONTEXT.md`, **except `/tgd-map` itself**):
+the repo scope was already established by `/tgd-map` Step 1 — **read CONTEXT.md's
+repo list instead of re-asking the user**. Asking "還有其他 repo 嗎" again on
+every task is noise.
+
+**Exception — `/tgd-map` owns this question.** When this skill runs as part of
+`/tgd-map` (Step 2), do NOT let this rule suppress the command's own Step 1
+prompt: on a re-map, Step 1 shows the previous repo list and asks whether to
+reuse or change it. This skill never overrides that.
 
 **Standalone use only** (no CONTEXT.md exists):
 

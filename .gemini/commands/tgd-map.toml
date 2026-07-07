@@ -81,14 +81,27 @@ command -v node && command -v npm && echo "node/npm: OK" || echo "node/npm: MISS
 
 ## Step 1: Context Discovery
 
-Before analyzing anything, ask the user:
+Before analyzing anything, **ask the user — on every `/tgd-map` run**. An existing CONTEXT.md changes the wording of the question, never the requirement to ask (same rule as Step 0b):
+
+If no `$TGD_DIR/CONTEXT.md` exists yet (first map):
 
 > "除了當前 repo，還有其他需要參考的 repo 嗎？（local path 或 git URL）"
+
+If `$TGD_DIR/CONTEXT.md` **already exists** with a repo list (re-map):
+
+> 📚 上次 map 的 repo 清單：`<primary>` + `<additional repos, or "無">`
+>
+> 1. 沿用這份清單 (Enter)
+> 2. 增加/移除 repo（輸入 local path 或 git URL，或要移除的名稱）
+>
+> Choose one (default 1):
 
 - Accept **local paths** (e.g. `~/Projects/wayflow`) — resolve to absolute path
 - Accept **git URLs** (e.g. `github.com/CopilotKit/CopilotKit`) — clone to `/tmp/tgd-context/<repo-name>`
 - If user says "no" or provides nothing, proceed with primary repo only
 - Store results for CONTEXT.md (see structure below)
+
+Note: `tgd-context-engineering`'s "read CONTEXT.md's repo list instead of re-asking" rule applies to **downstream** commands (`/tgd-develop`, `/tgd-verify`, …) — it does NOT apply to `/tgd-map` itself. Map owns this question; downstream consumes the answer.
 
 ## Step 2: Context Engineering
 
