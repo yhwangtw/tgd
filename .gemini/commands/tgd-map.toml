@@ -166,12 +166,29 @@ only the data varies.
 The generator is a formatter — its prose quality comes from what you write here.
 Read each repo's `knowledge-graph.json` + the actual source and write
 `$TGD_DIR/wiki/wiki-prose.json` following the schema in the `tgd-wiki-generation`
-skill. Cover, per repo:
-- `overview` / `architecture` / `onboarding` — a paragraph each
-- `layers` / `modules` / `flows` — one line of responsibility each
+skill. **All values are Markdown** — the wiki renders headings, bold, lists,
+inline/fenced code, and `#/`-anchor or http(s) links. Write documentation a
+human wants to read, not caption-length filler. Per repo, the content bar is:
+- `overview` — **2-4 paragraphs**: what the project does and for whom; how the
+  pieces fit (name the layers and the request/data path through them); what an
+  engineer should know before touching anything. Use `##` subheadings and lists
+  where they help.
+- `architecture` — **1-3 paragraphs**: the layering, the dominant dependency
+  direction, and *why* it's shaped that way (the diagrams show the what; you
+  write the why).
+- `onboarding` — a narrated path: "start at X because …, then Y, then Z", with
+  file names in backticks.
+- `layers` / `modules` — 2-4 sentences each: responsibility, key files, who
+  calls it, and any gotcha. Not "N files" — the generator derives that itself.
+- `flows` — narrate the sequence in prose ("the request enters at …, which
+  validates and hands off to …").
 - `files` — **every source file** gets a 1-2 sentence `summary`; explain
   **public / entry-reachable symbols** (skip trivial private one-liners — a
   paragraph restating a 3-line helper is noise, per `tgd-documentation-and-adrs`)
+
+Quality bar: if a page's prose would read the same for any random project, it's
+filler — rewrite it with this project's names, paths, and reasons. Ground every
+claim in the KG or the source you actually read.
 
 Coverage rules and cost control:
 - **Complete but altitude-appropriate.** Every file explained; deep symbol prose only for public API. Don't invent filler — an accurate one-liner beats a padded paragraph.
