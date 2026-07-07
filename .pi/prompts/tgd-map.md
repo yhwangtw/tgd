@@ -291,6 +291,7 @@ Synthesize data from the tools:
 - [ ] `$TGD_DIR/CONTEXT.md` exists and is non-empty
 - [ ] If any Tier 2 step was skipped: `## Degraded Mode` section in CONTEXT.md lists every skip with its reason
 - [ ] If additional repos were provided, their summaries appear in CONTEXT.md
+- [ ] The run ends with the **Step 9 Final Report** — every line a real value or an explicit `skipped — <reason>`; a run that ends without it fails this gate
 
 **Tier 2 (required if the tools were available — cross-check against Step 0.5 probe):**
 - [ ] `$TGD_DIR/.scans/<repo>/.codegraph` symlink exists
@@ -302,4 +303,22 @@ Synthesize data from the tools:
 
 **Gate integrity rule:** a Tier 2 checkbox may only be marked N/A if Step 0.5 proved the tool missing AND the skip is logged in Degraded Mode. "Tool probably missing" is not evidence — show the `command -v` output.
 
-If verification passes, suggest the next step: `/tgd-define` to start defining what to build.
+## Step 9: Final Report (MANDATORY — the run's LAST message)
+
+The LAST message of every `/tgd-map` run MUST be this report, fully filled in. Links recorded mid-run don't count — the user reads the end, not the middle. A run that finishes without this report fails the gate. **Every line must be either a real value or `skipped — <reason from Degraded Mode>`. Silence is not an option for any line.**
+
+```
+✅ /tgd-map 完成
+
+📂 $TGD_DIR: <path>
+📚 Repos mapped: <primary> (+ <additional>, or 無)
+👉 Wiki: <$TGD_DIR/wiki/wiki.html — opened in browser / open manually>
+   or: skipped — <reason, e.g. "understand skill unavailable (Degraded Mode)">
+📊 Dashboards:
+   - <repo-name>: http://localhost:<port>
+   - <repo-name>: http://localhost:<port>
+   or: skipped — <reason, e.g. "node/npm missing (Degraded Mode)">
+⚠️ Degraded Mode: <none / one line per skipped step with its reason>
+
+Next: /tgd-define
+```
