@@ -82,6 +82,17 @@ th { color: var(--fg2); font-size: 12px; text-transform: uppercase; letter-spaci
 .diagram svg { max-width: 100%; height: auto; }
 .crumbs { font-size: 13px; color: var(--fg2); margin-bottom: 16px; }
 
+.prose { max-width: 74ch; font-size: 15.5px; line-height: 1.75; margin: 14px 0 22px; }
+.prose p { margin: 0 0 12px; }
+.prose h3 { font-size: 17px; margin: 22px 0 8px; }
+.prose h4 { font-size: 15px; margin: 18px 0 6px; }
+.prose ul, .prose ol { margin: 0 0 12px 22px; }
+.prose li { margin: 3px 0; }
+.prose blockquote { border-left: 3px solid var(--accent); padding: 2px 14px; margin: 12px 0;
+  color: var(--fg2); }
+.prose pre { margin: 12px 0; }
+.prose code { font-size: 0.86em; }
+
 .srcview { background: var(--code-bg); border: 1px solid var(--border); border-radius: 10px;
   overflow-x: auto; margin: 12px 0; }
 .srcview .ln { display: flex; }
@@ -127,6 +138,50 @@ const $main = document.getElementById("main");
 const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g,
   c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const repoBy = slug => DATA.repos.find(r => r.slug === slug);
+
+/* Minimal markdown renderer for agent-authored prose (wiki-prose.json values).
+   Escape-first, then transform — no raw HTML passes through. Supports:
+   paragraphs, ## headings (mapped one level down), **bold**, *italic*,
+   `code`, fenced code blocks, -/* and 1. lists, > quotes, and links limited
+   to #anchors and http(s) URLs. Deliberately tiny; no external dependency. */
+function mdInline(t) {
+  return esc(t)
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
+    .replace(/(^|[\s(])\*([^*\n]+)\*(?=[\s).,;:!?]|$)/g, "$1<i>$2</i>")
+    .replace(/\[([^\]]+)\]\((#[^)\s]*|https?:\/\/[^)\s]+)\)/g, '<a href="$2">$1</a>');
+}
+function md(src) {
+  if (!src) return "";
+  const lines = String(src).split("\n");
+  let html = "", i = 0, para = [], list = null;
+  const flushP = () => { if (para.length) { html += `<p>${mdInline(para.join(" "))}</p>`; para = []; } };
+  const flushL = () => { if (list) { html += `<${list.tag}>` +
+    list.items.map(x => `<li>${mdInline(x)}</li>`).join("") + `</${list.tag}>`; list = null; } };
+  while (i < lines.length) {
+    const l = lines[i];
+    if (/^\s*```/.test(l)) { flushP(); flushL(); const buf = []; i++;
+      while (i < lines.length && !/^\s*```/.test(lines[i])) buf.push(lines[i++]);
+      i++; html += `<pre>${esc(buf.join("\n"))}</pre>`; continue; }
+    const h = l.match(/^(#{2,4})\s+(.*)/);
+    if (h) { flushP(); flushL();
+      const lvl = Math.min(h[1].length + 1, 5);
+      html += `<h${lvl}>${mdInline(h[2])}</h${lvl}>`; i++; continue; }
+    const q = l.match(/^>\s?(.*)/);
+    if (q) { flushP(); flushL(); const buf = [q[1]]; i++;
+      while (i < lines.length && /^>\s?/.test(lines[i])) buf.push(lines[i++].replace(/^>\s?/, ""));
+      html += `<blockquote>${mdInline(buf.join(" "))}</blockquote>`; continue; }
+    const ul = l.match(/^\s*[-*]\s+(.*)/), ol = l.match(/^\s*\d+[.)]\s+(.*)/);
+    if (ul || ol) { flushP(); const tag = ul ? "ul" : "ol";
+      if (!list || list.tag !== tag) { flushL(); list = { tag, items: [] }; }
+      list.items.push((ul || ol)[1]); i++; continue; }
+    if (/^\s*$/.test(l)) { flushP(); flushL(); i++; continue; }
+    para.push(l.trim()); i++;
+  }
+  flushP(); flushL();
+  return html;
+}
+const prose = t => t ? `<div class="prose">${md(t)}</div>` : "";
 
 const HAS_MERMAID = typeof mermaid !== "undefined";
 if (HAS_MERMAID) {
@@ -249,6 +304,7 @@ function viewRepoHome(repo) {
     <div class="hero"><h1>${esc(repo.name)} — Project Wiki</h1>
       <p>${esc(repo.description) || "Explore the architecture, modules, and flows of this codebase."}</p></div>
     ${kpis([[repo.kpi.files, "Files"], [repo.modules.length, "Modules"], [repo.flows.length, "Flows"], [repo.kpi.edges, "Dependencies"]])}
+    ${repo.overview ? `<h2>📋 About</h2>${prose(repo.overview)}` : ""}
     <h2>🧩 Modules</h2>
     <div class="grid">${repo.modules.map(m => `
       <a class="card" href="#/r/${esc(repo.slug)}/module/${esc(m.slug)}">
@@ -268,7 +324,7 @@ function viewOverview(repo) {
   $main.innerHTML = `
     ${crumbs([[`/r/${repo.slug}`, repo.name], [null, "Overview"]])}
     <h1 class="page">📋 Overview</h1>
-    <p class="sub">${esc(repo.overview || repo.description)}</p>
+    ${prose(repo.overview || repo.description)}
     ${kpis([[repo.kpi.files, "Files"], [repo.modules.length, "Modules"], [repo.flows.length, "Flows"], [repo.kpi.edges, "Dependencies"]])}
     <h2>Tech</h2>
     <table><tr><th>Languages</th><td>${(repo.languages || []).map(esc).join(", ") || "—"}</td></tr>
@@ -290,7 +346,7 @@ function viewArchitecture(repo) {
   $main.innerHTML = `
     ${crumbs([[`/r/${repo.slug}`, repo.name], [null, "Architecture"]])}
     <h1 class="page">🏛️ Architecture</h1>
-    ${repo.architecture ? `<p class="sub">${esc(repo.architecture)}</p>` : ""}
+    ${prose(repo.architecture)}
     <h2>Layer Diagram</h2>${diagram(repo.architecture_mermaid)}
     <h2>Dependency Graph (top nodes)</h2>${diagram(repo.dependency_mermaid)}
     <h2>Layers</h2>
@@ -305,7 +361,7 @@ function viewOnboarding(repo) {
   $main.innerHTML = `
     ${crumbs([[`/r/${repo.slug}`, repo.name], [null, "Onboarding"]])}
     <h1 class="page">🧭 Onboarding</h1>
-    <p class="sub">${esc(repo.onboarding || "Suggested reading path through the codebase.")}</p>
+    ${prose(repo.onboarding || "Suggested reading path through the codebase.")}
     ${repo.tour.length ? repo.tour.map((t, i) => `
       <div class="tour-step"><h3>Step ${i + 1}: ${esc(t.title)}</h3>
         <p>${esc(t.description)}</p>
@@ -321,7 +377,7 @@ function viewModule(repo, slug) {
   $main.innerHTML = `
     ${crumbs([[`/r/${repo.slug}`, repo.name], [null, "Modules"], [null, m.title]])}
     <h1 class="page">${m.icon || "🧩"} ${esc(m.title)} <span class="badge">${esc(m.accent)}</span></h1>
-    <p class="sub">${esc(m.summary)}</p>
+    ${prose(m.summary)}
     <h2>Key Files</h2>
     ${m.files.length ? `<table><tr><th>File</th><th>Role</th></tr>${m.files.map(f =>
       `<tr><td><a href="#${srcHref(repo, f.path)}"><code>${esc(f.path)}</code></a></td><td>${esc(f.summary) || "<i>(no summary)</i>"}</td></tr>`).join("")}</table>`
@@ -343,7 +399,7 @@ function viewFlow(repo, slug) {
   $main.innerHTML = `
     ${crumbs([[`/r/${repo.slug}`, repo.name], [null, "Flows"], [null, f.title]])}
     <h1 class="page">🔀 ${esc(f.title)}</h1>
-    <p class="sub">${esc(f.description)}</p>
+    ${prose(f.description)}
     <h2>Sequence</h2>${diagram(f.mermaid)}
     <h2>Files Involved</h2>
     ${f.files.length ? `<table><tr><th>File</th></tr>${f.files.map(x =>
@@ -382,7 +438,7 @@ function viewSourceFile(repo, rawPath) {
   $main.innerHTML = `
     ${crumbs([[`/r/${repo.slug}`, repo.name], [`/r/${repo.slug}/source`, "Source"], [null, path]])}
     <h1 class="page">📄 ${esc(path)}</h1>
-    ${(repo.fileSummaries || {})[path] ? `<p class="sub">${esc(repo.fileSummaries[path])}</p>` : ""}
+    ${(repo.fileSummaries || {})[path] ? prose(repo.fileSummaries[path]) : ""}
     <p class="sub">${s.line_count} lines · ${esc(s.language)}${s.truncated ? " · <b>truncated</b>" : ""}</p>
     <div class="srcview">${s.lines.map((tx, i) => {
       const n = i + 1;
