@@ -13,11 +13,22 @@ $TGD_DIR is where ALL tGD artifacts live. It is a **sibling directory** outside 
 **Step 0b: Confirm $TGD_DIR with user:**
 
 - **$TGD_DIR already set (env var)** → Inform user: "📂 Using $TGD_DIR: `$TGD_DIR`" and proceed. No need to block.
-- **First-time setup** (no env var) → **MUST ask:**
+- **No env var → MUST ask. Always.** This is not only for first-time setup — an env var does not persist between sessions, so ask at the start of every `/tgd-map` run that has no env var. **The candidate directory already existing is NOT permission to skip the question** — an existing dir changes the wording, not the requirement:
+
+  If `<candidate path>` does **not** exist yet:
 
   > 📂 tGD artifacts will be stored at: `<candidate path>`
   >
   > 1. Use this path (Enter)
+  > 2. Use a different path (enter an absolute path)
+  >
+  > Choose one (default 1):
+
+  If `<candidate path>` **already exists** (from a previous run):
+
+  > 📂 Found existing tGD artifacts at: `<candidate path>` (CONTEXT.md: yes/no · features: N)
+  >
+  > 1. Reuse it (Enter)
   > 2. Use a different path (enter an absolute path)
   >
   > Choose one (default 1):
@@ -30,7 +41,7 @@ $TGD_DIR is where ALL tGD artifacts live. It is a **sibling directory** outside 
     export TGD_DIR="$TGD_DIR"
     ```
 
-- **Non-interactive mode** (CI, subagent delegation, no TTY) → Skip confirmation, proceed with candidate. Log: "📂 Using $TGD_DIR: `<candidate path>` (non-interactive)"
+- **Non-interactive mode** (CI, subagent delegation, no TTY) → Skip confirmation, proceed with candidate. Log: "📂 Using $TGD_DIR: `<candidate path>` (non-interactive)". This branch is for environments where asking is *impossible* — an interactive session with an existing dir does not qualify.
 
 Result:
 ```
@@ -70,14 +81,27 @@ command -v node && command -v npm && echo "node/npm: OK" || echo "node/npm: MISS
 
 ## Step 1: Context Discovery
 
-Before analyzing anything, ask the user:
+Before analyzing anything, **ask the user — on every `/tgd-map` run**. An existing CONTEXT.md changes the wording of the question, never the requirement to ask (same rule as Step 0b):
+
+If no `$TGD_DIR/CONTEXT.md` exists yet (first map):
 
 > "除了當前 repo，還有其他需要參考的 repo 嗎？（local path 或 git URL）"
+
+If `$TGD_DIR/CONTEXT.md` **already exists** with a repo list (re-map):
+
+> 📚 上次 map 的 repo 清單：`<primary>` + `<additional repos, or "無">`
+>
+> 1. 沿用這份清單 (Enter)
+> 2. 增加/移除 repo（輸入 local path 或 git URL，或要移除的名稱）
+>
+> Choose one (default 1):
 
 - Accept **local paths** (e.g. `~/Projects/wayflow`) — resolve to absolute path
 - Accept **git URLs** (e.g. `github.com/CopilotKit/CopilotKit`) — clone to `/tmp/tgd-context/<repo-name>`
 - If user says "no" or provides nothing, proceed with primary repo only
 - Store results for CONTEXT.md (see structure below)
+
+Note: `tgd-context-engineering`'s "read CONTEXT.md's repo list instead of re-asking" rule applies to **downstream** commands (`/tgd-develop`, `/tgd-verify`, …) — it does NOT apply to `/tgd-map` itself. Map owns this question; downstream consumes the answer.
 
 ## Step 2: Context Engineering
 
@@ -267,6 +291,7 @@ Synthesize data from the tools:
 - [ ] `$TGD_DIR/CONTEXT.md` exists and is non-empty
 - [ ] If any Tier 2 step was skipped: `## Degraded Mode` section in CONTEXT.md lists every skip with its reason
 - [ ] If additional repos were provided, their summaries appear in CONTEXT.md
+- [ ] The run ends with the **Step 9 Final Report** — every line a real value or an explicit `skipped — <reason>`; a run that ends without it fails this gate
 
 **Tier 2 (required if the tools were available — cross-check against Step 0.5 probe):**
 - [ ] `$TGD_DIR/.scans/<repo>/.codegraph` symlink exists
@@ -278,5 +303,23 @@ Synthesize data from the tools:
 
 **Gate integrity rule:** a Tier 2 checkbox may only be marked N/A if Step 0.5 proved the tool missing AND the skip is logged in Degraded Mode. "Tool probably missing" is not evidence — show the `command -v` output.
 
-If verification passes, suggest the next step: `/tgd-define` to start defining what to build.
+## Step 9: Final Report (MANDATORY — the run's LAST message)
+
+The LAST message of every `/tgd-map` run MUST be this report, fully filled in. Links recorded mid-run don't count — the user reads the end, not the middle. A run that finishes without this report fails the gate. **Every line must be either a real value or `skipped — <reason from Degraded Mode>`. Silence is not an option for any line.**
+
+```
+✅ /tgd-map 完成
+
+📂 $TGD_DIR: <path>
+📚 Repos mapped: <primary> (+ <additional>, or 無)
+👉 Wiki: <$TGD_DIR/wiki/wiki.html — opened in browser / open manually>
+   or: skipped — <reason, e.g. "understand skill unavailable (Degraded Mode)">
+📊 Dashboards:
+   - <repo-name>: http://localhost:<port>
+   - <repo-name>: http://localhost:<port>
+   or: skipped — <reason, e.g. "node/npm missing (Degraded Mode)">
+⚠️ Degraded Mode: <none / one line per skipped step with its reason>
+
+Next: /tgd-define
+```
 """
