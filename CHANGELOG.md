@@ -4,6 +4,16 @@ All notable changes to tGD will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/). Versions follow [CalVer](https://calver.org/) (YYYY.MM.DD).
 
+## v2026.07.07
+
+### ✨ Features
+- /tgd-map must end with a Final Report — links and skip reasons, always (`365a3b1`)
+- enforce required doc sections + consolidate the ADR template (`b0685b9`)
+### 🐛 Bug Fixes
+- /tgd-map re-runs must also re-confirm the additional-repo list (`b2b8ffc`)
+- /tgd-map must always confirm $TGD_DIR when no env var is set (`e0feaea`)
+
+
 ## v2026.07.06.1
 
 ### ✨ Features
