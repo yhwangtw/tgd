@@ -56,6 +56,8 @@ After completing the spec, verify the outputs.
 - [ ] `$TGD_DIR/` directory exists
 - [ ] `$TGD_DIR/<feature-name>/PRD.md` exists and is non-empty
 - [ ] `$TGD_DIR/<feature-name>/SPEC.md` exists and is non-empty
+- [ ] `python3 "$TGD_REPO_ROOT/scripts/check-doc-sections.py" PRD "$TGD_DIR/<feature-name>/PRD.md"` exits 0 — every required PRD section is present (`(if applicable)` sections are not forced; missing ones are listed)
+- [ ] `python3 "$TGD_REPO_ROOT/scripts/check-doc-sections.py" SPEC "$TGD_DIR/<feature-name>/SPEC.md"` exits 0 — every required SPEC section is present
 - [ ] PRD §6 Success Metrics: at least one row names a real data source (concrete tool query or named event) — OR the section is `N/A` with a named PM sign-off line. Placeholder rows (`[Metric 1]`, "check analytics") fail this gate.
 - [ ] No feature branch was created or checked out (that happens in `/tgd-develop`)
 - [ ] If UI feature: `$TGD_DIR/<feature-name>/DESIGN.md` exists with Component Tree

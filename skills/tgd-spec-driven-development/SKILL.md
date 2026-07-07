@@ -127,17 +127,19 @@ Don't silently fill in ambiguous requirements. The spec's entire purpose is to s
 |---------|-------------|--------------|--------------|
 | [Feature] | ✅/❌/Phase N | ✅/❌ | ✅/❌ |
 
-## 10. Stakeholder Alignment
+## 10. Stakeholder Alignment (if applicable)
 - **PM:** [Sign-off on scope]
 - **Design:** [Sign-off on UX flow]
 - **Engineering:** [Sign-off on feasibility]
 - **Security:** [Sign-off on security requirements]
 
-## 11. Timeline
+## 11. Timeline (if applicable)
 | Phase | Duration | Milestone |
 |-------|----------|-----------|
 | Phase 1 | [X weeks] | [Milestone] |
 ```
+
+Sections 1–8 are always required. **9 Competitive Analysis**, **10 Stakeholder Alignment**, and **11 Timeline** are marked *(if applicable)* — a solo or small feature may omit them. `/tgd-define`'s gate (`check-doc-sections.py`) enforces exactly this: the always-required sections must be present, the *(if applicable)* ones are not forced. To make another section optional, mark it *(if applicable)* here — the gate reads this template as its single source, so nothing else needs to change.
 
 **§6 Success Metrics — filling rules (enforced by `/tgd-define`'s gate):**
 
