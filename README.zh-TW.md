@@ -17,11 +17,9 @@
 
 **你的 PDLC 是為人類設計的。現在 agent 來做事。**
 
-tGD 把你現有的工作流程轉變成 **agentic PDLC pipeline** — 同樣的關卡、同樣的問責，10 倍速度。
+tGD 是一套開源 **skill pack**，支援 Claude Code、Codex、Gemini CLI、OpenCode、Pi、Hermes。它把你的產品開發生命週期（PDLC）裝進團隊本來就信任的關卡——先規格再寫程式、先測試再宣稱完成、人類簽核才放行。
 
 Map → Define → Plan → Develop → Verify → Review → Release
-
-支援 Claude Code、Codex CLI、Gemini CLI、OpenCode、Pi Coding Agent、Hermes Agent。
 
 ---
 
@@ -29,7 +27,7 @@ Map → Define → Plan → Develop → Verify → Review → Release
 
 **問題不是 agent 不會寫 code，而是沒有人管得住它。**
 
-**❌ 沒有 harness：**
+**❌ 沒有 tGD：**
 - Agent 說「應該可以了」——測試根本沒跑
 - 先寫 500 行才讀你的 codebase
 - 跳過規格，出 broken PR，然後消失
@@ -122,7 +120,7 @@ hermes
 
 ---
 
-## 💡 實際範例
+## 💡 操作範例
 
 ### 範例 1：映射專案
 ```
@@ -288,7 +286,6 @@ flowchart LR
 - **自動掃描** 你專案的必填欄位（`createmeta` API）。
 - **讓你選擇** Issue Type（Story, Task, Bug...）。
 - **統一格式** 每張單據都是 `As a...` 摘要 + `Given/When/Then` 驗收標準。
-- **自動繞過 Proxy** 加上 `curl -x ""`。
 
 ---
 
@@ -321,7 +318,7 @@ flowchart LR
 | 沙盒建造 | `/tgd-develop` | **強制 Worktree** + 智能路由 | `tgd-source-driven-development` → (`subagent` OR `incremental`) → `tgd-test-driven-development` |
 | 證明它能跑 | `/tgd-verify` | 測試就是證明 | `tgd-debugging-and-error-recovery` → `tgd-test-driven-development` → **Cross-Feature Regression Gate** |
 | 合併前審查 | `/tgd-review` | 改善程式碼健康 | `tgd-code-review-and-quality` → `tgd-code-simplification` |
-| 部署到生產 | `/tgd-release` | 快就是安全 | `tgd-git-workflow-and-versioning` → `tgd-shipping-and-launch` → **Regression Catalog Update + Audit** |
+| 部署到生產 | `/tgd-release` | 快就是安全 | `tgd-git-workflow-and-versioning` → `tgd-shipping-and-launch` → **Regression Catalog Update + Audit** → **METRICS.md 交接** |
 
 ---
 
@@ -547,6 +544,8 @@ Skills 使用**漸進式揭露**——agent 只在需要時載入細節，保持
 | **安裝時間** | < 30 秒 |
 | **第一個功能** | ~15 分鐘（從 `/tgd-define` 到 `/tgd-release`） |
 
+> Context 用量與時間數字為約略值——取決於你的專案規模、模型與機器。
+
 ---
 
 ## ❓ 常見問題
@@ -565,6 +564,9 @@ A：可以！`/tgd-map` 會先掃描你現有的程式碼庫。
 
 **Q：可以自訂 pipeline 嗎？**
 A：可以！編輯 `skills/` 目錄下的 skill 檔案來配合你團隊的工作流。
+
+**Q：tGD 會把我的程式碼傳到哪裡嗎？**
+A：不會。tGD 只是純 Markdown skills 和 shell 腳本，在你自己的 agent 裡執行——沒有伺服器、沒有遙測、不用帳號。程式碼不會離開你原本使用的工具。
 
 ---
 

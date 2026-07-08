@@ -17,11 +17,9 @@
 
 **Ihr PDLC wurde für Menschen entwickelt. Jetzt erledigen Agenten die Arbeit.**
 
-tGD verwandelt Ihren bestehenden Workflow in eine **agentic PDLC Pipeline** — gleiche Gates, gleiche Verantwortung, 10× Geschwindigkeit.
+tGD ist ein Open-Source **Skill-Pack** für Claude Code, Codex, Gemini CLI, OpenCode, Pi und Hermes. Es legt die Gates, denen Ihr Team bereits vertraut, um Ihren Product Development Lifecycle (PDLC) — Spec vor Code, Tests vor Behauptungen, menschliches Sign-off vor dem Release.
 
 Map → Define → Plan → Develop → Verify → Review → Release
-
-Funktioniert mit Claude Code, Codex CLI, Gemini CLI, OpenCode, Pi Coding Agent und Hermes Agent.
 
 ---
 
@@ -29,7 +27,7 @@ Funktioniert mit Claude Code, Codex CLI, Gemini CLI, OpenCode, Pi Coding Agent u
 
 **Das Problem ist nicht, dass Agenten nicht programmieren können. Es ist, dass niemand sie zur Verantwortung zieht.**
 
-**❌ Ohne Harness:**
+**❌ Ohne tGD:**
 - Agent sagt "sollte funktionieren" — Tests liefen nie
 - Schreibt 500 Zeilen, bevor er Ihre Codebasis liest
 - Überspringt die Spezifikation, liefert einen kaputten PR und verschwindet
@@ -47,8 +45,8 @@ Funktioniert mit Claude Code, Codex CLI, Gemini CLI, OpenCode, Pi Coding Agent u
 |------------|---------------|
 | **Solo-Entwickler** | Schneller liefern mit diszipliniertem KI-Workflow. Der Agent übernimmt Specs, Tests, Reviews |
 | **Team-Lead** | Standards für KI-generierten Code durchsetzen. Jeder PR folgt derselben 7-Stufen-Pipeline |
-| **Startup** | Schnell bewegen, ohne etwas zu zerstören. Der Harness fängt Agent-Fehler vor der Produktion ab |
-| **Enterprise** | Qualitätsgates für KI-Entwicklung. Security, Performance und Compliance werden durchgesetzt |
+| **Startup** | Schnell bewegen, ohne etwas zu zerstören. tGD fängt Agent-Fehler vor der Produktion ab |
+| **Enterprise** | Qualitätsgates für KI-Entwicklung. Security-, Performance- und Compliance-Gates eingebaut |
 
 ---
 
@@ -111,7 +109,7 @@ Nutzen Sie Claude Desktop statt eines Coding-Agent? tGD funktioniert im **halbau
 
 ---
 
-## 💡 Praxisbeispiele
+## 💡 Beispiel-Sessions
 
 ### Beispiel 1: Projekt mappen
 ```
@@ -264,7 +262,6 @@ Beim Sync zu Jira erstellt tGD nicht einfach blind Issues. Es:
 - **Erkennt** die Pflichtfelder Ihres Projekts über die `createmeta`-API
 - **Lässt Sie den Issue-Type wählen** (Story, Task, Bug, etc.)
 - **Formatiert** jedes Issue mit strukturierter `As a... I want...`-Zusammenfassung und `Given/When/Then`-Akzeptanzkriterien
-- **Umgeht Proxys** automatisch mit `curl -x ""`
 
 ---
 
@@ -297,7 +294,7 @@ Die `tgd` CLI verwaltet Installation, Updates und Diagnose:
 | Sandbox-Bau | `/tgd-develop` | **Pflicht-Worktree** + Intelligentes Routing | `tgd-source-driven-development` → (`subagent` OR `incremental`) → `tgd-test-driven-development` |
 | Beweis erbringen | `/tgd-verify` | Tests sind der Beweis | `tgd-debugging-and-error-recovery` → `tgd-test-driven-development` → **Cross-Feature Regression Gate** |
 | Review vor Merge | `/tgd-review` | Code-Qualität verbessern | `tgd-code-review-and-quality` → `tgd-code-simplification` |
-| Produktion | `/tgd-release` | Schneller ist sicherer | `tgd-git-workflow-and-versioning` → `tgd-shipping-and-launch` → **Regression Catalog Update + Audit** |
+| Produktion | `/tgd-release` | Schneller ist sicherer | `tgd-git-workflow-and-versioning` → `tgd-shipping-and-launch` → **Regression Catalog Update + Audit** → **METRICS.md-Übergabe** |
 
 ---
 
@@ -523,6 +520,8 @@ Jeder Skill folgt einer konsistenten Anatomie:
 | **Setup-Zeit** | < 30 Sekunden |
 | **Erstes Feature** | ~15 Minuten (von `/tgd-define` bis `/tgd-release`) |
 
+> Kontext- und Zeitangaben sind Näherungswerte — sie hängen von Projektgröße, Modell und Maschine ab.
+
 ---
 
 ## ❓ FAQ
@@ -541,6 +540,9 @@ A: Ja! `/tgd-map` scannt zuerst die bestehende Codebasis.
 
 **Q: Kann ich die Pipeline anpassen?**
 A: Ja! Bearbeiten Sie die Skill-Dateien in `skills/`, um sie an den Workflow Ihres Teams anzupassen.
+
+**Q: Sendet tGD meinen Code irgendwohin?**
+A: Nein. tGD besteht aus reinen Markdown-Skills und Shell-Skripten, die in Ihrem eigenen Agent laufen — kein Server, keine Telemetrie, kein Account. Ihr Code verlässt nie die Tools, die Sie bereits nutzen.
 
 ---
 

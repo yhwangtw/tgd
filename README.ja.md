@@ -17,11 +17,9 @@
 
 **あなたのPDLCは人間のために設計された。今ではエージェントが仕事をする。**
 
-tGDは既存のワークフローを **agentic PDLC pipeline** に変換 — 同じゲート、同じ責任、10倍の速度。
+tGDはClaude Code、Codex、Gemini CLI、OpenCode、Pi、Hermes対応のオープンソース **skill pack**。製品開発ライフサイクル（PDLC）を、チームがすでに信頼しているゲートで包みます — コードの前に仕様、主張の前にテスト、リリースの前に人間のサインオフ。
 
 Map → Define → Plan → Develop → Verify → Review → Release
-
-Claude Code、Codex CLI、Gemini CLI、OpenCode、Pi Coding Agent、Hermes Agent に対応。
 
 ---
 
@@ -29,7 +27,7 @@ Claude Code、Codex CLI、Gemini CLI、OpenCode、Pi Coding Agent、Hermes Agent
 
 **問題はエージェントがコードを書けないことではなく、誰もエージェントに責任を持たせていないことです。**
 
-**❌ ハーネスなし：**
+**❌ tGDなし：**
 - エージェントは「動くはず」と言う — テストは一度も実行されていない
 - コードベースを読む前に500行書く
 - 仕様を飛ばし、壊れたPRを出して消える
@@ -47,8 +45,8 @@ Claude Code、Codex CLI、Gemini CLI、OpenCode、Pi Coding Agent、Hermes Agent
 |--------------|-------------|
 | **個人開発者** | 規律あるAIワークフローでより速くリリース。仕様・テスト・レビューはエージェントが担当 |
 | **チームリード** | AI生成コード全体に標準を強制。すべてのPRが同じ7段階パイプラインに従う |
-| **スタートアップ** | 壊さずに速く動く。ハーネスがエージェントのミスを本番前に捕捉 |
-| **エンタープライズ** | AI開発の品質ゲート。セキュリティ・パフォーマンス・コンプライアンスを強制 |
+| **スタートアップ** | 壊さずに速く動く。tGDがエージェントのミスを本番前に捕捉 |
+| **エンタープライズ** | AI開発の品質ゲート。セキュリティ・パフォーマンス・コンプライアンスのゲートを標準装備 |
 
 ---
 
@@ -111,7 +109,7 @@ hermes   # Hermes Agent
 
 ---
 
-## 💡 実例
+## 💡 操作例
 
 ### 例1：プロジェクトをマップ
 ```
@@ -264,7 +262,6 @@ Jira への同期時、tGD はやみくもに課題を作成しません：
 - `createmeta` API でプロジェクトの必須フィールドを**自動検出**
 - Issue Type（Story、Task、Bug など）を**選択させてくれる**
 - すべての課題を構造化された `As a... I want...` サマリーと `Given/When/Then` 受け入れ基準で**フォーマット**
-- `curl -x ""` でプロキシを自動**バイパス**
 
 ---
 
@@ -297,7 +294,7 @@ Jira への同期時、tGD はやみくもに課題を作成しません：
 | サンドボックス構築 | `/tgd-develop` | **必須 Worktree** + スマートルーティング | `tgd-source-driven-development` → (`subagent` OR `incremental`) → `tgd-test-driven-development` |
 | 動作を証明 | `/tgd-verify` | テストが証拠 | `tgd-debugging-and-error-recovery` → `tgd-test-driven-development` → **Cross-Feature Regression Gate** |
 | マージ前レビュー | `/tgd-review` | コードの健康改善 | `tgd-code-review-and-quality` → `tgd-code-simplification` |
-| 本番デプロイ | `/tgd-release` | 速い方が安全 | `tgd-git-workflow-and-versioning` → `tgd-shipping-and-launch` → **Regression Catalog Update + Audit** |
+| 本番デプロイ | `/tgd-release` | 速い方が安全 | `tgd-git-workflow-and-versioning` → `tgd-shipping-and-launch` → **Regression Catalog Update + Audit** → **METRICS.md 引き継ぎ** |
 
 ---
 
@@ -523,6 +520,8 @@ tGD には3つの人間ロール。各artifact の下部に `## Sign-off` セク
 | **セットアップ時間** | 30秒未満 |
 | **最初の機能** | 約15分（`/tgd-define` から `/tgd-release` まで） |
 
+> コンテキスト使用量と時間の数値は目安です — プロジェクト規模、モデル、マシンによって変わります。
+
 ---
 
 ## ❓ よくある質問
@@ -541,6 +540,9 @@ A：はい！`/tgd-map` が既存コードベースをスキャン。
 
 **Q：パイプラインをカスタマイズできる？**
 A：はい！`skills/` 内のスキルファイルを編集してチームのワークフローに合わせられます。
+
+**Q：tGDは私のコードをどこかへ送信する？**
+A：いいえ。tGDはプレーンなMarkdownスキルとシェルスクリプトで、あなた自身のエージェント内で動作します — サーバーなし、テレメトリなし、アカウント不要。コードが今使っているツールの外に出ることはありません。
 
 ---
 

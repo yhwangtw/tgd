@@ -16,11 +16,9 @@
 
 **Your PDLC was built for humans. Now agents do the work.**
 
-tGD transforms your existing workflow into an **agentic PDLC pipeline** — same gates, same accountability, 10× the velocity.
+tGD is an open-source **skill pack** for Claude Code, Codex, Gemini CLI, OpenCode, Pi, and Hermes. It wraps your product development lifecycle (PDLC) in the gates your team already trusts — spec before code, tests before claims, human sign-off before release.
 
 Map → Define → Plan → Develop → Verify → Review → Release
-
-Works with Claude Code, Codex CLI, Gemini CLI, OpenCode, Pi Coding Agent, and Hermes Agent.
 
 ---
 
@@ -28,7 +26,7 @@ Works with Claude Code, Codex CLI, Gemini CLI, OpenCode, Pi Coding Agent, and He
 
 **The problem isn't that agents can't code. It's that nobody holds them accountable.**
 
-**❌ Without a harness:**
+**❌ Without tGD:**
 - Agent says "should work" — tests never ran
 - Writes 500 lines before reading your codebase
 - Skips spec, ships broken PR, disappears
@@ -40,12 +38,12 @@ Works with Claude Code, Codex CLI, Gemini CLI, OpenCode, Pi Coding Agent, and He
 
 ---
 
-## Who is this for?
+## 🎯 Who is this for?
 
 - 🧑‍💻 **Solo Dev** — Release faster with disciplined AI workflow. Agent handles specs, tests, reviews.
 - 👥 **Team Lead** — Enforce standards across AI-generated code. Every PR follows the same 7-stage pipeline.
-- 🚀 **Startup** — Move fast without breaking things. The harness catches agent mistakes before production.
-- 🏢 **Enterprise** — Quality gates for AI development. Security, performance, and compliance enforced.
+- 🚀 **Startup** — Move fast without breaking things. tGD catches agent mistakes before production.
+- 🏢 **Enterprise** — Quality gates for AI development. Security, performance, and compliance gates built in.
 
 ---
 
@@ -119,7 +117,7 @@ Using Claude Desktop instead of a coding agent? tGD works in **semi-automatic mo
 
 ---
 
-## 💡 Real-world Examples
+## 💡 Example Sessions
 
 ### Example 1: Map the Project
 ```
@@ -277,7 +275,6 @@ When syncing to Jira, tGD doesn't just blindly create issues. It:
 - **Discovers** your project's mandatory fields via `createmeta` API.
 - **Lets you choose** the Issue Type (Story, Task, Bug, etc.).
 - **Formats** every issue with a structured `As a... I want...` summary and `Given/When/Then` acceptance criteria.
-- **Bypasses proxies** automatically with `curl -x ""`.
 
 ---
 
@@ -308,7 +305,7 @@ The `tgd` CLI manages installation, updates, and diagnostics:
 | Develop in sandbox | `/tgd-develop` | **Mandatory Worktree** + smart routing | `tgd-source-driven-development` → (`subagent` OR `incremental`) → `tgd-test-driven-development` |
 | Prove it works | `/tgd-verify` | Tests are proof | `tgd-debugging-and-error-recovery` → `tgd-test-driven-development` → **Cross-Feature Regression Gate** |
 | Review before merge | `/tgd-review` | Improve code health | `tgd-code-review-and-quality` → `tgd-code-simplification` |
-| Release to production | `/tgd-release` | Faster is safer | `tgd-git-workflow-and-versioning` → `tgd-shipping-and-launch` → **Regression Catalog Update + Audit** |
+| Release to production | `/tgd-release` | Faster is safer | `tgd-git-workflow-and-versioning` → `tgd-shipping-and-launch` → **Regression Catalog Update + Audit** → **METRICS.md handoff** |
 
 ---
 
@@ -534,6 +531,8 @@ Skills use **progressive disclosure** — the agent only loads details when need
 | **Setup time** | < 30 seconds |
 | **First feature** | ~15 minutes (from `/tgd-define` to `/tgd-release`) |
 
+> Context and timing figures are approximate — they depend on your project size, model, and machine.
+
 ---
 
 ## ❓ FAQ
@@ -552,6 +551,9 @@ A: Yes! `/tgd-map` scans your existing codebase first.
 
 **Q: Can I customize the pipeline?**
 A: Yes! Edit the skill files in `skills/` to match your team's workflow.
+
+**Q: Does tGD send my code anywhere?**
+A: No. tGD is plain Markdown skills and shell scripts that run inside your own agent — no server, no telemetry, no account. Your code never leaves the tools you already use.
 
 ---
 
