@@ -1130,6 +1130,60 @@ for dir in "$TGD_REPO_ROOT/skills" "$TGD_REPO_ROOT/vendor/understand-anything/un
     fi
 done
 
+# ─── Final verification: prove the install, don't just narrate it ───────────
+# Every line below is a REAL check (ls/test on the actual paths), not an echo
+# of what earlier sections claimed. A detected platform with missing command
+# links is a hard failure (exit 1). UA dependency state is reported honestly
+# (⚠️, not fake-green) but does not fail setup — the registry policy may
+# intentionally defer it.
+echo ""
+echo "🔎 Final verification:"
+SETUP_FAILED=0
+
+verify_cmd_links() {
+    local label="$1" dir="$2" pattern="$3"
+    local n=0 f
+    for f in "$dir"/$pattern; do
+        [ -e "$f" ] && n=$((n + 1))   # -e follows symlinks: dangling links don't count
+    done
+    if [ "$n" -eq 7 ]; then
+        echo "   ✅ $label: 7/7 commands linked ($dir)"
+    else
+        echo "   ❌ $label: $n/7 commands resolve in $dir"
+        SETUP_FAILED=1
+    fi
+}
+
+command -v claude   &> /dev/null && verify_cmd_links "Claude Code" "$HOME/.claude/commands" "tgd-*.md"           || echo "   ⏭️  Claude Code not detected — skipped"
+command -v opencode &> /dev/null && verify_cmd_links "OpenCode"    "$HOME/.config/opencode/commands" "tgd-*.md"  || echo "   ⏭️  OpenCode not detected — skipped"
+command -v gemini   &> /dev/null && verify_cmd_links "Gemini CLI"  "$HOME/.gemini/commands" "tgd-*.toml"         || echo "   ⏭️  Gemini CLI not detected — skipped"
+command -v codex    &> /dev/null && verify_cmd_links "Codex CLI"   "$HOME/.codex/prompts" "tgd-*.md"             || echo "   ⏭️  Codex CLI not detected — skipped"
+command -v pi       &> /dev/null && verify_cmd_links "Pi"          "$HOME/.pi/agent/prompts" "tgd-*.md"          || echo "   ⏭️  Pi not detected — skipped"
+
+# Understand-Anything runtime state (needed by /tgd-map Steps 4-5)
+if [ -d "$UA_SKILLS_DIR" ]; then
+    if [ -d "$UA_DIR/node_modules" ]; then
+        echo "   ✅ UA dependencies installed (node_modules present)"
+    else
+        echo "   ⚠️  UA dependencies NOT installed — /understand scans and the dashboard will not run."
+        echo "      (pnpm missing or registry policy deferred the install — see messages above)"
+    fi
+    if [ -d "$UA_DIR/understand-anything-plugin/packages/core/dist" ]; then
+        echo "   ✅ UA core built (packages/core/dist present)"
+    else
+        echo "   ⚠️  UA core NOT built — run: cd vendor/understand-anything && pnpm install && pnpm build"
+    fi
+else
+    echo "   ⏭️  Understand-Anything vendor not present — skipped"
+fi
+
+if [ "$SETUP_FAILED" -eq 1 ]; then
+    echo ""
+    echo "❌ Setup finished WITH FAILURES — see the ❌ lines above, fix, and re-run."
+    exit 1
+fi
+
+echo ""
 echo "✅ Setup Complete!"
 echo ""
 echo "tGD is now active in ALL projects."
