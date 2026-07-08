@@ -4,6 +4,17 @@ All notable changes to tGD will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/). Versions follow [CalVer](https://calver.org/) (YYYY.MM.DD).
 
+## v2026.07.08
+
+### ✨ Features
+- setup.sh ends with a real verification summary, not a narrated one (`1cce4b8`)
+- wiki v0.6 — markdown prose renders as real documentation pages (`bc18091`)
+### 🐛 Bug Fixes
+- pre-create symlink targets in /tgd-map + wire --dashboard-url end to end (`84f5f55`)
+- /tgd-map dashboard launch must set GRAPH_DIR per repo (`5de35ee`)
+- pi templates are pointers now — the full command body stays out of the user turn (`804a388`)
+
+
 ## v2026.07.07
 
 ### ✨ Features
