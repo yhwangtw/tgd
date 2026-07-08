@@ -115,7 +115,7 @@ Run the `tgd-context-engineering` skill. Analyze the current project: tech stack
 
 For each repo to map (primary + all additional repos from Step 1):
 
-1. Ensure output dir exists: `mkdir -p $TGD_DIR/.scans/<repo-name>`
+1. Ensure the symlink TARGET exists: `mkdir -p $TGD_DIR/.scans/<repo-name>/.codegraph` — the leaf dir included. A symlink to a not-yet-existing target is dangling: the tool's own `mkdir` fails with "File exists" (the symlink) while writes fail with "No such file or directory" (the missing target) — it dies both ways.
 2. Create symlink: `rm -rf <repo-path>/.codegraph && ln -s $TGD_DIR/.scans/<repo-name>/.codegraph <repo-path>/.codegraph`
 3. cd into the repo and run: `codegraph init -i`
 
@@ -131,7 +131,7 @@ When the skill IS available, this step is **required**, not optional.
 
 For each repo to map (primary + all additional repos from Step 1):
 
-1. Create symlink: `rm -rf <repo-path>/.understand-anything && ln -s $TGD_DIR/.scans/<repo-name>/.understand-anything <repo-path>/.understand-anything`
+1. Ensure the symlink TARGET exists first: `mkdir -p $TGD_DIR/.scans/<repo-name>/.understand-anything` (a dangling symlink kills the tool's writes — same trap as Step 3). Then create the symlink: `rm -rf <repo-path>/.understand-anything && ln -s $TGD_DIR/.scans/<repo-name>/.understand-anything <repo-path>/.understand-anything`
 2. load and execute the `understand` skill to build a full knowledge graph
 3. This produces `$TGD_DIR/.scans/<repo-name>/.understand-anything/knowledge-graph.json`
 4. If unfamiliar with any repo, load the `understand-onboard` skill for a guided tour
@@ -206,6 +206,9 @@ Coverage rules and cost control:
 ```bash
 python3 "$TGD_REPO_ROOT/skills/tgd-wiki-generation/scripts/generate-wiki.py" "$TGD_DIR"
 ```
+
+If Step 5 launched a dashboard for the primary repo, pass its URL so the wiki
+sidebar links to it: append `--dashboard-url http://localhost:<port>`.
 
 Resolve `$TGD_REPO_ROOT` to the cloned tGD repo (typically `~/tGD/`). The
 generator merges your prose with the graph (prose wins; blanks derive) and

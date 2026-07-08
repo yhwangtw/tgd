@@ -248,6 +248,7 @@ function sidebar(repo, activePath) {
         ${link(b + "/architecture", "🏛️ Architecture")}
         ${link(b + "/onboarding", "🧭 Onboarding")}
         ${link(b + "/source", "📄 Source")}
+        ${repo.dashboardUrl ? `<a href="${esc(repo.dashboardUrl)}" target="_blank" rel="noopener" title="Live only while the dev server from /tgd-map is running">📊 Live Dashboard ↗</a>` : ""}
       </div>
       <div class="nav-sec">Modules</div><div class="nav">
         ${repo.modules.map(m => link(`${b}/module/${m.slug}`, `${m.icon || "🧩"} ${m.title}`)).join("") || '<span class="empty">none</span>'}
