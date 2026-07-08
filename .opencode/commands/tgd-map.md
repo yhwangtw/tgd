@@ -144,9 +144,14 @@ The live dashboard serves **humans**, not the agent — `CONTEXT.md` and the kno
 
 For each repo:
 
-1. cd into the repo
-2. Load the `understand-dashboard` skill to launch the dashboard **in the background** — it must not block the rest of `/tgd-map`.
-3. Capture the localhost URL from the skill's output (each repo lands on a distinct port). If it did not come up, log the failure in `## Degraded Mode` and continue with the other repos.
+1. Load the `understand-dashboard` skill and launch **in the background** — it must not block the rest of `/tgd-map`.
+2. **The launch MUST set `GRAPH_DIR` to the repo's absolute path.** The dev server looks for the knowledge graph ONLY at `$GRAPH_DIR/.understand-anything/` (plus two cwd-relative fallbacks that never match in the tGD layout). Without `GRAPH_DIR`, Vite serves only its own `/public` assets and the graph fetch 404s — the dashboard opens but shows nothing. The exact launch shape (from the `understand-dashboard` skill):
+   ```
+   cd <ua-plugin-root>/packages/dashboard
+   GRAPH_DIR=<absolute-repo-path> npx vite --host 127.0.0.1
+   ```
+   One instance per repo, each with its own `GRAPH_DIR`; Vite auto-picks the next free port. `<ua-plugin-root>` resolves the same way the `understand` skill resolves it (tGD installs it at `~/.understand-anything/repo`). The repo's `.understand-anything` is a symlink into `$TGD_DIR/.scans/` — that's fine, the server follows it.
+3. Capture the localhost URL from the output. If it did not come up, log the failure in `## Degraded Mode` and continue with the other repos.
 4. **Open it in the browser** — best-effort, per-OS: `open <url>` (macOS) · `xdg-open <url>` (Linux) · `start "" <url>` (Windows). If no display is available (headless / remote / CI session), skip the open silently — the URL is still captured and reported.
 
 Record every dashboard URL for the final report and the CONTEXT.md `## See Also` section.
