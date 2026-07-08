@@ -115,7 +115,7 @@ Run the `tgd-context-engineering` skill. Analyze the current project: tech stack
 
 For each repo to map (primary + all additional repos from Step 1):
 
-1. Ensure output dir exists: `mkdir -p $TGD_DIR/.scans/<repo-name>`
+1. Ensure the symlink TARGET exists: `mkdir -p $TGD_DIR/.scans/<repo-name>/.codegraph` — the leaf dir included. A symlink to a not-yet-existing target is dangling: the tool's own `mkdir` fails with "File exists" (the symlink) while writes fail with "No such file or directory" (the missing target) — it dies both ways.
 2. Create symlink: `rm -rf <repo-path>/.codegraph && ln -s $TGD_DIR/.scans/<repo-name>/.codegraph <repo-path>/.codegraph`
 3. cd into the repo and run: `codegraph init -i`
 
@@ -131,7 +131,7 @@ When the skill IS available, this step is **required**, not optional.
 
 For each repo to map (primary + all additional repos from Step 1):
 
-1. Create symlink: `rm -rf <repo-path>/.understand-anything && ln -s $TGD_DIR/.scans/<repo-name>/.understand-anything <repo-path>/.understand-anything`
+1. Ensure the symlink TARGET exists first: `mkdir -p $TGD_DIR/.scans/<repo-name>/.understand-anything` (a dangling symlink kills the tool's writes — same trap as Step 3). Then create the symlink: `rm -rf <repo-path>/.understand-anything && ln -s $TGD_DIR/.scans/<repo-name>/.understand-anything <repo-path>/.understand-anything`
 2. load and execute the `understand` skill to build a full knowledge graph
 3. This produces `$TGD_DIR/.scans/<repo-name>/.understand-anything/knowledge-graph.json`
 4. If unfamiliar with any repo, load the `understand-onboard` skill for a guided tour
@@ -144,9 +144,14 @@ The live dashboard serves **humans**, not the agent — `CONTEXT.md` and the kno
 
 For each repo:
 
-1. cd into the repo
-2. Load the `understand-dashboard` skill to launch the dashboard **in the background** — it must not block the rest of `/tgd-map`.
-3. Capture the localhost URL from the skill's output (each repo lands on a distinct port). If it did not come up, log the failure in `## Degraded Mode` and continue with the other repos.
+1. Load the `understand-dashboard` skill and launch **in the background** — it must not block the rest of `/tgd-map`.
+2. **The launch MUST set `GRAPH_DIR` to the repo's absolute path.** The dev server looks for the knowledge graph ONLY at `$GRAPH_DIR/.understand-anything/` (plus two cwd-relative fallbacks that never match in the tGD layout). Without `GRAPH_DIR`, Vite serves only its own `/public` assets and the graph fetch 404s — the dashboard opens but shows nothing. The exact launch shape (from the `understand-dashboard` skill):
+   ```
+   cd <ua-plugin-root>/packages/dashboard
+   GRAPH_DIR=<absolute-repo-path> npx vite --host 127.0.0.1
+   ```
+   One instance per repo, each with its own `GRAPH_DIR`; Vite auto-picks the next free port. `<ua-plugin-root>` resolves the same way the `understand` skill resolves it (tGD installs it at `~/.understand-anything/repo`). The repo's `.understand-anything` is a symlink into `$TGD_DIR/.scans/` — that's fine, the server follows it.
+3. Capture the localhost URL from the output. If it did not come up, log the failure in `## Degraded Mode` and continue with the other repos.
 4. **Open it in the browser** — best-effort, per-OS: `open <url>` (macOS) · `xdg-open <url>` (Linux) · `start "" <url>` (Windows). If no display is available (headless / remote / CI session), skip the open silently — the URL is still captured and reported.
 
 Record every dashboard URL for the final report and the CONTEXT.md `## See Also` section.
@@ -201,6 +206,9 @@ Coverage rules and cost control:
 ```bash
 python3 "$TGD_REPO_ROOT/skills/tgd-wiki-generation/scripts/generate-wiki.py" "$TGD_DIR"
 ```
+
+If Step 5 launched a dashboard for the primary repo, pass its URL so the wiki
+sidebar links to it: append `--dashboard-url http://localhost:<port>`.
 
 Resolve `$TGD_REPO_ROOT` to the cloned tGD repo (typically `~/tGD/`). The
 generator merges your prose with the graph (prose wins; blanks derive) and
