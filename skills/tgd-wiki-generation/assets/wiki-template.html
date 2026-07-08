@@ -132,11 +132,36 @@ th { color: var(--fg2); font-size: 12px; text-transform: uppercase; letter-spaci
 <script id="tgd-data" type="application/json">__TGD_DATA__</script>
 <script>
 "use strict";
-const DATA = JSON.parse(document.getElementById("tgd-data").textContent);
-const $side = document.getElementById("sidebar");
-const $main = document.getElementById("main");
+/* Fail loud, never blank. A JS error on boot used to leave a white page with
+   no clue; instead render a visible message so the failure is diagnosable. */
+let _fatalShown = false;
+function fatal(title, detail) {
+  if (_fatalShown) return;  // first (most specific) message wins
+  _fatalShown = true;
+  var m = document.getElementById("main") || document.body;
+  if (!m) return;
+  m.innerHTML =
+    '<div style="max-width:660px;margin:60px auto;padding:24px;border:1px solid #e4474a;'
+    + 'border-radius:12px;font-family:system-ui,-apple-system,sans-serif">'
+    + '<h1 style="font-size:20px;margin:0 0 10px;color:#e4474a">⚠️ Wiki failed to render</h1>'
+    + '<p style="margin:0 0 10px">' + esc(title) + '</p>'
+    + (detail ? '<pre style="white-space:pre-wrap;font-size:12px;background:#f3f4f6;color:#1a1d23;'
+        + 'padding:10px;border-radius:6px;overflow:auto">' + esc(detail) + '</pre>' : '')
+    + '<p style="font-size:13px;color:#5c6370;margin-top:12px">This usually means the wiki was '
+    + 'generated incompletely. Regenerate: <code>python3 generate-wiki.py "$TGD_DIR"</code></p></div>';
+}
 const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g,
   c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+window.addEventListener("error", e => fatal("A script error stopped the page.", (e && e.message) || String(e)));
+let DATA;
+try {
+  DATA = JSON.parse(document.getElementById("tgd-data").textContent);
+} catch (e) {
+  fatal("The embedded wiki data is not valid JSON — the generator likely wrote a truncated file.", e && e.message);
+  throw e;
+}
+const $side = document.getElementById("sidebar");
+const $main = document.getElementById("main");
 const repoBy = slug => DATA.repos.find(r => r.slug === slug);
 
 /* Minimal markdown renderer for agent-authored prose (wiki-prose.json values).
@@ -210,6 +235,10 @@ window.addEventListener("hashchange", route);
 window.addEventListener("DOMContentLoaded", route);
 
 function route() {
+  try { routeInner(); }
+  catch (e) { fatal("Failed to render this page.", (e && e.stack) || String(e)); }
+}
+function routeInner() {
   const { seg, q } = parseHash();
   document.getElementById("sidebar").classList.remove("open");
   if (seg.length === 0) return DATA.repos.length === 1

@@ -60,7 +60,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-GENERATOR_VERSION = "0.6.0"
+GENERATOR_VERSION = "0.6.1"
 ENGINE = "static-html"
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
