@@ -1,72 +1,9 @@
 ---
 description: Develop — implement with fresh subagents per task and two-stage review
 ---
+Execute the tGD `/tgd-develop` workflow. This template is a POINTER, not the workflow — load the full instructions first:
 
-**🛑 Pre-flight: Environment Check**
-- [ ] `$TGD_DIR/CONTEXT.md` exists (or `.codegraph/` is present).
-- **If missing:** STOP. Tell user: "Project context not mapped. Please run `/tgd-map` first."
-- **$TGD_DIR:** Check env var `$TGD_DIR` first. If not set, check sibling `../<project-name>-tGD/`. If neither exists: STOP — run `/tgd-map` first.
+1. If `.claude/commands/tgd-develop.md` exists in the current project (you are inside the tGD repo), read it.
+2. Otherwise resolve the installed copy: run `python3 -c "import os;print(os.path.realpath(os.path.expanduser('~/.pi/agent/prompts/tgd-develop.md')))"` and replace `/.pi/prompts/` with `/.claude/commands/` in the result — read that file.
 
-**🔑 Step 0: Feature Name Resolution**
-1. Scan `$TGD_DIR/` for **feature directories**: subdirectories containing `SPEC.md` or `PRD.md` (e.g., `$TGD_DIR/user-login/`). Infrastructure dirs (`.scans/`, `wiki/`, and any dot-directories) are NOT features — always exclude them.
-2. If none found: 🛑 STOP. "No features defined. Run `/tgd-define` first."
-3. If exactly one found: Lock it as `<feature-name>`.
-4. If multiple found: List them and ask user to specify.
-5. **Verify**: `$TGD_DIR/<feature-name>/SPEC.md` exists (defines scope).
-
-**🔒 Pre-flight: Artifact Check**
-- [ ] `$TGD_DIR/<feature-name>/TASKS.md` exists and is non-empty.
-- [ ] `$TGD_DIR/<feature-name>/PRD.md` exists and is non-empty.
-- [ ] `$TGD_DIR/<feature-name>/SPEC.md` exists and is non-empty.
-- **If missing:** STOP. Tell user: "Specs are missing. Please run `/tgd-define` first."
-
-This is the BUILD phase. The pipeline operates in an isolated environment.
-
-**🌳 Step 1: Worktree Isolation (Mandatory)**
-Before writing any code, create an isolated workspace. This keeps `$TGD_DIR/` artifacts safe and prevents code mess from polluting the planning directory.
-1. **Create** (branch + worktree in one step — the branch must NOT already be checked out anywhere, which is why `/tgd-define` does not create it):
-   - Branch doesn't exist yet (normal case): `git worktree add ../project-<feature-name> -b feature/<feature-name> main`
-   - Branch already exists (resuming): `git worktree add ../project-<feature-name> feature/<feature-name>` — if git says the branch is "already used by worktree", the main checkout is sitting on it: `git checkout main` there first, then retry.
-2. **Action**: All coding, testing, and commits MUST happen inside `../project-<feature-name>/`.
-
-**⚡ Step 2: Execution Mode Routing**
-Route on risk first, then size:
-- **Any task with an `[R]` criterion on a critical path** (auth, payment, data loss, security boundary) OR **any Large task (5+ files)** → `tgd-subagent-driven-development`. High-stakes work gets fresh-context implementation and two-stage review regardless of task count.
-- Otherwise, **< 3 tasks** → `tgd-incremental-implementation`. The main agent switches to the worktree directory and implements directly.
-- Otherwise (**≥ 3 tasks**) → `tgd-subagent-driven-development`. Dispatch subagents to implement and review within the worktree directory.
-
-**Core flow (both modes):**
-1. `tgd-context-engineering` — load the right spec sections and source files for the current task
-   - Before modifying a file, run `codegraph callers <symbol>` to ensure backward compatibility.
-2. `tgd-source-driven-development` — ground framework decisions in official docs, verify and cite
-3. `tgd-subagent-driven-development` OR `tgd-incremental-implementation` — execute tasks in worktree
-4. `tgd-test-driven-development` — Red-Green-Refactor, write tests alongside each task
-   - Every test verifying a criterion MUST mention its `AC-<task>.<n>` id in the test name, docstring, or a comment (`ac-trace.py` cross-references them in `/tgd-verify`).
-5. **Backfill `Test:` fields** — after each task's tests pass, record the test file path in the corresponding criterion's `Test:` field in `$TGD_DIR/<feature-name>/TASKS.md`. MANDATORY for `[R]` criteria — they feed REGRESSION-CATALOG.md at release, and `/tgd-verify` fails closed on `[R]` criteria without a `Test:` file.
-6. `tgd-verification-before-completion` — evidence before claims, no exceptions
-
-**Conditional (apply when relevant):**
-- Working with unfamiliar code? → the `understand` skill to clarify architectural boundaries.
-- Touching UI? → `tgd-frontend-ui-engineering`
-- Designing APIs? → `tgd-api-and-interface-design`
-- High-stakes decision? → `tgd-doubt-driven-development`
-
-**🧹 Step 3: Hand-off (do NOT merge)**
-After all tasks pass verification:
-1. Commit all work on `feature/<feature-name>` inside the worktree.
-2. **Keep the worktree** — `/tgd-verify` and `/tgd-review` run against it next.
-3. **Do NOT merge to `main` here.** Merging happens in `/tgd-release`, after verify and review pass. Merging now would put unverified, unreviewed code on `main` — the exact thing the Review phase exists to prevent.
-
-Use feature flags for incomplete features, safe defaults, and rollback-friendly changes.
-
-**Do not pause between tasks.** Execute all tasks from the plan without stopping unless BLOCKED.
-
-After completing the implementation, verify the outputs.
-
-**Verification Gate:**
-- [ ] The feature branch has source changes: `git diff main...feature/<feature-name> --stat` is non-empty (use the project's actual layout from CONTEXT.md — do NOT assume `src/` + `tests/`)
-- [ ] Tests written AND passing for new logic, each tagged with its `AC-<task>.<n>` id
-- [ ] Every completed task's criteria have their `Test:` fields filled in TASKS.md (all `[R]` criteria without exception)
-- [ ] Verification commands run and output confirmed (no "should work")
-
-If verification passes, suggest the next step: `/tgd-verify` to prove it works.
+Then execute ALL of its instructions in order, from the first pre-flight to the final verification gate. Do not improvise from this stub — that file is the single source of truth.

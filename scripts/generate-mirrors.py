@@ -112,13 +112,29 @@ def gen_gemini(name: str, description: str, body: str) -> str:
 
 
 def gen_pi_prompt(name: str, description: str, body: str) -> str:
-    # pi discovers native "prompt templates" from .pi/prompts/*.md — the
-    # filename becomes the /command name, the frontmatter description shows in
-    # autocomplete, and the body expands as the prompt. Same shape as opencode.
-    # (Earlier versions shipped a TypeScript extension that called
-    # pi.sendUserMessage(body), which injected the whole command as a
-    # *user-authored* message — the wall-of-text-under-your-name bug.)
-    return f"---\ndescription: {description}\n---\n{body}"
+    # pi prompt templates are CLIENT-SIDE TEXT EXPANSION: whatever the template
+    # contains becomes the user message, rendered in full by the TUI
+    # (agent-session.js expandPromptTemplate -> _queueFollowUp(expandedText);
+    # UserMessageComponent renders the whole text). Shipping the full command
+    # body therefore reproduces the wall-of-text-under-the-user's-name problem
+    # the old sendUserMessage extension had — different mechanism, same screen.
+    #
+    # So the pi template is a 4-line STUB (a pointer): the agent loads the real
+    # command file itself, keeping the user turn tiny. The full body ships only
+    # in .claude/commands/ (present in every tGD clone; ~/.pi/agent/prompts/*
+    # symlinks resolve into that clone).
+    del body  # intentionally NOT embedded — see comment above
+    return (
+        "---\n"
+        f"description: {description}\n"
+        "---\n"
+        f"Execute the tGD `/{name}` workflow. This template is a POINTER, not the workflow — load the full instructions first:\n"
+        "\n"
+        f"1. If `.claude/commands/{name}.md` exists in the current project (you are inside the tGD repo), read it.\n"
+        f"2. Otherwise resolve the installed copy: run `python3 -c \"import os;print(os.path.realpath(os.path.expanduser('~/.pi/agent/prompts/{name}.md')))\"` and replace `/.pi/prompts/` with `/.claude/commands/` in the result — read that file.\n"
+        "\n"
+        "Then execute ALL of its instructions in order, from the first pre-flight to the final verification gate. Do not improvise from this stub — that file is the single source of truth.\n"
+    )
 
 
 def write_if_changed(path: Path, content: str, changed: List[str]) -> None:
