@@ -4,6 +4,14 @@ All notable changes to tGD will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/). Versions follow [CalVer](https://calver.org/) (YYYY.MM.DD).
 
+## v2026.07.08.1
+
+### 🐛 Bug Fixes
+- fail loud instead of a blank page when wiki.html can't boot (#30) (`674235c`)
+### 📝 Documentation
+- align README wording with the landing page and deck (`efb1418`)
+
+
 ## v2026.07.08
 
 ### ✨ Features
