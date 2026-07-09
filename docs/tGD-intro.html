@@ -51,7 +51,7 @@ if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
       <span class="pill pill-accent">Pi</span>
       <span class="pill pill-accent">Hermes</span>
     </div>
-    <div class="deck-footer"><span>Press <b>T</b> to toggle dark/light · ← → to navigate</span><span class="slide-number" data-current="1" data-total="12"></span></div>
+    <div class="deck-footer"><span>Press <b>T</b> to toggle dark/light · ← → to navigate</span><span class="slide-number" data-current="1" data-total="13"></span></div>
   </section>
 
   <!-- ==================== 2. Problem ==================== -->
@@ -67,7 +67,7 @@ if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
       <div class="quote">The harness matters as much as the model.</div>
       <div class="source">— the principle behind tGD</div>
     </div>
-    <div class="deck-footer"><span>Problem</span><span class="slide-number" data-current="2" data-total="12"></span></div>
+    <div class="deck-footer"><span>Problem</span><span class="slide-number" data-current="2" data-total="13"></span></div>
   </section>
 
   <!-- ==================== 3. Solution ==================== -->
@@ -82,7 +82,7 @@ if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
       <div class="stat"><div class="n">3</div><div class="l">Personas</div></div>
     </div>
     <p class="dim mt-l" style="font-size:15px">Open source · Apache 2.0 · plain Markdown skills — no server, no telemetry, your code never leaves your tools.</p>
-    <div class="deck-footer"><span>Solution</span><span class="slide-number" data-current="3" data-total="12"></span></div>
+    <div class="deck-footer"><span>Solution</span><span class="slide-number" data-current="3" data-total="13"></span></div>
   </section>
 
   <!-- ==================== 4. Pipeline ==================== -->
@@ -99,7 +99,7 @@ if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
       <div class="phase"><div class="p-icon">🚀</div><div><div class="p-name">7 · RELEASE</div><div class="p-desc">Commit + CI → <b>CHANGELOG + METRICS</b></div><div class="p-skills">git-workflow → catalog</div></div></div>
       <div class="phase" style="border:1px dashed var(--border-strong);background:transparent"><div class="p-icon">🔁</div><div><div class="p-name">THE LOOP</div><div class="p-desc">Verify fails? Work goes back to Develop.<br>Nothing broken reaches Release.</div></div></div>
     </div>
-    <div class="deck-footer"><span>Pipeline — every stage gated</span><span class="slide-number" data-current="4" data-total="12"></span></div>
+    <div class="deck-footer"><span>Pipeline — every stage gated</span><span class="slide-number" data-current="4" data-total="13"></span></div>
   </section>
 
   <!-- ==================== 5. Human Gates ==================== -->
@@ -120,7 +120,7 @@ TEST-REPORT.md → - [x] <b>QA</b>  ✓   (regression 100%)
 REVIEW.md      → - [x] <b>QA + DEV</b> ✓
 <span class="dim-t">One person can hold multiple roles — git is the only coordination tool.</span></pre>
     </div>
-    <div class="deck-footer"><span>Human gates — sign-off before the next stage</span><span class="slide-number" data-current="5" data-total="12"></span></div>
+    <div class="deck-footer"><span>Human gates — sign-off before the next stage</span><span class="slide-number" data-current="5" data-total="13"></span></div>
   </section>
 
   <!-- ==================== 6. Act I: Define the work ==================== -->
@@ -145,7 +145,7 @@ REVIEW.md      → - [x] <b>QA + DEV</b> ✓
       </div>
     </div>
     <div class="callout mt-xl">💡 Each command refuses to run until the previous stage's artifact exists and is signed off — that's the pre-flight check.</div>
-    <div class="deck-footer"><span>Define the work — Map · Define · Plan</span><span class="slide-number" data-current="6" data-total="12"></span></div>
+    <div class="deck-footer"><span>Define the work — Map · Define · Plan</span><span class="slide-number" data-current="6" data-total="13"></span></div>
   </section>
 
   <!-- ==================== 7. Act II: Build it ==================== -->
@@ -174,7 +174,7 @@ REVIEW.md      → - [x] <b>QA + DEV</b> ✓
   3. refactor — tests stay green</pre>
       </div>
     </div>
-    <div class="deck-footer"><span>Build it — mandatory worktree + smart routing</span><span class="slide-number" data-current="7" data-total="12"></span></div>
+    <div class="deck-footer"><span>Build it — mandatory worktree + smart routing</span><span class="slide-number" data-current="7" data-total="13"></span></div>
   </section>
 
   <!-- ==================== 8. Act III: Prove it ==================== -->
@@ -205,7 +205,7 @@ Sign-off:
   - [ ] <b>QA</b>: (pending)</pre>
       </div>
     </div>
-    <div class="deck-footer"><span>Prove it — tests are proof</span><span class="slide-number" data-current="8" data-total="12"></span></div>
+    <div class="deck-footer"><span>Prove it — tests are proof</span><span class="slide-number" data-current="8" data-total="13"></span></div>
   </section>
 
   <!-- ==================== 9. Act IV: Ship it ==================== -->
@@ -236,10 +236,57 @@ Sign-off:
       </div>
     </div>
     <div class="callout mt-xl">🤖 Backed by three reviewer personas — <b>code-reviewer</b> · <b>test-engineer</b> · <b>security-auditor</b> — you (or the command) orchestrate them.</div>
-    <div class="deck-footer"><span>Ship it — Review · Release</span><span class="slide-number" data-current="9" data-total="12"></span></div>
+    <div class="deck-footer"><span>Ship it — Review · Release</span><span class="slide-number" data-current="9" data-total="13"></span></div>
   </section>
 
-  <!-- ==================== 10. Testing Strategy ==================== -->
+  <!-- ==================== 10. The Spiral ==================== -->
+  <section class="slide" data-title="The Spiral">
+    <p class="num-tag">WHY IT COMPOUNDS</p>
+    <h2 class="h2 mt-s">It's not a loop. It's a <span class="gradient-text">spiral</span>.</h2>
+    <p class="lede mt-m">Each feature runs the full seven-stage pipeline — and leaves the codebase stronger than it found it. The next feature starts on that higher floor. A cycle returns to where it began; tGD ratchets.</p>
+    <div class="grid g2 mt-l" style="align-items:center">
+      <div>
+        <svg viewBox="0 0 440 400" role="img" aria-label="An outward spiral: each loop is one feature running the full pipeline, spiraling outward as the codebase gets stronger." style="width:100%;height:auto;max-width:440px">
+          <defs>
+            <linearGradient id="spiralGrad" x1="0" y1="1" x2="1" y2="0">
+              <stop offset="0" stop-color="var(--accent)" stop-opacity="0.28"/>
+              <stop offset="0.55" stop-color="var(--accent)" stop-opacity="0.7"/>
+              <stop offset="1" stop-color="var(--accent-3)" stop-opacity="1"/>
+            </linearGradient>
+          </defs>
+          <path fill="none" stroke="url(#spiralGrad)" stroke-width="2.6" stroke-linecap="round"
+            d="M 214.5 181.5 L 209.7 170.6 L 203.1 166.8 L 194.5 165.8 L 186.7 167.8 L 179.3 172.6 L 174.4 178.4 L 170.8 185.7 L 169.1 194.1 L 169.5 203.2 L 172.3 212.3 L 177.5 221.0 L 185.0 228.4 L 194.5 234.1 L 205.5 237.5 L 217.6 238.1 L 229.9 235.7 L 241.8 230.2 L 252.4 221.6 L 261.0 210.5 L 266.8 197.1 L 269.4 182.2 L 268.9 170.6 L 265.0 155.1 L 259.5 144.0 L 252.0 133.9 L 242.6 125.1 L 231.5 117.9 L 219.1 112.8 L 205.7 109.8 L 191.7 109.3 L 177.5 111.4 L 163.6 116.0 L 150.6 123.1 L 138.8 132.7 L 128.7 144.4 L 120.6 157.9 L 115.1 173.0 L 112.2 189.0 L 112.2 205.6 L 115.2 222.2 L 121.3 238.3 L 130.2 253.3 L 141.8 266.7 L 155.9 278.0 L 171.9 286.8 L 189.6 292.7 L 208.3 295.4 L 227.4 294.7 L 246.5 290.6 L 264.7 283.1 L 281.6 272.3 L 296.5 258.6 L 309.0 242.1 L 318.4 223.5 L 324.5 203.2 L 326.9 181.9 L 325.5 160.2 L 320.3 138.8 L 311.2 118.4 L 298.5 99.7 L 282.4 83.3 L 263.6 69.9 L 242.3 59.9 L 219.4 53.7 L 195.5 51.6 L 171.2 53.9 L 147.5 60.4 L 125.1 71.1 L 104.6 85.9 L 86.9 104.2 L 72.5 125.5 L 62.0 149.4 L 55.9 175.0 L 54.3 201.5 L 59.5 237.0"/>
+          <!-- arrowhead flying outward -->
+          <path d="M0,-6 L11,0 L0,6 Z" transform="translate(59.5,237.0) rotate(119)" fill="var(--accent-3)"/>
+          <!-- feature loop markers: inner (1st) → outer (3rd), growing -->
+          <circle cx="214.5" cy="181.5" r="4.5" fill="var(--surface)" stroke="var(--accent)" stroke-width="2"/>
+          <circle cx="262.2" cy="148.9" r="6" fill="var(--surface)" stroke="var(--accent)" stroke-width="2.4"/>
+          <circle cx="309.9" cy="116.2" r="7.5" fill="var(--accent)" stroke="var(--accent-3)" stroke-width="2.4"/>
+          <g font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="var(--text-2)">
+            <text x="224" y="186">Feature 1</text>
+            <text x="273" y="153">Feature 2</text>
+            <text x="322" y="120">Feature 3</text>
+          </g>
+          <text x="66" y="252" font-family="Inter,sans-serif" font-size="12.5" font-weight="600" fill="var(--accent-3)">Feature 4 — higher still</text>
+          <text x="205" y="205" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="var(--text-3)">start</text>
+        </svg>
+      </div>
+      <div>
+        <div class="body-list">
+          <div>Three things accumulate on every loop — the pipeline never resets to zero:</div>
+        </div>
+        <div class="grid mt-m" style="gap:10px">
+          <div class="phase"><div class="p-icon">🛡️</div><div><div class="p-name">Regression catalog</div><div class="p-desc">Every feature's acceptance tests join it. The safety net only ever gets denser.</div></div></div>
+          <div class="phase"><div class="p-icon">🗺️</div><div><div class="p-name">CONTEXT.md</div><div class="p-desc">Re-mapped each loop against the now-larger codebase — understanding deepens.</div></div></div>
+          <div class="phase"><div class="p-icon">📈</div><div><div class="p-name">CHANGELOG + METRICS</div><div class="p-desc">A durable audit trail of what shipped and what it moved.</div></div></div>
+        </div>
+        <div class="callout mt-l">A cycle returns to the same place. tGD <b>ratchets</b> — every release raises the floor the next feature builds on.</div>
+      </div>
+    </div>
+    <div class="deck-footer"><span>The spiral — every release raises the floor</span><span class="slide-number" data-current="10" data-total="13"></span></div>
+  </section>
+
+  <!-- ==================== 11. Testing Strategy ==================== -->
   <section class="slide" data-title="Testing">
     <p class="num-tag">TESTING STRATEGY</p>
     <h2 class="h2 mt-s">Three roles. One rule:<br><span style="color:#ef4444">no shortcuts.</span></h2>
@@ -249,7 +296,7 @@ Sign-off:
       <div class="card" style="border-top:3px solid #a78bfa"><h4>🕵️ Auditor</h4><p class="dim cmd-sub">/tgd-review</p><p class="mt-s">Audits test quality.<br>80% unit · 15% integration · 5% E2E.</p></div>
     </div>
     <p class="lede mt-xl"><b>Why separate roles?</b> The one who writes the code never gets to be the only one who judges it — separation is what prevents "lazy agent" behavior.</p>
-    <div class="deck-footer"><span>Testing strategy — builder, inspector, auditor</span><span class="slide-number" data-current="10" data-total="12"></span></div>
+    <div class="deck-footer"><span>Testing strategy — builder, inspector, auditor</span><span class="slide-number" data-current="11" data-total="13"></span></div>
   </section>
 
   <!-- ==================== 11. Quick Start ==================== -->
@@ -284,7 +331,7 @@ $ <span class="acc">/tgd-define</span> add user auth</pre>
         <p class="mt-m dim" style="font-size:14px">One <span class="cmd-name">setup.sh</span> detects what you have and links the right format for each.</p>
       </div>
     </div>
-    <div class="deck-footer"><span>Quick start</span><span class="slide-number" data-current="11" data-total="12"></span></div>
+    <div class="deck-footer"><span>Quick start</span><span class="slide-number" data-current="12" data-total="13"></span></div>
   </section>
 
   <!-- ==================== 12. CTA ==================== -->
@@ -304,7 +351,7 @@ claude  # then: /tgd-map</pre>
       <span class="pill" style="font-size:15px">Apache 2.0</span>
       <span class="pill" style="font-size:15px">6 Platforms</span>
     </div>
-    <div class="deck-footer"><span>openclawyhwang-hub/tGD</span><span class="slide-number" data-current="12" data-total="12"></span></div>
+    <div class="deck-footer"><span>openclawyhwang-hub/tGD</span><span class="slide-number" data-current="13" data-total="13"></span></div>
   </section>
 
 </div>
