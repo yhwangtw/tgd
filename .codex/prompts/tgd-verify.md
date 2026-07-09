@@ -105,4 +105,4 @@ The gate executes **every catalog entry individually** (jest/vitest/npm/pytest/g
 - [ ] If TRACKING-PLAN.md has entries for this feature: each event owned by this platform has a test asserting it fires with the expected properties
 - [ ] `regression-gate.sh` exits 0 (or 3 = no catalog yet); FLAKY entries recorded in "## Flaky Tests"
 
-If verification passes, suggest the next step: `/tgd-review` to review the code quality.
+End with the closing report per `tgd-rules` → **Command Closing Report**: 📦 產出 (TEST-REPORT.md — real passed/failed + coverage) · 🔎 檢查 (gate as one line) · ➡️ 下一步 `/tgd-review` — 檢查程式碼品質. Don't paste the raw checklist above.

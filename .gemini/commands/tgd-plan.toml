@@ -76,5 +76,5 @@ This ensures each task is assigned to the correct repo and can be executed in th
 - [ ] If UI feature: TASKS.md references DESIGN.md components
 - [ ] If PRD §6 names new events: each has a `$TGD_DIR/TRACKING-PLAN.md` entry (Status: planned) and an instrumentation task with its own AC
 
-If verification passes, suggest the next step: `/tgd-develop` to start implementing the first slice.
+End with the closing report per `tgd-rules` → **Command Closing Report**: 📦 產出 (TASKS.md — N 個任務、M 條驗收標準；Jira keys 或「略過」) · 🔎 檢查 (gate as one line) · ➡️ 下一步 `/tgd-develop` — 實作第一片. Don't paste the raw checklist above.
 """

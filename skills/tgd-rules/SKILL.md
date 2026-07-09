@@ -158,6 +158,25 @@ Each lifecycle phase has a distinct communication tone. Follow these when respon
 - VERIFY tone overrides all other considerations (no softening bad news)
 - When uncertain about phase, default to DEVELOP tone (minimal, code-first)
 
+## Command Closing Report
+
+End every lifecycle command with a short, scannable summary — it is the part the human actually reads. Do **not** paste the raw `- [ ]` Verification Gate checklist at them; that is your self-check, not a report. Collapse it. Three parts:
+
+- **📦 產出** — what this phase produced or changed, with a one-line *real* summary (counts, coverage, file — from actual output, never invented; the Verification Iron Law applies here too).
+- **🔎 檢查** — the whole gate as ONE line: `✅ 全數通過` or `❌ N 項未過`. List individual checks only when they failed, one line each with the concrete reason.
+- **➡️ 下一步** — the next command and a short why. Omit it on a failed run — the next step is "fix and re-run this command"; make the header `❌ … 未通過`.
+
+Suggested shape (adapt it; this is guidance, not a rigid template):
+
+```
+✅ /tgd-verify 完成
+📦 產出   TEST-REPORT.md — 142 passed / 0 failed, coverage 87%
+🔎 檢查   ✅ 全數通過（tests · coverage · ac-trace · regression-gate）
+➡️ 下一步  /tgd-review — 檢查程式碼品質
+```
+
+`/tgd-map`'s Step 8 Final Report is the fuller, enforced instance of this same shape.
+
 ## Human Roles & Sign-off Protocol
 
 tGD has three human roles. Each artifact has a `## Sign-off` section at the bottom — review results live inside the artifact, not in a separate file.

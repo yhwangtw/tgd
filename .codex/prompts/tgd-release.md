@@ -105,4 +105,4 @@ This catalog is cumulative — every shipped feature's `[R]` tests are preserved
 - [ ] `$TGD_DIR/<feature-name>/METRICS.md` created from PRD §6 with Actual left blank (skipped only for signed-off N/A); TRACKING-PLAN entries flipped to `live`
 - [ ] `$TGD_DIR/REGRESSION-CATALOG.md` updated with new `[R]` entries (if any)
 
-If verification passes, confirm that monitoring is active and the rollback plan is documented.
+End with the closing report per `tgd-rules` → **Command Closing Report**: 📦 產出 (released version + CHANGELOG/METRICS/REGRESSION-CATALOG updates) · 🔎 檢查 (gate as one line) · ➡️ 下一步 確認 monitoring 已啟動、rollback plan 有記錄（發布是終點,不接下一個命令）. Don't paste the raw checklist above.

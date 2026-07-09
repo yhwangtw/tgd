@@ -63,4 +63,4 @@ After completing the spec, verify the outputs.
 - [ ] If UI feature: `$TGD_DIR/<feature-name>/DESIGN.md` exists with Component Tree
 - [ ] If UI feature: `$TGD_DIR/<feature-name>/prototype/` contains at least 2 HTML variants
 
-If verification passes, suggest the next step: `/tgd-plan` to decompose it into tasks.
+End with the closing report per `tgd-rules` → **Command Closing Report**: 📦 產出 (PRD.md + SPEC.md, and DESIGN.md/prototype if UI) · 🔎 檢查 (gate as one line) · ➡️ 下一步 `/tgd-plan` — 拆解成任務. Don't paste the raw checklist above.

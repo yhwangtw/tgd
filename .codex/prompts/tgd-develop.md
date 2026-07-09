@@ -69,4 +69,4 @@ After completing the implementation, verify the outputs.
 - [ ] Every completed task's criteria have their `Test:` fields filled in TASKS.md (all `[R]` criteria without exception)
 - [ ] Verification commands run and output confirmed (no "should work")
 
-If verification passes, suggest the next step: `/tgd-verify` to prove it works.
+End with the closing report per `tgd-rules` → **Command Closing Report**: 📦 產出 (實作的任務數 + 檔案摘要；worktree 保留、未 merge) · 🔎 檢查 (gate as one line) · ➡️ 下一步 `/tgd-verify` — 證明它能動. Don't paste the raw checklist above.
