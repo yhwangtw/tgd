@@ -230,22 +230,6 @@ flowchart LR
 
 ## 🔑 Key Features
 
-### 📖 DeepWiki-Style Project Documentation
-`/tgd-map` compiles CodeGraph + Understand-Anything analysis into a
-**single self-contained `wiki.html`** at `$TGD_DIR/wiki/` — open it by
-double-clicking, no server, no build step, no node/npm. You get:
-- **Uniform structure across every project** — the same page skeleton (home, overview, architecture, onboarding, modules, flows, source, search); only the data varies
-- **Multi-repo support** — repo selector on the home page and a sidebar switcher when multiple repos are scanned
-- **Offline search** — repos, modules, symbols, flows, and source files, all client-side
-- **Symbol → source jumps** — module tables link functions/classes into the built-in source browser with line highlighting
-- **Mermaid diagrams** — architecture, dependencies, and per-module graphs; the renderer is inlined so diagrams work offline
-- **Markdown twin for agents & GitHub** — `wiki/docs/` mirrors the same structure as plain `.md` (GitHub renders it, Mermaid included) with `manifest.json` as the machine-readable index
-- **Shareable** — send one file to a teammate; it just opens
-
-Everything lives in `$TGD_DIR/wiki/`, so the wiki never pollutes your code repo.
-Layout is uniform across projects because the HTML template ships inside the
-`tgd-wiki-generation` skill — there is no artifact-side knob that can change the structure.
-
 ### 🏖️ Mandatory Worktree Isolation
 When you run `/tgd-develop`, tGD **automatically creates a Git Worktree** sandbox (`../project-<feature>/`) before writing any code. This ensures:
 - Your `$TGD_DIR/` planning files (PRD, SPEC, TASKS) stay clean and untouched.
@@ -299,7 +283,7 @@ The `tgd` CLI manages installation, updates, and diagnostics:
 
 | 🎯 What you're doing | ⌨️ Command | 💡 Key principle | 🔧 Invokes |
 |---|---|---|---|
-| Understand the project | `/tgd-map` | Context before changes + browsable wiki | `tgd-context-engineering` + `codegraph init` + `understand-dashboard` + `tgd-wiki-generation` |
+| Understand the project | `/tgd-map` | Context before changes + live dashboard | `tgd-context-engineering` + `codegraph init` + `understand-dashboard` |
 | Define what to build | `/tgd-define` | 3-option naming + Product + Spec | `tgd-interview-me` → `tgd-idea-refine` → `tgd-spec-driven-development` |
 | Plan how to build it | `/tgd-plan` | Read CONTEXT + PRD + SPEC → atomic tasks | `tgd-planning-and-task-breakdown` → `tgd-jira-auto-sync` |
 | Develop in sandbox | `/tgd-develop` | **Mandatory Worktree** + smart routing | `tgd-source-driven-development` → (`subagent` OR `incremental`) → `tgd-test-driven-development` |

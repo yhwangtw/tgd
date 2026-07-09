@@ -244,19 +244,6 @@ flowchart LR
 
 ## 🔑 核心特色
 
-### 📖 DeepWiki 風格的專案文件
-`/tgd-map` 將 CodeGraph + Understand-Anything 的分析結果編譯成**單一自足的 `wiki.html`**，放在 `$TGD_DIR/wiki/`——雙擊即開，不用伺服器、不用 build、不用 node/npm。你會得到：
-- **每個專案結構一致**——相同的頁面骨架（首頁、總覽、架構、上手指南、模組、流程、原始碼、搜尋），只有資料不同
-- **多 repo 支援**——首頁有 repo 選擇器，掃描多個 repo 時側欄可切換
-- **離線搜尋**——repo、模組、符號、流程、原始碼檔案，全部在客戶端完成
-- **符號 → 原始碼跳轉**——模組表格的函式/類別連結到內建原始碼瀏覽器，附行號高亮
-- **Mermaid 圖表**——架構、依賴、各模組的關係圖；渲染器已內嵌，離線也能顯示
-- **給 agent 和 GitHub 的 Markdown 分身**——`wiki/docs/` 以純 `.md` 鏡射相同結構（GitHub 可直接渲染，含 Mermaid），`manifest.json` 是機器可讀的索引
-- **可分享**——傳一個檔案給隊友，打開就能看
-
-所有東西都在 `$TGD_DIR/wiki/`，wiki 永遠不會污染你的程式碼 repo。
-版面在所有專案間保持一致，因為 HTML 模板內建在 `tgd-wiki-generation` skill 裡——artifact 端沒有任何可以改變結構的開關。
-
 ### 🏖️ 強制 Worktree 隔離
 執行 `/tgd-develop` 時，tGD **自動建立 Git Worktree 沙盒**（`../project-<feature>/`）才開始寫 code。這確保：
 - `$TGD_DIR/` 規劃檔案（PRD, SPEC, TASKS）保持乾淨不受程式碼污染。
@@ -312,7 +299,7 @@ flowchart LR
 
 | 🎯 做什麼 | ⌨️ 指令 | 💡 核心原則 | 🔧 呼叫的 Skills |
 |---|---|---|---|
-| 了解專案 | `/tgd-map` | 先有 context 再動手 + 可瀏覽的 wiki | `tgd-context-engineering` + `codegraph init` + `understand-dashboard` + `tgd-wiki-generation` |
+| 了解專案 | `/tgd-map` | 先有 context 再動手 + 即時 dashboard | `tgd-context-engineering` + `codegraph init` + `understand-dashboard` |
 | 定義要做什麼 | `/tgd-define` | 3 選 1 命名 + 產品 + 規格 | `tgd-interview-me` → `tgd-idea-refine` → `tgd-spec-driven-development` |
 | 規劃怎麼做 | `/tgd-plan` | 讀 CONTEXT + PRD + SPEC → 原子任務 | `tgd-planning-and-task-breakdown` → `tgd-jira-auto-sync` |
 | 沙盒建造 | `/tgd-develop` | **強制 Worktree** + 智能路由 | `tgd-source-driven-development` → (`subagent` OR `incremental`) → `tgd-test-driven-development` |

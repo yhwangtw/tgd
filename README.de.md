@@ -220,19 +220,6 @@ flowchart LR
 
 ## 🔑 Hauptfunktionen
 
-### 📖 Projektdokumentation im DeepWiki-Stil
-`/tgd-map` kompiliert die CodeGraph- + Understand-Anything-Analyse in eine **einzige, in sich geschlossene `wiki.html`** unter `$TGD_DIR/wiki/` — per Doppelklick öffnen, kein Server, kein Build-Schritt, kein node/npm. Sie erhalten:
-- **Einheitliche Struktur über alle Projekte** — dasselbe Seitengerüst (Home, Übersicht, Architektur, Onboarding, Module, Flows, Quellcode, Suche); nur die Daten variieren
-- **Multi-Repo-Unterstützung** — Repo-Auswahl auf der Startseite und Sidebar-Umschalter bei mehreren gescannten Repos
-- **Offline-Suche** — Repos, Module, Symbole, Flows und Quelldateien, alles clientseitig
-- **Symbol → Quellcode-Sprünge** — Funktionen/Klassen in Modultabellen verlinken in den eingebauten Quellcode-Browser mit Zeilenhervorhebung
-- **Mermaid-Diagramme** — Architektur, Abhängigkeiten und Graphen pro Modul; der Renderer ist eingebettet, Diagramme funktionieren offline
-- **Markdown-Zwilling für Agenten & GitHub** — `wiki/docs/` spiegelt dieselbe Struktur als reines `.md` (GitHub rendert es, inkl. Mermaid) mit `manifest.json` als maschinenlesbarem Index
-- **Teilbar** — schicken Sie eine Datei an einen Kollegen; sie öffnet sich einfach
-
-Alles liegt in `$TGD_DIR/wiki/`, das Wiki verschmutzt also nie Ihr Code-Repo.
-Das Layout ist über alle Projekte einheitlich, weil das HTML-Template im `tgd-wiki-generation`-Skill mitgeliefert wird — es gibt keinen artefaktseitigen Schalter, der die Struktur ändern könnte.
-
 ### 🏖️ Pflicht-Worktree-Isolierung
 Beim Ausführen von `/tgd-develop` erstellt tGD **automatisch eine Git-Worktree-Sandbox** (`../project-<feature>/`), bevor Code geschrieben wird. Das stellt sicher:
 - Ihre `$TGD_DIR/`-Planungsdateien (PRD, SPEC, TASKS) bleiben sauber und unberührt.
@@ -288,7 +275,7 @@ Die `tgd` CLI verwaltet Installation, Updates und Diagnose:
 
 | 🎯 Was | ⌨️ Command | 💡 Prinzip | 🔧 Skills |
 |---|---|---|---|
-| Projekt verstehen | `/tgd-map` | Kontext vor Änderungen + durchsuchbares Wiki | `tgd-context-engineering` + `codegraph init` + `understand-dashboard` + `tgd-wiki-generation` |
+| Projekt verstehen | `/tgd-map` | Kontext vor Änderungen + Live-Dashboard | `tgd-context-engineering` + `codegraph init` + `understand-dashboard` |
 | Definition | `/tgd-define` | 3-Option-Naming + Produkt + Spezifikation | `tgd-interview-me` → `tgd-idea-refine` → `tgd-spec-driven-development` |
 | Planung | `/tgd-plan` | CONTEXT + PRD + SPEC → Atomare Tasks | `tgd-planning-and-task-breakdown` → `tgd-jira-auto-sync` |
 | Sandbox-Bau | `/tgd-develop` | **Pflicht-Worktree** + Intelligentes Routing | `tgd-source-driven-development` → (`subagent` OR `incremental`) → `tgd-test-driven-development` |

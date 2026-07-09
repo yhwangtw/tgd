@@ -1,6 +1,6 @@
 ---
 name: tgd-wiki-generation
-description: Compiles CodeGraph + Understand-Anything outputs into a self-contained single-file HTML wiki (wiki.html) plus a plain-Markdown docs tree. Every scanned repo gets the same fixed DeepWiki-style structure — home, overview, architecture, modules, flows, onboarding, source browser, search — only the data varies per project. Zero runtime dependencies beyond Python 3 stdlib; no node, npm, or build step. Use when /tgd-map Step 6 runs, or to regenerate the wiki after code changes.
+description: Compiles CodeGraph + Understand-Anything outputs into a self-contained single-file HTML wiki (wiki.html) plus a plain-Markdown docs tree. Every scanned repo gets the same fixed DeepWiki-style structure — home, overview, architecture, modules, flows, onboarding, source browser, search — only the data varies per project. Zero runtime dependencies beyond Python 3 stdlib; no node, npm, or build step. Standalone / manual skill — NOT part of the /tgd-map pipeline. Use when you explicitly want to generate or regenerate a project wiki from an existing knowledge graph under $TGD_DIR/.scans/.
 ---
 
 # tGD Wiki Generation (Single-File HTML, Multi-Repo)
@@ -33,8 +33,8 @@ assets.
 
 ## When to Use
 
-- Called automatically by `/tgd-map` Step 6 after CodeGraph + UA analysis complete
-- Called manually to regenerate the wiki after code changes
+- Invoked **manually / on demand** to build a project wiki from a knowledge graph that `/tgd-map` already produced under `$TGD_DIR/.scans/`. This skill is **not** wired into the `/tgd-map` pipeline — run it yourself when you want the wiki.
+- Called again to regenerate the wiki after code changes (re-run `/tgd-map` first to refresh the knowledge graph)
 
 ## Inputs
 
@@ -86,7 +86,7 @@ $TGD_DIR/
 
 Every page's prose resolves in this precedence: **Understand-Anything field → `wiki-prose.json` → deterministic derivation from graph structure**. So a description is never blank: if UA left it empty and no sidecar entry exists, the generator writes a true sentence computed from counts and edges (e.g. "2 files; depends on Data; used by Routes.").
 
-`/tgd-map` Step 6 has the agent synthesize the sidecar (read the knowledge graph + source, write explanatory prose). Schema:
+The invoking agent synthesizes the sidecar (read the knowledge graph + source, write explanatory prose) before running the generator. Schema:
 
 ```json
 {
@@ -113,7 +113,7 @@ Every page's prose resolves in this precedence: **Understand-Anything field → 
 
 Every key is optional — supply what you have, the rest derives. The `hash` per file lets a re-run skip re-synthesizing unchanged files (incremental). Keep it out of the code repo; it lives under `$TGD_DIR/wiki/`.
 
-**All prose values are Markdown.** `wiki.html` renders them with a small vendored renderer (paragraphs, `##`→`###` headings, bold/italic, inline + fenced code, lists, blockquotes, and links restricted to `#` anchors and http(s)); the `docs/` tree emits them verbatim, where GitHub renders the same Markdown natively. Multi-paragraph prose with subheadings is expected on overview/architecture pages — see `/tgd-map` Step 6a for the per-page content bar. Raw HTML in prose is NOT rendered (it is escaped) — the renderer is escape-first by design.
+**All prose values are Markdown.** `wiki.html` renders them with a small vendored renderer (paragraphs, `##`→`###` headings, bold/italic, inline + fenced code, lists, blockquotes, and links restricted to `#` anchors and http(s)); the `docs/` tree emits them verbatim, where GitHub renders the same Markdown natively. Multi-paragraph prose with subheadings is expected on overview/architecture pages. Per-page content bar: `overview` 2-4 paragraphs (what it does, how the layers/data-path fit, what to know before touching it); `architecture` 1-3 paragraphs (the layering and *why*); `onboarding` a narrated reading path; `layers`/`modules` 2-4 sentences each (responsibility, key files, gotcha); `flows` narrate the sequence; `files` a 1-2 sentence summary per source file with public-symbol notes. If a page's prose would read the same for any project, it's filler — ground every claim in the graph or the source you read. Raw HTML in prose is NOT rendered (it is escaped) — the renderer is escape-first by design.
 
 The generator prints a **coverage line** per repo so the sidecar's effect is never silent — e.g. `[tGD] prose: 8 slot(s) authored; 3/12 files summarized; rest derived from graph.` A repo key in the sidecar that matches no scanned repo (a typo) is reported as ignored rather than swallowed. If prose was written but the line says "no prose sidecar", the file is in the wrong place or the JSON is malformed.
 
@@ -158,9 +158,8 @@ edits will be lost. Re-running on the same input produces the same structure
 ## Related Skills
 
 - `tgd-router` — Meta-skill entry point
-- `tgd-context-engineering` — Uses wiki output to reload project context
-- `tgd-planning-and-task-breakdown` — Reads `manifest.json` for task planning
 - `understand` — Upstream: produces the knowledge graph consumed here
+- `tgd-map` — Produces the `$TGD_DIR/.scans/<repo>/` knowledge graph this skill reads (this skill is standalone and no longer auto-invoked by it)
 
 ## Pitfalls
 

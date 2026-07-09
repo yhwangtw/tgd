@@ -220,19 +220,6 @@ flowchart LR
 
 ## 🔑 主な機能
 
-### 📖 DeepWikiスタイルのプロジェクトドキュメント
-`/tgd-map` は CodeGraph + Understand-Anything の分析結果を、`$TGD_DIR/wiki/` にある**単一の自己完結型 `wiki.html`** にコンパイルします — ダブルクリックで開き、サーバー不要、ビルド不要、node/npm 不要。得られるもの：
-- **どのプロジェクトでも同じ構造** — 同じページ骨格（ホーム、概要、アーキテクチャ、オンボーディング、モジュール、フロー、ソース、検索）で、変わるのはデータだけ
-- **マルチレポ対応** — ホームページのレポセレクターと、複数レポをスキャンした際のサイドバー切り替え
-- **オフライン検索** — レポ、モジュール、シンボル、フロー、ソースファイルをすべてクライアントサイドで検索
-- **シンボル → ソースへのジャンプ** — モジュール表の関数/クラスが、行ハイライト付きの内蔵ソースブラウザにリンク
-- **Mermaid 図** — アーキテクチャ、依存関係、モジュールごとのグラフ。レンダラーは埋め込み済みでオフラインでも表示可能
-- **エージェントとGitHub向けのMarkdown版** — `wiki/docs/` が同じ構造をプレーンな `.md` でミラー（GitHubがMermaid込みでレンダリング）、`manifest.json` が機械可読インデックス
-- **共有可能** — ファイルを1つチームメイトに送るだけで、そのまま開ける
-
-すべて `$TGD_DIR/wiki/` に置かれるため、wiki がコードレポを汚すことはありません。
-HTMLテンプレートは `tgd-wiki-generation` スキルに同梱されているため、レイアウトは全プロジェクトで統一 — 構造を変えられるアーティファクト側のスイッチは存在しません。
-
 ### 🏖️ 必須 Worktree 隔離
 `/tgd-develop` を実行すると、tGD はコードを書く前に **Git Worktree サンドボックス**（`../project-<feature>/`）を自動作成します。これにより：
 - `$TGD_DIR/` の計画ファイル（PRD、SPEC、TASKS）はクリーンなまま保たれます。
@@ -288,7 +275,7 @@ Jira への同期時、tGD はやみくもに課題を作成しません：
 
 | 🎯 内容 | ⌨️ コマンド | 💡 原則 | 🔧 呼び出し |
 |---|---|---|---|
-| プロジェクト理解 | `/tgd-map` | 変更前にコンテキスト + 閲覧可能なwiki | `tgd-context-engineering` + `codegraph init` + `understand-dashboard` + `tgd-wiki-generation` |
+| プロジェクト理解 | `/tgd-map` | 変更前にコンテキスト + ライブダッシュボード | `tgd-context-engineering` + `codegraph init` + `understand-dashboard` |
 | 何を構築するか定義 | `/tgd-define` | 3択命名 + 製品 + 仕様 | `tgd-interview-me` → `tgd-idea-refine` → `tgd-spec-driven-development` |
 | 構築方法を計画 | `/tgd-plan` | CONTEXT + PRD + SPEC → アトミックタスク | `tgd-planning-and-task-breakdown` → `tgd-jira-auto-sync` |
 | サンドボックス構築 | `/tgd-develop` | **必須 Worktree** + スマートルーティング | `tgd-source-driven-development` → (`subagent` OR `incremental`) → `tgd-test-driven-development` |
