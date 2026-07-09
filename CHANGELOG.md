@@ -4,6 +4,12 @@ All notable changes to tGD will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/). Versions follow [CalVer](https://calver.org/) (YYYY.MM.DD).
 
+## v2026.07.09
+
+### ♻️ Refactoring
+- drop wiki generation, make CONTEXT.md the complete deliverable (#31) (`051aa30`)
+
+
 ## v2026.07.08.1
 
 ### 🐛 Bug Fixes
