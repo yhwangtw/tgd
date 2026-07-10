@@ -4,6 +4,12 @@ All notable changes to tGD will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/). Versions follow [CalVer](https://calver.org/) (YYYY.MM.DD).
 
+## v2026.07.10.2
+
+### 🐛 Bug Fixes
+- cover re-define, resolve $TGD_REPO_ROOT once, drop the .codegraph escape hatch (#38) (`d850e1f`)
+
+
 ## v2026.07.10.1
 
 ### 🐛 Bug Fixes
