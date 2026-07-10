@@ -3,7 +3,7 @@
 Verify — prove it works with debugging and test pyramid
 
 **🛑 Pre-flight: Environment Check**
-- [ ] `$TGD_DIR/CONTEXT.md` exists (or `.codegraph/` is present).
+- [ ] `$TGD_DIR/CONTEXT.md` exists. No substitutes — `/tgd-map` produces it unconditionally (Tier 1).
 - **If missing:** STOP. Tell user: "Project context not mapped. Please run `/tgd-map` first."
 - **$TGD_DIR:** Check env var `$TGD_DIR` first. If not set, check sibling `../<project-name>-tGD/`. If neither exists: STOP — run `/tgd-map` first.
 

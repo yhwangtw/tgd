@@ -258,6 +258,17 @@ If the PRD's §6 Success Metrics names a tracking event that does not exist yet 
 
 A mis-firing event is worse than a missing one — you will trust a wrong number. That is why instrumentation gets tested ACs, not a "remember to add analytics" checklist line.
 
+## Re-planning an Existing TASKS.md
+
+When TASKS.md already exists (spec changed mid-flight, scope grew), the default is an **incremental update**, never a from-scratch rewrite — `/tgd-develop` backfills `Test:` fields and completion state into TASKS.md, and regenerating the file destroys them, breaking `ac-trace.py` and the regression chain downstream.
+
+Incremental rules:
+- **Completed tasks are immutable**: keep their status, criteria, and `Test:` fields byte-for-byte.
+- **Never renumber existing `AC-<task>.<n>` ids** — tests already reference them.
+- New tasks continue the numbering after the highest existing task.
+- An *unstarted* task invalidated by the spec change may be rewritten in place (same task number, new content, new criterion ids under it).
+- A full rewrite is legitimate only when the old plan is void (feature repurposed) AND the user explicitly chose it (`/tgd-plan`'s re-plan prompt, option 2).
+
 ## Task Sizing Guidelines
 
 | Size | Files | Scope | Example |

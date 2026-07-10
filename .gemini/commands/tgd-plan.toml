@@ -3,7 +3,7 @@ description = "Plan — decompose specs into small, verifiable tasks with accept
 prompt = """
 
 **🛑 Pre-flight: Environment Check**
-- [ ] `$TGD_DIR/CONTEXT.md` exists (or `.codegraph/` is present).
+- [ ] `$TGD_DIR/CONTEXT.md` exists. No substitutes — `/tgd-map` produces it unconditionally (Tier 1).
 - **If missing:** STOP. Tell user: "Project context not mapped. Please run `/tgd-map` first."
 - **$TGD_DIR:** Check env var `$TGD_DIR` first. If not set, check sibling `../<project-name>-tGD/`. If neither exists: STOP — run `/tgd-map` first.
 
@@ -20,6 +20,17 @@ prompt = """
 - **If missing:** STOP. Tell user: "Specs are missing. Please run `/tgd-define` first."
 - [ ] If SPEC has Frontend/Full-stack: `$TGD_DIR/<feature-name>/DESIGN.md` exists.
 - **If missing:** STOP. Tell user: "Design is missing. Please run `/tgd-define` first."
+
+**🔁 Re-plan check (BEFORE writing anything):** if `$TGD_DIR/<feature-name>/TASKS.md` already exists, do NOT regenerate it from scratch — `/tgd-develop` backfills `Test:` fields and completion state into it, and a fresh rewrite destroys them (breaking the `ac-trace` / regression chain). Ask (Selection Protocol):
+
+> 📋 TASKS.md 已存在（N 個任務，M 個已完成，K 條 `Test:` 已回填）
+>
+> 1. 增量更新 — 保留已完成任務與所有 `Test:` 欄位；只新增/修改受 spec 變更影響的任務（預設）
+> 2. 整份重來 — 丟棄現有 TASKS.md（含完成狀態與 Test: 回填）。只在舊計畫已作廢時選這個。
+>
+> Choose one (default 1):
+
+Incremental rules: completed tasks and their `AC-<task>.<n>` ids are immutable — never renumber existing ids; new tasks continue the numbering; an *unstarted* task invalidated by the spec change may be rewritten in place.
 
 Run the `tgd-planning-and-task-breakdown` skill. Decompose the specification into small, verifiable tasks with acceptance criteria and dependency ordering.
 
@@ -53,24 +64,28 @@ This ensures each task is assigned to the correct repo and can be executed in th
 3. New entries start as `Status: planned` — `/tgd-release` flips them to `live`.
 
 **🔗 Jira Integration Gate** → IMMEDIATELY after TASKS.md is written. Do NOT skip this step.
-1. Check env vars: `JIRA_URL`, `JIRA_PROJECT`, `JIRA_TOKEN`.
+1. **Load saved config first**: if `$TGD_DIR/.env` exists, source it (`set -a; . "$TGD_DIR/.env"; set +a`) — a previous run may have saved `JIRA_URL`/`JIRA_PROJECT` there. THEN check env vars: `JIRA_URL`, `JIRA_PROJECT`, `JIRA_TOKEN`. (Without this load, values saved "for future runs" are never read and the user gets re-asked every time.)
 2. **If ALL configured:** Run the `tgd-jira-auto-sync` skill automatically. Do NOT ask.
    - Parse TASKS.md, create issues, report keys (e.g., `ENG-1234`).
    - Add issue keys back to TASKS.md tasks as `[ENG-1234]`.
-3. **If NOT configured:** Ask the user conversationally:
+3. **If NOT configured:** Ask via Selection Protocol:
    ```
    📋 TASKS.md 已完成（N 個任務）。
-   🔗 要同步到 Jira 嗎？(y/n)
+   🔗 要同步到 Jira 嗎？
+   1. 同步（我會逐項問缺少的連線設定）
+   2. 略過
    ```
-   - **If yes:** Ask for each missing value one at a time:
+   - **If 1:** Ask for each missing value one at a time:
      - `JIRA_URL`（例：https://jira.company.com）
      - `JIRA_PROJECT`（例：ENG）
      - `JIRA_TOKEN`（Personal Access Token）
      Save `JIRA_URL` and `JIRA_PROJECT` to `$TGD_DIR/.env` for future runs. For `JIRA_TOKEN`, warn the user that `.env` is plaintext and recommend exporting it in their shell profile instead; only write it to `.env` if they explicitly agree. Then run the `tgd-jira-auto-sync` skill.
-   - **If no:** Skip Jira, proceed to verification.
+   - **If 2:** Skip Jira, proceed to verification.
 
 **Verification Gate** (runs regardless of whether Jira sync happened):
 - [ ] `$TGD_DIR/<feature-name>/TASKS.md` exists and is non-empty
+- [ ] `python3 "$TGD_REPO_ROOT/scripts/check-doc-sections.py" TASKS "$TGD_DIR/<feature-name>/TASKS.md"` exits 0 — required sections present, ≥1 task, ≥1 checkpoint (the `## Sign-off` section feeds `/tgd-release`'s sign-off gate — its absence would silently skip that check). Resolve `$TGD_REPO_ROOT` per `tgd-rules` → **Resolving $TGD_REPO_ROOT**.
+- [ ] If this was a re-plan (TASKS.md pre-existed): every previously completed task is still present with its status and `Test:` fields intact, and no existing `AC-<task>.<n>` id was renumbered
 - [ ] Every acceptance criterion carries a stable `AC-<task>.<n>` id in BDD format — check: `grep -qE 'AC-[0-9]+[.][0-9]+' TASKS.md`. Without ids, `/tgd-verify`'s `ac-trace.py` gate fails closed.
 - [ ] Every criterion has an explicit `[R]` Yes/No regression decision
 - [ ] If UI feature: TASKS.md references DESIGN.md components
