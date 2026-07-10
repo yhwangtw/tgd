@@ -4,6 +4,17 @@ All notable changes to tGD will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/). Versions follow [CalVer](https://calver.org/) (YYYY.MM.DD).
 
+## v2026.07.10
+
+### ✨ Features
+- derive the domain graph in Step 4 + surface Business Flows in CONTEXT.md (#36) (`f3074a7`)
+- add "The Spiral" slide — tGD compounds, not just loops (`b2dd0f2`)
+### ♻️ Refactoring
+- shared lightweight Command Closing Report (#33) (`a9325a3`)
+### 📦 Other Changes
+- style(deck): drop the red gate emphasis on Verify (`9cad2c7`)
+
+
 ## v2026.07.09
 
 ### ♻️ Refactoring
