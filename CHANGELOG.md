@@ -4,6 +4,12 @@ All notable changes to tGD will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/). Versions follow [CalVer](https://calver.org/) (YYYY.MM.DD).
 
+## v2026.07.10.5
+
+### 🐛 Bug Fixes
+- per-repo worktrees, codegraph qualifiers, status/error-path chain (#41) (`e000c18`)
+
+
 ## v2026.07.10.4
 
 ### 🐛 Bug Fixes
