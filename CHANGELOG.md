@@ -4,6 +4,13 @@ All notable changes to tGD will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/). Versions follow [CalVer](https://calver.org/) (YYYY.MM.DD).
 
+## v2026.07.10.1
+
+### 🐛 Bug Fixes
+- theme toggle left body data-theme stale — half-applied themes (#37) (`c873928`)
+- unify the always-on layer, fix OpenCode injection (#35) (`f17517e`)
+
+
 ## v2026.07.10
 
 ### ✨ Features
