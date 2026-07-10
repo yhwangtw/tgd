@@ -4,6 +4,12 @@ All notable changes to tGD will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/). Versions follow [CalVer](https://calver.org/) (YYYY.MM.DD).
 
+## v2026.07.10.3
+
+### 🐛 Bug Fixes
+- repair the UI Design Gate — dislocated branch, phantom tools, machine-checked DESIGN.md (#39) (`a5cd1c2`)
+
+
 ## v2026.07.10.2
 
 ### 🐛 Bug Fixes
