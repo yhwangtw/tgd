@@ -25,6 +25,7 @@ Spec-driven development has four phases. Do not advance to the next phase until 
 
 **Step 0: Feature Name Resolution**
 Before writing any content, determine the `<feature-name>`:
+0. **Existing-feature check first**: scan `$TGD_DIR/` for feature dirs (subdirs with `PRD.md`/`SPEC.md`). If one plausibly matches this ask, offer to revise it in place instead of minting a new name (same rule as `/tgd-define` step 3) — never silently create a duplicate directory for the same feature.
 1. **Propose**: Based on the user's request, propose 3 distinct kebab-case `<feature-name>` options with brief descriptions (e.g., "user-auth", "login-system", "access-control").
 2. **Wait**: Ask the user to pick one or provide their own. Do NOT proceed until the name is locked.
 3. **Create directory**: `mkdir -p $TGD_DIR/<feature-name>/`.
@@ -197,8 +198,8 @@ After writing SPEC.md, you MUST stop and ask the user via **Selection Protocol**
 
 **If user confirms YES:**
 1. **Check existing design** in SPEC.md:
-   - If `[Figma URL]` → Use `web_extract` to fetch design screenshot + component structure → skip to step 3
-   - If `[Screenshot/PDF]` → Use `vision_analyze` to extract UI elements → skip to step 3
+   - If `[Figma URL]` → fetch the URL with your platform's web-fetch capability and extract the component structure; if the platform cannot render it, ask the user for a screenshot export → skip to step 3
+   - If `[Screenshot/PDF]` → read the image with vision and extract the UI elements → skip to step 3
    - If `[None]` → proceed to step 2
 
 2. **Generate design mockups** (via the `tgd-sketch` skill):
@@ -216,110 +217,108 @@ After writing SPEC.md, you MUST stop and ask the user via **Selection Protocol**
 4. **Confirm with user:**
    - Present DESIGN.md summary: Visual Direction, Font choices, Color palette, Spacing
    - **STOP. Ask user:** "DESIGN.md confirmed? Ready to proceed to PLAN?"
+   - If not satisfied → modify DESIGN.md → re-confirm
 
 **If user confirms NO:**
 - Skip DESIGN.md entirely and proceed to PLAN.
-   - If not satisfied → modify DESIGN.md → re-confirm
 
-5. **DESIGN.md template:**
-   ```markdown
-   # DESIGN: [Feature Name]
-   
-   ## Source
-   - **Type**: [Figma / Mockup / Screenshot]
-   - **URL/Path**: [link or file path]
-   - **Variant**: [Conservative / Strong-fit / Divergent]
-   
-   ## Visual Direction
-   - **Reference**: [Product name, e.g. Linear / Stripe / Vercel]
-   - **Vibe**: [e.g. "ultra-minimal dark, precise, purple accent"]
-   - **Anti-patterns** (MUST NOT):
-     - Fonts: Inter, Roboto, Arial, Open Sans, system defaults
-     - Colors: pure black (#000), pure white (#fff), cyan-on-dark, purple-to-blue gradients, neon accents
-     - Layout: everything in cards, cards inside cards, identical card grids, center everything
-     - Visual: glassmorphism, gradient text, rounded rectangles with thick colored border on one side
-     - Motion: bounce/elastic easing, animate layout properties (width/height/padding)
-     - Content: lorem ipsum, fake metrics, placeholder testimonials, decorative SVG illustrations
-   
-   ## Component Tree
-   - Page
-     - Header
-     - LoginForm
-       - InputField × 2
-       - SubmitButton
-     - Footer
-   
-   ## Design Tokens
-   | Token | Value | Notes |
-   |-------|-------|-------|
-   | color-bg | #0a0a0a | tinted, not pure black |
-   | color-surface | #111111 | |
-   | color-text | #e5e5e5 | |
-   | color-text-muted | #737373 | |
-   | color-accent | #3b82f6 | one primary accent only |
-   | color-success | #22c55e | |
-   | color-danger | #ef4444 | |
-   | color-border | #262626 | |
-   | font-heading | [Choose: Space Grotesk / DM Sans / Geist / etc.] | NOT Inter/Roboto |
-   | font-body | [Choose: DM Sans / Source Sans 3 / Geist / etc.] | NOT Inter/Roboto |
-   | font-mono | JetBrains Mono | code only, not everywhere |
-   | radius-sm | 4px | |
-   | radius-md | 8px | |
-   | radius-lg | 12px | |
-   
-   ## Typography Scale
-   | Level | Size | Weight | Letter-spacing | Usage |
-   |-------|------|--------|----------------|-------|
-   | h1 | clamp(36px, 5vw, 64px) | 800 | -0.03em | Page title (one per page) |
-   | h2 | clamp(24px, 3vw, 40px) | 700 | -0.02em | Section title |
-   | h3 | 20px | 600 | -0.01em | Subsection |
-   | body | 16px | 400 | 0 | Default text |
-   | small | 13px | 400 | 0 | Helper / secondary |
-   | code | 14px | 400 | 0 | Monospace, inline |
-   
-   ## Spacing System
-   | Token | Value | Usage |
-   |-------|-------|-------|
-   | space-xs | 4px | Tight gaps |
-   | space-sm | 8px | Inner padding |
-   | space-md | 16px | Card padding, gaps |
-   | space-lg | 24px | Section gaps |
-   | space-xl | 32px | Section padding |
-   | space-2xl | 48px | Major sections |
-   | space-3xl | 64px | Hero / page margins |
-   
-   ## Responsive
-   | Breakpoint | Layout | Notes |
-   |------------|--------|-------|
-   | mobile (<768px) | Stack vertically | Touch targets ≥ 44px |
-   | tablet (768-1024px) | 2-column where appropriate | |
-   | desktop (≥1024px) | Full layout | |
-   
-   ## Interactions
-   - Submit button: idle → loading → success/error
-   - Hover: subtle lift + shadow (use transform, not layout properties)
-   - Focus: visible focus ring (2px accent, 2px offset)
-   - Transitions: 0.2s ease for micro-interactions, 0.3s ease for state changes
-   
-   ## States
-   | State | Treatment |
-   |-------|-----------|
-   | Loading | Skeleton placeholders, NOT spinners for content |
-   | Empty | Icon + message + CTA button |
-   | Error | Message + retry button, NOT just red text |
-   | Success | Brief confirmation, auto-dismiss |
-   
-   ## Accessibility
-   - Contrast ratio ≥ 4.5:1 for normal text, ≥ 3:1 for large text
-   - All interactive elements keyboard navigable (Tab/Enter/Space)
-   - Visible focus indicators on all focusable elements
-   - `prefers-reduced-motion` disables non-essential animations
-   - `aria-label` on icon-only buttons
-   - Semantic HTML: `<button>` not `<div onClick>`, `<nav>`, `<main>`, `<section>`
-   - Color is NOT the sole indicator of state (always pair with text/icon)
-   ```
+**DESIGN.md template (save to `$TGD_DIR/<feature-name>/DESIGN.md`):**
+```markdown
+# DESIGN: [Feature Name]
 
-**If Backend only:** Skip this step.
+## Source
+- **Type**: [Figma / Mockup / Screenshot]
+- **URL/Path**: [link or file path]
+- **Variant**: [Conservative / Strong-fit / Divergent]
+
+## Visual Direction
+- **Reference**: [Product name, e.g. Linear / Stripe / Vercel]
+- **Vibe**: [e.g. "ultra-minimal dark, precise, purple accent"]
+- **Anti-patterns** (MUST NOT):
+  - Fonts: Inter, Roboto, Arial, Open Sans, system defaults
+  - Colors: pure black (#000), pure white (#fff), cyan-on-dark, purple-to-blue gradients, neon accents
+  - Layout: everything in cards, cards inside cards, identical card grids, center everything
+  - Visual: glassmorphism, gradient text, rounded rectangles with thick colored border on one side
+  - Motion: bounce/elastic easing, animate layout properties (width/height/padding)
+  - Content: lorem ipsum, fake metrics, placeholder testimonials, decorative SVG illustrations
+
+## Component Tree
+- Page
+  - Header
+  - LoginForm
+    - InputField × 2
+    - SubmitButton
+  - Footer
+
+## Design Tokens
+| Token | Value | Notes |
+|-------|-------|-------|
+| color-bg | #0a0a0a | tinted, not pure black |
+| color-surface | #111111 | |
+| color-text | #e5e5e5 | |
+| color-text-muted | #737373 | |
+| color-accent | #3b82f6 | one primary accent only |
+| color-success | #22c55e | |
+| color-danger | #ef4444 | |
+| color-border | #262626 | |
+| font-heading | [Choose: Space Grotesk / DM Sans / Geist / etc.] | NOT Inter/Roboto |
+| font-body | [Choose: DM Sans / Source Sans 3 / Geist / etc.] | NOT Inter/Roboto |
+| font-mono | JetBrains Mono | code only, not everywhere |
+| radius-sm | 4px | |
+| radius-md | 8px | |
+| radius-lg | 12px | |
+
+## Typography Scale
+| Level | Size | Weight | Letter-spacing | Usage |
+|-------|------|--------|----------------|-------|
+| h1 | clamp(36px, 5vw, 64px) | 800 | -0.03em | Page title (one per page) |
+| h2 | clamp(24px, 3vw, 40px) | 700 | -0.02em | Section title |
+| h3 | 20px | 600 | -0.01em | Subsection |
+| body | 16px | 400 | 0 | Default text |
+| small | 13px | 400 | 0 | Helper / secondary |
+| code | 14px | 400 | 0 | Monospace, inline |
+
+## Spacing System
+| Token | Value | Usage |
+|-------|-------|-------|
+| space-xs | 4px | Tight gaps |
+| space-sm | 8px | Inner padding |
+| space-md | 16px | Card padding, gaps |
+| space-lg | 24px | Section gaps |
+| space-xl | 32px | Section padding |
+| space-2xl | 48px | Major sections |
+| space-3xl | 64px | Hero / page margins |
+
+## Responsive
+| Breakpoint | Layout | Notes |
+|------------|--------|-------|
+| mobile (<768px) | Stack vertically | Touch targets ≥ 44px |
+| tablet (768-1024px) | 2-column where appropriate | |
+| desktop (≥1024px) | Full layout | |
+
+## Interactions
+- Submit button: idle → loading → success/error
+- Hover: subtle lift + shadow (use transform, not layout properties)
+- Focus: visible focus ring (2px accent, 2px offset)
+- Transitions: 0.2s ease for micro-interactions, 0.3s ease for state changes
+
+## States
+| State | Treatment |
+|-------|-----------|
+| Loading | Skeleton placeholders, NOT spinners for content |
+| Empty | Icon + message + CTA button |
+| Error | Message + retry button, NOT just red text |
+| Success | Brief confirmation, auto-dismiss |
+
+## Accessibility
+- Contrast ratio ≥ 4.5:1 for normal text, ≥ 3:1 for large text
+- All interactive elements keyboard navigable (Tab/Enter/Space)
+- Visible focus indicators on all focusable elements
+- `prefers-reduced-motion` disables non-essential animations
+- `aria-label` on icon-only buttons
+- Semantic HTML: `<button>` not `<div onClick>`, `<nav>`, `<main>`, `<section>`
+- Color is NOT the sole indicator of state (always pair with text/icon)
+```
 
 **Reframe instructions as success criteria.** When receiving vague requirements, translate them into concrete conditions:
 

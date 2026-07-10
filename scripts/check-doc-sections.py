@@ -4,10 +4,10 @@ check-doc-sections.py — verify a produced tGD artifact contains the required
 `##` sections its template prescribes.
 
 Usage:
-    python3 scripts/check-doc-sections.py <PRD|SPEC|REVIEW> <path-to-file>
+    python3 scripts/check-doc-sections.py <PRD|SPEC|DESIGN|REVIEW> <path-to-file>
 
 Why this exists:
-    PRD/SPEC/REVIEW templates prescribe sections, but the phase gates only
+    PRD/SPEC/DESIGN/REVIEW templates prescribe sections, but the phase gates only
     checked the file existed and was non-empty — an agent that wrote a
     truncated or free-form document still passed. This is the floor that
     catches "half the sections are missing". It does NOT check content (an
@@ -17,7 +17,7 @@ Why this exists:
 Single source of truth:
     The required section list is DERIVED AT RUNTIME from the canonical template
     (not hardcoded here), so the check can never drift from the template:
-      - PRD, SPEC → skills/tgd-spec-driven-development/SKILL.md
+      - PRD, SPEC, DESIGN → skills/tgd-spec-driven-development/SKILL.md
       - REVIEW    → .claude/commands/tgd-review.md
     A section whose heading is marked "(if applicable)" / "(if <cond>)" in the
     template is OPTIONAL and not enforced. To relax a section, mark it in the
@@ -49,6 +49,7 @@ REVIEW_CMD = REPO_ROOT / ".claude" / "commands" / "tgd-review.md"
 TEMPLATES = {
     "PRD": (SPEC_SKILL, r"^# PRD: "),
     "SPEC": (SPEC_SKILL, r"^# SPEC: "),
+    "DESIGN": (SPEC_SKILL, r"^# DESIGN: "),
     "REVIEW": (REVIEW_CMD, r"^# REVIEW: "),
 }
 
@@ -89,13 +90,13 @@ def resolve(artifact: str) -> Tuple[Path, str]:
 
 def main() -> int:
     if len(sys.argv) != 3:
-        sys.stderr.write("usage: check-doc-sections.py <PRD|SPEC|REVIEW> <file>\n")
+        sys.stderr.write("usage: check-doc-sections.py <PRD|SPEC|DESIGN|REVIEW> <file>\n")
         return 2
     artifact = sys.argv[1].strip().upper()
     target = Path(sys.argv[2]).expanduser()
 
     if artifact not in TEMPLATES:
-        sys.stderr.write(f"unknown artifact '{artifact}' — expected PRD, SPEC, or REVIEW\n")
+        sys.stderr.write(f"unknown artifact '{artifact}' — expected PRD, SPEC, DESIGN, or REVIEW\n")
         return 2
 
     template_file, start_rx = resolve(artifact)
