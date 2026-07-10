@@ -97,7 +97,10 @@
             document.head.appendChild(link);
           }
           link.href = previewThemeBase + e.data.name + '.css';
+          // Same html+body rule as applyTheme(): theme CSS scopes to the
+          // element carrying the template class (body) — html alone is dead.
           document.documentElement.setAttribute('data-theme', e.data.name);
+          document.body.setAttribute('data-theme', e.data.name);
         }
       });
       /* Signal to parent that preview iframe is ready */
@@ -879,7 +882,11 @@
     const root = document.documentElement;
     const themesAttr = root.getAttribute('data-themes') || document.body.getAttribute('data-themes');
     const themes = themesAttr ? themesAttr.split(',').map(s=>s.trim()).filter(Boolean) : [];
-    let themeIdx = 0;
+    // Start cycling from the theme that's actually active (a boot script may
+    // have set data-theme from prefers-color-scheme), not blindly from 0 —
+    // otherwise the first T press can re-apply the current theme (a no-op).
+    const activeTheme = document.body.getAttribute('data-theme') || root.getAttribute('data-theme');
+    let themeIdx = Math.max(0, themes.indexOf(activeTheme));
 
     // Auto-detect theme base path from existing <link id="theme-link">
     let themeBase = root.getAttribute('data-theme-base');
@@ -904,7 +911,11 @@
         document.head.appendChild(link);
       }
       link.href = themeBase + name + '.css';
+      // Set on BOTH html and body: theme CSS commonly scopes rules to the
+      // element carrying the template class (e.g. [data-theme=x].tpl-y on
+      // <body>). Setting only <html> leaves those rules dead after a toggle.
       root.setAttribute('data-theme', name);
+      document.body.setAttribute('data-theme', name);
       const ind = document.querySelector('.theme-indicator');
       if (ind) ind.textContent = name;
     }
