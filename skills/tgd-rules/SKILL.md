@@ -1,6 +1,6 @@
 ---
 name: tgd-rules
-description: Core tGD rules that MUST be followed at all times. Loaded automatically on every session. Do not skip, do not rationalize exceptions.
+description: Core tGD rules that MUST be followed at all times — the Verification Iron Law, per-phase tone, the Command Closing Report, and human sign-off. Load this at the start of every tGD session (the session-start meta-skill tgd-router points here) and whenever a command references it. Do not skip, do not rationalize exceptions.
 ---
 
 # tGD Core Rules
@@ -11,7 +11,7 @@ Core rules that MUST be followed at all times in every tGD session. These rules 
 
 ## When to Use
 
-- Automatically loaded on every session via `tgd-rules`
+- At the start of every tGD session: the session-start meta-skill (`tgd-router`, injected by the hook/plugin platforms) and the generated session preamble (Pi/Hermes) both direct you to load this skill first
 - Referenced by all 7 `/tgd-*` lifecycle commands
 - Any time an agent is about to claim completion, skip a step, or rationalize an exception
 

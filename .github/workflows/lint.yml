@@ -59,15 +59,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Regenerate platform mirrors from .claude/commands
+      - name: Regenerate platform mirrors + always-load files
         run: python3 scripts/generate-mirrors.py
 
-      - name: Fail if mirrors drifted
+      - name: Fail if mirrors or always-load files drifted
         run: |
-          if ! git diff --exit-code -- .codex .opencode .gemini .pi; then
-            echo "::error::Platform mirrors are out of sync with .claude/commands/."
-            echo "Edit .claude/commands/*.md only, then run: python3 scripts/generate-mirrors.py"
-            echo "and commit the regenerated mirrors together with the source change."
+          if ! git diff --exit-code -- .codex .opencode .gemini .pi .hermes; then
+            echo "::error::Platform mirrors or always-load files are out of sync."
+            echo "Command mirrors come from .claude/commands/*.md; the Pi/Hermes"
+            echo "always-load files come from hooks/session-preamble.md."
+            echo "Edit the source only, then run: python3 scripts/generate-mirrors.py"
+            echo "and commit the regenerated files together with the source change."
             exit 1
           fi
 

@@ -5,6 +5,8 @@ description: Discovers and invokes agent skills. Use when starting a session or 
 
 # Using tGD
 
+> **First, load the `tgd-rules` skill.** It is the core rules — the Verification Iron Law, the per-phase tone, the Command Closing Report, and the human sign-off protocol — and it governs every phase. This router is injected at session start; loading `tgd-rules` from here is how the rules reliably enter context (there is no separate hook that injects them).
+
 ## Overview
 
 tGD is a collection of engineering workflow skills organized by development phase. Each skill encodes a specific process that senior engineers follow. This meta-skill helps you discover and apply the right skill for your current task.

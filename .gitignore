@@ -28,3 +28,6 @@ storage/
 tmp/
 # Self-referencing symlink created by Hermes plugin loader (runtime, not source)
 .hermes/plugins/tgd/tgd
+# Node compile cache dropped by pnpm/node inside the vendored UA workspace
+# whenever setup.sh installs UA deps — build byproduct, never source.
+vendor/understand-anything/node-compile-cache/

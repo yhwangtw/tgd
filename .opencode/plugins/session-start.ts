@@ -3,13 +3,13 @@ import { readFileSync, existsSync } from "fs"
 import { join, dirname } from "path"
 
 /**
- * SessionStart — injects using-tGD meta-skill into every session.
+ * SessionStart — injects the tgd-router meta-skill into every session.
  * OpenCode equivalent of Claude Code's SessionStart hook.
  */
 export const SessionStart: Plugin = async ({ directory, client }) => {
   // Find skills directory relative to the project
   const skillsDir = join(directory, "skills")
-  const metaSkillPath = join(skillsDir, "using-tgd", "SKILL.md")
+  const metaSkillPath = join(skillsDir, "tgd-router", "SKILL.md")
 
   return {
     event: async ({ event }) => {

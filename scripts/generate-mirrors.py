@@ -39,6 +39,29 @@ OPENCODE_DIR = REPO_ROOT / ".opencode" / "commands"
 GEMINI_DIR = REPO_ROOT / ".gemini" / "commands"
 PI_PROMPTS_DIR = REPO_ROOT / ".pi" / "prompts"
 
+# Always-on layer: one canonical preamble → the per-platform always-load files.
+# (The hook/plugin platforms inject tgd-router instead; those injectors are
+# checked by check_injectors() below.)
+PREAMBLE_SRC = REPO_ROOT / "hooks" / "session-preamble.md"
+PI_INSTRUCTIONS = REPO_ROOT / ".pi" / "instructions.md"
+HERMES_AGENTS = REPO_ROOT / ".hermes" / "AGENTS.md"
+
+# session-start injectors: each reads a <skill>/SKILL.md at session start. We
+# extract the skill it actually points at and verify that dir exists — a stale
+# name means the platform silently injects nothing (the OpenCode "using-tgd"
+# bug). Matching the SKILL.md reference (not just the name anywhere) means a
+# skill named in a nearby comment can't mask a broken path.
+INJECTORS = [
+    "hooks/session-start.sh",
+    "hooks/codex/session-start.sh",
+    "hooks/gemini/session-start.sh",
+    ".opencode/plugins/session-start.ts",
+]
+# Captures the skill token right before SKILL.md, in either
+#   "<skill>", "SKILL.md"   (JS path.join style)   or
+#   <skill>/SKILL.md        (shell path style)
+_SKILL_REF = re.compile(r'"([a-z0-9][a-z0-9-]*)"\s*,\s*"SKILL\.md"|([a-z0-9][a-z0-9-]*)/SKILL\.md')
+
 # The 7 lifecycle commands, in pipeline order (drives pi registration order).
 COMMANDS = [
     "tgd-map",
@@ -137,6 +160,43 @@ def gen_pi_prompt(name: str, description: str, body: str) -> str:
     )
 
 
+def read_preamble() -> str:
+    if not PREAMBLE_SRC.is_file():
+        die(f"canonical preamble missing: {PREAMBLE_SRC}")
+    text = PREAMBLE_SRC.read_text(encoding="utf-8")
+    # Strip ALL HTML comments (source-only maintenance notes) from generated
+    # output — not just the first, so a comment added later can't leak through.
+    text = re.sub(r"<!--.*?-->\n?", "", text, flags=re.DOTALL)
+    # Collapse any run of 3+ newlines (left by the comment strip) to a blank line.
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    if "Verification Iron Law" not in text:
+        die(f"{PREAMBLE_SRC}: missing the Verification Iron Law — refusing to generate an empty preamble")
+    return text.strip() + "\n"
+
+
+def gen_pi_instructions(preamble: str) -> str:
+    return preamble
+
+
+def gen_hermes_agents(preamble: str) -> str:
+    return preamble
+
+
+def check_injectors() -> None:
+    for rel_path in INJECTORS:
+        injector = REPO_ROOT / rel_path
+        if not injector.is_file():
+            die(f"session-start injector missing: {rel_path}")
+        text = injector.read_text(encoding="utf-8")
+        skills = [m.group(1) or m.group(2) for m in _SKILL_REF.finditer(text)]
+        if not skills:
+            die(f"{rel_path}: no <skill>/SKILL.md reference found to validate")
+        for skill in skills:
+            if not (REPO_ROOT / "skills" / skill / "SKILL.md").is_file():
+                die(f"{rel_path} injects skills/{skill}/SKILL.md, which does not exist "
+                    f"(a stale meta-skill name = the platform injects nothing)")
+
+
 def write_if_changed(path: Path, content: str, changed: List[str]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     if path.is_file() and path.read_text(encoding="utf-8") == content:
@@ -146,6 +206,8 @@ def write_if_changed(path: Path, content: str, changed: List[str]) -> None:
 
 
 def main() -> int:
+    check_injectors()
+
     entries: List[Tuple[str, str, str]] = []
     for name in COMMANDS:
         description, body = parse_source(name)
@@ -159,6 +221,12 @@ def main() -> int:
         write_if_changed(OPENCODE_DIR / f"{name}.md", gen_opencode(name, description, body), changed)
         write_if_changed(GEMINI_DIR / f"{name}.toml", gen_gemini(name, description, body), changed)
         write_if_changed(PI_PROMPTS_DIR / f"{name}.md", gen_pi_prompt(name, description, body), changed)
+
+    # Always-on layer: regenerate the Pi/Hermes always-load files from the
+    # single canonical preamble so they can't drift by hand.
+    preamble = read_preamble()
+    write_if_changed(PI_INSTRUCTIONS, gen_pi_instructions(preamble), changed)
+    write_if_changed(HERMES_AGENTS, gen_hermes_agents(preamble), changed)
 
     if changed:
         print(f"[generate-mirrors] Updated {len(changed)} file(s):")

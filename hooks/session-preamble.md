@@ -1,5 +1,20 @@
 # tGD — Session Preamble
 
+<!--
+CANONICAL SOURCE for the tGD always-on layer.
+Edit THIS file only. The per-platform always-load files are generated from it:
+  .pi/instructions.md      (→ ~/.pi/agent/instructions.md)
+  .hermes/AGENTS.md        (→ each Hermes profile home)
+Run: python3 scripts/generate-mirrors.py   (CI "Mirror sync" fails on drift)
+The hook/plugin platforms (Claude, Codex, Gemini, OpenCode) inject tgd-router
+at session start instead; tgd-router points back here + to tgd-rules.
+
+NOT generated from this file (deliberately): .claude/CLAUDE.md. That file is
+instructions for agents developing tGD ITSELF — setup.sh never installs it
+into user homes ("Claude Code: NO global rules symlink"). Same Iron Law
+wording by design, different audience; keep it hand-maintained.
+-->
+
 ## Verification Iron Law
 
 **NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE.**

@@ -1,4 +1,4 @@
-# tGD — Agent Instructions
+# tGD — Session Preamble
 
 ## Verification Iron Law
 
@@ -19,11 +19,13 @@ These thoughts are WRONG:
 - "Just this once" → No exceptions
 - "Looks correct to me" → Visual inspection ≠ verification
 - "Tests passed last time" → Run them again, fresh
+- "I'm tired" → Exhaustion ≠ excuse
+- "The user is waiting" → Lying is worse than delay
 
 Never use "should", "probably", "seems to" when describing code state.
 
-## tGD Lifecycle Commands
+## How tGD Works
 
-Use slash commands for each phase: /tgd-map → /tgd-define → /tgd-plan → /tgd-develop → /tgd-verify → /tgd-review → /tgd-release
-
-Each command has pre-flight checks. Do not skip phases.
+- Run the lifecycle in order: `/tgd-map` → `/tgd-define` → `/tgd-plan` → `/tgd-develop` → `/tgd-verify` → `/tgd-review` → `/tgd-release`. Each command has pre-flight checks; do not skip phases.
+- **Load the `tgd-rules` skill** for the full core rules (Iron Law, tone per phase, the Command Closing Report, human sign-off). It governs every phase.
+- **Load the `tgd-router` skill** when you are not already inside a `/tgd-*` command and need to discover which skill applies to a task.
