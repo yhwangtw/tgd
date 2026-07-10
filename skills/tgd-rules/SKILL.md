@@ -19,6 +19,18 @@ Core rules that MUST be followed at all times in every tGD session. These rules 
 
 A collection of skills for Claude.ai and Claude Code for senior software engineers. Skills are packaged instructions and scripts that extend Claude and your coding agents capabilities.
 
+## Resolving $TGD_REPO_ROOT
+
+Several commands run gate scripts that live in the **tGD repo clone itself** (`$TGD_REPO_ROOT/scripts/…`) — NOT in `$TGD_DIR`, which holds artifacts only. Resolve it once, in this order:
+
+1. Env var `$TGD_REPO_ROOT`, if set.
+2. `~/tGD` — the default clone location from the install instructions.
+3. Resolve an installed skill symlink back to the clone, e.g.
+   `python3 -c "import os;print(os.path.realpath(os.path.expanduser('~/.claude/skills/tgd-rules')))"`
+   → strip the trailing `/skills/tgd-rules` to get the repo root. (Codex/OpenCode/Gemini/Pi link the whole folder as `skills/tGD` — realpath it and strip `/skills`.)
+
+If none resolves to a directory containing `scripts/generate-mirrors.py`, STOP and tell the user the tGD clone can't be located — do NOT skip a gate because its script "wasn't found".
+
 ## Lifecycle Commands
 
 7 commands, each a full pipeline. Commands are defined in `.claude/commands/`, `.gemini/commands/`, `.opencode/commands/`, `.codex/prompts/`, and `.pi/prompts/`.

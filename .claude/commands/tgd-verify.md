@@ -37,7 +37,7 @@ Verify that the feature works correctly before proceeding to review. Tests are p
 
 Run the test-output capture first — this is the raw evidence that backs the report.
 
-The gate scripts live in the **tGD repo itself** (`$TGD_REPO_ROOT/scripts/`), NOT in `$TGD_DIR` (the artifacts directory contains no scripts). Resolve `$TGD_REPO_ROOT` to the cloned tGD repo (typically `~/tGD/`), same as `/tgd-map` does for wiki generation.
+The gate scripts live in the **tGD repo itself** (`$TGD_REPO_ROOT/scripts/`), NOT in `$TGD_DIR` (the artifacts directory contains no scripts). Resolve `$TGD_REPO_ROOT` per `tgd-rules` → **Resolving $TGD_REPO_ROOT** (env var → `~/tGD` → installed-skill symlink).
 
 ```bash
 # Run from the WORKTREE (../project-<feature-name>/ — that's where the feature

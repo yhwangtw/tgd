@@ -35,7 +35,7 @@ Run the `tgd-shipping-and-launch` skill. This is the Release phase. The full pip
    1. Read every entry in `$TGD_DIR/REGRESSION-CATALOG.md` (not just the current feature's).
    2. **Test file exists?** If the path is broken (file deleted, moved, or renamed): remove the entry. Log the removal in `$TGD_DIR/CHANGELOG.md` under a `## Catalog Cleanup` subsection.
    3. **Feature deprecated?** If the feature's code was removed or deprecated in this cycle (`tgd-deprecation-and-migration` ran): remove its entries from the catalog.
-   4. **Every entry still passes?** Run the machine gate — do NOT eyeball it:
+   4. **Every entry still passes?** Run the machine gate — do NOT eyeball it (resolve `$TGD_REPO_ROOT` per `tgd-rules` → **Resolving $TGD_REPO_ROOT**):
       `bash "$TGD_REPO_ROOT/scripts/regression-gate.sh" ../project-<feature-name> "$TGD_DIR"`
       Exit 0 = pass. Exit 1 = 🛑 STOP — a shipped behavior regressed; fix before merging. Exit 2 = configuration error — fix the invocation, never treat as pass. Exit 3 = no catalog yet — skip this audit.
    5. After the audit, the catalog contains ONLY entries whose test files exist and pass. This prevents the catalog from becoming a zombie file full of dead references.
