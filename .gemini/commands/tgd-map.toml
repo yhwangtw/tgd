@@ -71,7 +71,7 @@ command -v node && command -v npm && echo "node/npm: OK" || echo "node/npm: MISS
 | Tier | Steps | Runs when | Output |
 |------|-------|-----------|--------|
 | **Tier 1 — Core** (always) | 1, 2, 6, 7 | Every `/tgd-map` run, no dependencies | `CONTEXT.md` |
-| **Tier 2 — Deep scan + dashboards** | 3, 4, 5 | `codegraph` CLI / `understand` skill available; Step 5 dashboards additionally need `node`/`npm` | `.scans/<repo>/` symbol index + knowledge graph + one live localhost dashboard per repo |
+| **Tier 2 — Deep scan + dashboards** | 3, 4, 5 | `codegraph` CLI / `understand` skill available; Step 5 dashboards additionally need `node`/`npm` | `.scans/<repo>/` symbol index + knowledge graph + domain graph + one live localhost dashboard per repo |
 
 **Degradation rule:** If a tier cannot run, you MUST record it in `CONTEXT.md` under `## Degraded Mode` — which steps were skipped, why (missing tool), and how to enable them later. A skipped step that is not logged is a verification failure. Silent skipping is the failure mode this rule exists to prevent.
 
@@ -135,6 +135,9 @@ For each repo to map (primary + all additional repos from Step 1):
 2. load and execute the `understand` skill to build a full knowledge graph
 3. This produces `$TGD_DIR/.scans/<repo-name>/.understand-anything/knowledge-graph.json`
 4. If unfamiliar with any repo, load the `understand-onboard` skill for a guided tour
+5. **Derive the domain graph (idempotent).** If `domain-graph.json` is missing OR older than `knowledge-graph.json`: load and execute the `understand-domain` skill — it derives business domains/flows from the just-built knowledge graph (its Path 2; no re-scan). If it already exists and is newer, skip — a re-map must not re-pay the analysis.
+   - The skill validates its own output (schema pipeline). If the run fails or validation rejects everything, **delete any partial `domain-graph.json`**, log the failure in `## Degraded Mode`, and continue — a broken domain file must not reach the dashboard.
+   - Output: `$TGD_DIR/.scans/<repo-name>/.understand-anything/domain-graph.json`. When present, the Step 5 dashboard gains a **Domain / Structural** toggle (the default view stays Structural — verified against the dashboard source).
 
 ## Step 5: Launch Dashboards (Tier 2 — auto-launch, one per repo, requires `node`/`npm`)
 
@@ -194,6 +197,13 @@ Record every dashboard URL for the final report and the CONTEXT.md `## See Also`
 ### Code Entry Points
 <the real entry points from CodeGraph: main()/CLI/HTTP routes/exported API — with file:symbol>
 
+### Business Flows
+<FACTS extracted from domain-graph.json — domain names, flow names, step counts, entry file. No narrative prose here; the story lives in the dashboard's Domain view. If Step 4's domain derivation was skipped/failed, write exactly: "not analyzed — see ## Degraded Mode".>
+| Domain | Flow | Steps | Entry |
+|---|---|---|---|
+| <domain> | <flow> | <n> | <file> |
+Full detail: `.scans/<repo>/.understand-anything/domain-graph.json` · dashboard → Domain view
+
 ## 2. Build / Test / Run
 <The commands to work with this repo, each tagged with where you found it. Write "not detected" for any you cannot find in a real source — never invent one.>
 - **Build:** `<cmd>`  _(source: package.json / Makefile / pyproject.toml / … )_
@@ -240,6 +250,10 @@ Record every dashboard URL for the final report and the CONTEXT.md `## See Also`
 - Interactive Dashboards (one per repo; only when node/npm present):
   - <primary-repo-name>: http://localhost:<port>
   - <additional-repo-name>: http://localhost:<port>
+- 🔍 繼續探索這份知識圖 (on-demand, generated fresh per question — no stale docs):
+  - 問這個 codebase:`/understand-chat <question>`
+  - 深讀某個檔/函式:`/understand-explain <file-or-symbol>`
+  - 業務流程視角:dashboard 的 **Domain** 切換鈕 (or re-derive: `/understand-domain`)
 ```
 
 ## Step 7: Verification Gate (tier-conditional)
@@ -250,6 +264,7 @@ Record every dashboard URL for the final report and the CONTEXT.md `## See Also`
 - [ ] `## 2. Build / Test / Run` names build, test, lint, and run — each a real command with its source, or "not detected"
 - [ ] `## 3. Conventions & Rules` lists any rules files (or "none found") and where tests live
 - [ ] `### Analysis Coverage` is present for every repo — either a real file count from the UA run or the exact string "not analyzed — understand skill unavailable (see ## Degraded Mode)"
+- [ ] `### Business Flows` is present for every repo — either a real table extracted from `domain-graph.json` or the exact string "not analyzed — see ## Degraded Mode"
 - [ ] If any Tier 2 step was skipped: `## Degraded Mode` section in CONTEXT.md lists every skip with its reason
 - [ ] If additional repos were provided, their summaries appear in CONTEXT.md
 - [ ] The run ends with the **Step 8 Final Report** — every line a real value or an explicit `skipped — <reason>`; a run that ends without it fails this gate
@@ -259,6 +274,7 @@ Record every dashboard URL for the final report and the CONTEXT.md `## See Also`
 - [ ] `$TGD_DIR/.scans/<repo>/.understand-anything` symlink exists
 - [ ] `$TGD_DIR/.scans/<repo>/.understand-anything/knowledge-graph.json` exists
 - [ ] Because UA ran, each repo's `### Analysis Coverage` states a **real file count** (the whole-repo scan happened) — NOT "not analyzed"
+- [ ] `$TGD_DIR/.scans/<repo>/.understand-anything/domain-graph.json` exists for each repo (or the domain derivation failure is logged in `## Degraded Mode` — a partial/invalid file must have been deleted, never left behind)
 - [ ] If `node`/`npm` present: a dashboard was launched for **each** repo and its localhost URL is recorded in `## See Also` (or the skip/failure is logged in `## Degraded Mode`)
 
 **Gate integrity rule:** a Tier 2 checkbox may only be marked N/A if Step 0.5 proved the tool missing AND the skip is logged in Degraded Mode. "Tool probably missing" is not evidence — show the `command -v` output.
@@ -276,6 +292,9 @@ The LAST message of every `/tgd-map` run MUST be this report, fully filled in. L
    - <repo-name>: http://localhost:<port>
    - <repo-name>: http://localhost:<port>
    or: skipped — <reason, e.g. "node/npm missing (Degraded Mode)">
+🧭 Domain: <N domains / M flows — 開 dashboard 的 Domain 視角確認一眼；覺得不對就刪 domain-graph.json 即回復>
+   or: skipped — <reason from Degraded Mode>
+🔍 繼續探索: /understand-chat <問題> · /understand-explain <檔案> · dashboard Domain 視角
 ⚠️ Degraded Mode: <none / one line per skipped step with its reason>
 
 Next: /tgd-define

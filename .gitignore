@@ -1,5 +1,6 @@
 .DS_Store
 node_modules/
+vendor/understand-anything/node-compile-cache/
 .env
 .env.*
 *.log
