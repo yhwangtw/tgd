@@ -31,17 +31,17 @@ Run the `tgd-shipping-and-launch` skill. This is the Release phase. The full pip
 
 **Core flow:**
 1. `tgd-git-workflow-and-versioning` — clean commit history, trunk-based development
-2. **🧹 Regression Catalog Audit — BEFORE merging** (MANDATORY if `$TGD_DIR/REGRESSION-CATALOG.md` exists). Run it in the worktree (`../project-<feature-name>`), so a failure stops the release before anything lands on `main`:
+2. **🧹 Regression Catalog Audit — BEFORE merging** (MANDATORY if `$TGD_DIR/REGRESSION-CATALOG.md` exists). Run it in the worktree (`../project-<feature-name>`; multi-repo features have one per repo — `../project-<feature-name>-<repo-name>` — audit each), so a failure stops the release before anything lands on `main`:
    1. Read every entry in `$TGD_DIR/REGRESSION-CATALOG.md` (not just the current feature's).
    2. **Test file exists?** If the path is broken (file deleted, moved, or renamed): remove the entry. Log the removal in `$TGD_DIR/CHANGELOG.md` under a `## Catalog Cleanup` subsection.
    3. **Feature deprecated?** If the feature's code was removed or deprecated in this cycle (`tgd-deprecation-and-migration` ran): remove its entries from the catalog.
    4. **Every entry still passes?** Run the machine gate — do NOT eyeball it (resolve `$TGD_REPO_ROOT` per `tgd-rules` → **Resolving $TGD_REPO_ROOT**):
-      `bash "$TGD_REPO_ROOT/scripts/regression-gate.sh" ../project-<feature-name> "$TGD_DIR"`
+      `bash "$TGD_REPO_ROOT/scripts/regression-gate.sh" ../project-<feature-name> "$TGD_DIR"` (multi-repo: once per worktree, `../project-<feature-name>-<repo-name>` as the first arg)
       Exit 0 = pass. Exit 1 = 🛑 STOP — a shipped behavior regressed; fix before merging. Exit 2 = configuration error — fix the invocation, never treat as pass. Exit 3 = no catalog yet — skip this audit.
    5. After the audit, the catalog contains ONLY entries whose test files exist and pass. This prevents the catalog from becoming a zombie file full of dead references.
-3. **🌳 Merge & worktree cleanup** — this is where the feature branch lands on `main` (NOT in `/tgd-develop`):
+3. **🌳 Merge & worktree cleanup** — this is where the feature branch lands on `main` (NOT in `/tgd-develop`). Multi-repo features repeat all three steps in EACH repo that has a worktree:
    1. Merge `feature/<feature-name>` into `main` (or open a PR, per team policy).
-   2. Remove the worktree: `git worktree remove ../project-<feature-name>`.
+   2. Remove the worktree: `git worktree remove ../project-<feature-name>` (multi-repo: `../project-<feature-name>-<repo-name>`).
    3. After the merge lands, delete the branch: `git branch -d feature/<feature-name>`.
 4. `tgd-shipping-and-launch` — pre-launch checklist, staged rollouts, monitoring setup
 

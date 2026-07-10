@@ -78,6 +78,7 @@ Before writing any code, operate in read-only mode to gather context from all av
 ---
 
 ## Task 1: [User Story Title] (Story ID: US-01)
+**Status:** pending <!-- pending | in-progress | complete | blocked: <ref>. The ONLY task-state marker: /tgd-develop flips it, resume + re-plan read it. Do not invent checkboxes/emoji variants. -->
 
 ### 1. Context & Goal
 [What is the goal of this task? Why is it important?]
@@ -187,10 +188,12 @@ Each vertical slice delivers working, testable functionality.
 ### Step 4: Write Tasks
 
 Write each task using the **canonical per-task block from the TASKS.md
-template above** (Context & Goal → Technical Design → Acceptance Criteria
-with `AC-<task>.<n>` ids, `[R]` decision, and `Test:` field → Files Likely
-Touched). Do not use a simplified layout — the AC ids and `Test:` fields are
-machine-checked downstream.
+template above** (`**Status:** pending` line → Context & Goal → Technical
+Design → Acceptance Criteria with `AC-<task>.<n>` ids, `[R]` decision, and
+`Test:` field → Files Likely Touched). Do not use a simplified layout — the
+AC ids and `Test:` fields are machine-checked downstream, and the `Status:`
+line is what `/tgd-develop`'s resume rule and `/tgd-plan`'s re-plan protocol
+read; a task without one is invisible to both.
 
 Per-task quality bar (in addition to the template fields):
 - **Verification is explicit**: name the exact command (`npm test -- --grep "x"`),
@@ -211,11 +214,15 @@ Add explicit checkpoints:
 
 ```markdown
 ## Checkpoint: After Tasks 1-3
-- [ ] All tests pass
-- [ ] Application builds without errors
+- [ ] All tests pass (`npm test`)
+- [ ] Application builds without errors (`npm run build`)
 - [ ] Core user flow works end-to-end
-- [ ] Review with human before proceeding
 ```
+
+Checkpoint items must be **machine-checkable commands** — `/tgd-develop` runs
+them when it reaches the checkpoint and stops only on failure; it does NOT
+pause for a human. Human review is concentrated in `/tgd-release`'s sign-off
+gate, not mid-execution.
 
 ## Instrumentation Tasks and TRACKING-PLAN.md
 
@@ -263,7 +270,7 @@ A mis-firing event is worse than a missing one — you will trust a wrong number
 When TASKS.md already exists (spec changed mid-flight, scope grew), the default is an **incremental update**, never a from-scratch rewrite — `/tgd-develop` backfills `Test:` fields and completion state into TASKS.md, and regenerating the file destroys them, breaking `ac-trace.py` and the regression chain downstream.
 
 Incremental rules:
-- **Completed tasks are immutable**: keep their status, criteria, and `Test:` fields byte-for-byte.
+- **Completed tasks are immutable**: any task with `**Status:** complete` keeps its Status line, criteria, and `Test:` fields byte-for-byte. (The `Status:` lines are also how the re-plan prompt counts "M 個已完成" — no marker, no count.)
 - **Never renumber existing `AC-<task>.<n>` ids** — tests already reference them.
 - New tasks continue the numbering after the highest existing task.
 - An *unstarted* task invalidated by the spec change may be rewritten in place (same task number, new content, new criterion ids under it).
@@ -318,6 +325,7 @@ When multiple agents or sessions are available:
 Before starting implementation, confirm:
 
 - [ ] Every task has acceptance criteria in BDD format with stable `AC-<task>.<n>` ids (`ac-trace.py` fails closed without them)
+- [ ] Every task has a `**Status:**` line, initialized `pending` (`/tgd-develop` resume and re-plan both read it)
 - [ ] Every criterion has an explicit `[R]` Yes/No decision; every `[R]` will get a `Test:` file reference during `/tgd-develop`
 - [ ] Every task has a verification step
 - [ ] Task dependencies are identified and ordered correctly

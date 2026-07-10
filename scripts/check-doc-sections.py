@@ -65,6 +65,11 @@ DYNAMIC_RULES = {
     "TASKS": [
         (r"^Task\s+\d+", r"^##\s+Task\s+\d+:", "## Task N: <title> — at least one task"),
         (r"^Checkpoint", r"^##\s+Checkpoint", "## Checkpoint: … — at least one checkpoint"),
+        # `**Status:**` is a line under each task heading, not a `##` heading,
+        # so the drop_rx must match no template heading — (?!x)x never matches.
+        # The need_rx is load-bearing: /tgd-develop's resume rule and
+        # /tgd-plan's re-plan protocol both read these lines.
+        (r"(?!x)x", r"^\*\*Status:\*\*", "**Status:** … — at least one task status line"),
     ],
 }
 

@@ -19,13 +19,13 @@ prompt = """
 - [ ] `$TGD_DIR/<feature-name>/TEST-REPORT.md` exists (produced by `/tgd-verify`).
 - **If missing:** STOP. Tell user: "Tests are missing. Please run `/tgd-verify` first."
 
-**🌳 Worktree:** If `../project-<feature-name>` exists (created by `/tgd-develop`), review the code inside that worktree — the feature branch is not on `main` yet. Review the diff against `main` (`git diff main...feature/<feature-name>`).
+**🌳 Worktree:** If `../project-<feature-name>` exists (created by `/tgd-develop`), review the code inside that worktree — the feature branch is not on `main` yet. Review the diff against `main` (`git diff main...feature/<feature-name>`). Multi-repo features (TASKS.md has `[repo-name]` prefixes) have one worktree PER repo (`../project-<feature-name>-<repo-name>`) — review EACH repo's diff; a repo with tagged tasks but an unreviewed diff fails the gate.
 
 Run the `tgd-code-review-and-quality` skill. This is the REVIEW phase. The full pipeline is:
 
 **Core flow:**
 1. `tgd-code-review-and-quality` — five-axis review with severity labels (Critical/Important/Nit/FYI), ~100 lines per change
-   - Run `codegraph callers <modified-function>` and `codegraph affected <changed-files>` to verify impact coverage.
+   - **If `codegraph` is available** (the `/tgd-map` Step 0.5 probe): run `codegraph callers <modified-function>` and `codegraph affected <changed-files>` to verify impact coverage. If not installed, skip — trace callers with plain search instead; this enrichment is Tier 2, its absence is not a failure.
 2. `tgd-code-simplification` — apply Chesterton's Fence, reduce complexity while preserving exact behavior
 
 **🎭 Persona Fan-Out (MANDATORY for high-stakes features, optional otherwise)**

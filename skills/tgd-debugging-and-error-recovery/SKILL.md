@@ -362,9 +362,10 @@ When filing a Jira bug, include:
 
 When a bug blocks the current task:
 
-1. Mark the task in `TASKS.md` as `[!] BLOCKED: <jira-issue-key>` (or `[!] BLOCKED: see TEST-REPORT.md ## Known Issues` when Jira isn't configured)
-2. Continue with non-blocked tasks
-3. Add a note in the task: "Blocked by [JIRA-123]" (or the Known Issues entry title)
+1. Set the task's `**Status:**` line in `TASKS.md` to `blocked: <jira-issue-key>` (or `blocked: see TEST-REPORT.md ## Known Issues` when Jira isn't configured) — this is the same Status field `/tgd-develop`'s resume rule reads, so a re-entry skips the task instead of blindly retrying it.
+2. Continue with non-blocked tasks.
+3. Add a note in the task body: "Blocked by [JIRA-123]" (or the Known Issues entry title).
+4. **Know the exit:** a blocked task's ACs will fail `/tgd-verify`'s `ac-trace.py` closed — there is no shipping around it silently. Either clear the blocker and finish the task, or defer it out of this feature via `/tgd-plan`'s incremental re-plan (which preserves all other tasks). Deleting the task or its ACs to make the gate pass is falsifying evidence.
 
 ---
 

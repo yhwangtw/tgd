@@ -22,12 +22,17 @@ prompt = """
 
 This is the BUILD phase. The pipeline operates in an isolated environment.
 
-**🌳 Step 1: Worktree Isolation (Mandatory)**
+**🌳 Step 1: Worktree Isolation (Mandatory — one worktree PER repo with tasks)**
 Before writing any code, create an isolated workspace. This keeps `$TGD_DIR/` artifacts safe and prevents code mess from polluting the planning directory.
-1. **Create** (branch + worktree in one step — the branch must NOT already be checked out anywhere, which is why `/tgd-define` does not create it):
-   - Branch doesn't exist yet (normal case): `git worktree add ../project-<feature-name> -b feature/<feature-name> main`
-   - Branch already exists (resuming): `git worktree add ../project-<feature-name> feature/<feature-name>` — if git says the branch is "already used by worktree", the main checkout is sitting on it: `git checkout main` there first, then retry.
-2. **Action**: All coding, testing, and commits MUST happen inside `../project-<feature-name>/`.
+
+First determine which repos have work: the set of `[repo-name]` prefixes in TASKS.md (no prefixes = single repo, the current one).
+
+1. **Create** for EACH repo with tagged tasks (branch + worktree in one step — the branch must NOT already be checked out anywhere, which is why `/tgd-define` does not create it):
+   - Single repo (no `[repo-name]` prefixes): `git worktree add ../project-<feature-name> -b feature/<feature-name> main`
+   - Multi-repo: for each repo, run from that repo's path — `git -C <repo-path> worktree add ../project-<feature-name>-<repo-name> -b feature/<feature-name> main` (the `-<repo-name>` suffix prevents sibling repos from colliding on the same worktree path; single-repo keeps the unsuffixed name so downstream commands find it unchanged)
+   - Branch already exists (resuming): same command without `-b` — if git says the branch is "already used by worktree", that repo's main checkout is sitting on it: `git checkout main` there first, then retry.
+2. **Action**: All coding, testing, and commits MUST happen inside the worktree of the repo the current task is tagged for. A `[shop-frontend]` task implemented in the backend worktree is a routing failure, not a detail.
+3. **Resume rule**: tasks with `**Status:** complete` in TASKS.md (with their `Test:` fields filled) are SKIPPED — re-entering `/tgd-develop` continues from the first task whose Status is `pending`/`in-progress`; it never redoes or rewrites finished ones. `blocked` tasks stay skipped until their blocker is cleared (see the blocked handling below).
 
 **⚡ Step 2: Execution Mode Routing**
 Route on risk first, then size:
@@ -37,12 +42,12 @@ Route on risk first, then size:
 
 **Core flow (both modes):**
 1. `tgd-context-engineering` — load the right spec sections and source files for the current task
-   - Before modifying a file, run `codegraph callers <symbol>` to ensure backward compatibility.
+   - **If `codegraph` is available** (the `/tgd-map` Step 0.5 probe): before modifying a file, run `codegraph callers <symbol>` to ensure backward compatibility. If not installed, skip — this enrichment is Tier 2, its absence is not a failure.
 2. `tgd-source-driven-development` — ground framework decisions in official docs, verify and cite
 3. `tgd-subagent-driven-development` OR `tgd-incremental-implementation` — execute tasks in worktree
 4. `tgd-test-driven-development` — Red-Green-Refactor, write tests alongside each task
    - Every test verifying a criterion MUST mention its `AC-<task>.<n>` id in the test name, docstring, or a comment (`ac-trace.py` cross-references them in `/tgd-verify`).
-5. **Backfill `Test:` fields** — after each task's tests pass, record the test file path in the corresponding criterion's `Test:` field in `$TGD_DIR/<feature-name>/TASKS.md`. MANDATORY for `[R]` criteria — they feed REGRESSION-CATALOG.md at release, and `/tgd-verify` fails closed on `[R]` criteria without a `Test:` file.
+5. **Backfill `Test:` fields + flip `Status:`** — after each task's tests pass, record the test file path in the corresponding criterion's `Test:` field in `$TGD_DIR/<feature-name>/TASKS.md` AND flip the task's `**Status:**` line to `complete` (set it to `in-progress` when starting a task). This is the state the resume rule and `/tgd-plan`'s re-plan protocol read — a finished task without `Status: complete` will be treated as unfinished on the next run. `Test:` backfill is MANDATORY for `[R]` criteria — they feed REGRESSION-CATALOG.md at release, and `/tgd-verify` fails closed on `[R]` criteria without a `Test:` file.
 6. `tgd-verification-before-completion` — evidence before claims, no exceptions
 
 **Conditional (apply when relevant):**
@@ -50,6 +55,9 @@ Route on risk first, then size:
 - Touching UI? → `tgd-frontend-ui-engineering`
 - Designing APIs? → `tgd-api-and-interface-design`
 - High-stakes decision? → `tgd-doubt-driven-development`
+- Blocked by a bug you can't fix within the task's scope? → `tgd-debugging-and-error-recovery` → **Blocked Task Handling**: set the task's `**Status:** blocked: <issue-ref>`, file the bug, continue with non-blocked tasks. A blocked task's ACs will fail `/tgd-verify`'s `ac-trace.py` closed — the way to ship without it is deferring the task via `/tgd-plan`'s incremental re-plan, never deleting it.
+
+**Checkpoints:** when execution reaches a `## Checkpoint` in TASKS.md, run every command it lists and check off what passes. All pass → continue immediately (checkpoints are machine gates, not human pauses). Any fail → fix before starting the next task; if unfixable, apply Blocked Task Handling to the task that broke it.
 
 **🧹 Step 3: Hand-off (do NOT merge)**
 After all tasks pass verification:
@@ -64,9 +72,9 @@ Use feature flags for incomplete features, safe defaults, and rollback-friendly 
 After completing the implementation, verify the outputs.
 
 **Verification Gate:**
-- [ ] The feature branch has source changes: `git diff main...feature/<feature-name> --stat` is non-empty (use the project's actual layout from CONTEXT.md — do NOT assume `src/` + `tests/`)
+- [ ] The feature branch has source changes: `git diff main...feature/<feature-name> --stat` is non-empty — in EACH repo that has tagged tasks, not just one (use the project's actual layout from CONTEXT.md — do NOT assume `src/` + `tests/`)
 - [ ] Tests written AND passing for new logic, each tagged with its `AC-<task>.<n>` id
-- [ ] Every completed task's criteria have their `Test:` fields filled in TASKS.md (all `[R]` criteria without exception)
+- [ ] Every completed task's criteria have their `Test:` fields filled in TASKS.md (all `[R]` criteria without exception), and its `**Status:**` line reads `complete` (blocked tasks read `blocked: <issue-ref>` — never left as `pending`)
 - [ ] Verification commands run and output confirmed (no "should work")
 
 End with the closing report per `tgd-rules` → **Command Closing Report**: 📦 產出 (實作的任務數 + 檔案摘要；worktree 保留、未 merge) · 🔎 檢查 (gate as one line) · ➡️ 下一步 `/tgd-verify` — 證明它能動. Don't paste the raw checklist above.

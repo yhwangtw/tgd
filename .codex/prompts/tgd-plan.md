@@ -21,7 +21,7 @@ Plan — decompose specs into small, verifiable tasks with acceptance criteria
 - [ ] If SPEC has Frontend/Full-stack: `$TGD_DIR/<feature-name>/DESIGN.md` exists.
 - **If missing:** STOP. Tell user: "Design is missing. Please run `/tgd-define` first."
 
-**🔁 Re-plan check (BEFORE writing anything):** if `$TGD_DIR/<feature-name>/TASKS.md` already exists, do NOT regenerate it from scratch — `/tgd-develop` backfills `Test:` fields and completion state into it, and a fresh rewrite destroys them (breaking the `ac-trace` / regression chain). Ask (Selection Protocol):
+**🔁 Re-plan check (BEFORE writing anything):** if `$TGD_DIR/<feature-name>/TASKS.md` already exists, do NOT regenerate it from scratch — `/tgd-develop` backfills `Test:` fields and flips `**Status:**` lines in it, and a fresh rewrite destroys them (breaking the `ac-trace` / regression chain). Count from the file — `M` = tasks with `**Status:** complete` — then ask (Selection Protocol):
 
 > 📋 TASKS.md 已存在（N 個任務，M 個已完成，K 條 `Test:` 已回填）
 >
@@ -84,8 +84,8 @@ This ensures each task is assigned to the correct repo and can be executed in th
 
 **Verification Gate** (runs regardless of whether Jira sync happened):
 - [ ] `$TGD_DIR/<feature-name>/TASKS.md` exists and is non-empty
-- [ ] `python3 "$TGD_REPO_ROOT/scripts/check-doc-sections.py" TASKS "$TGD_DIR/<feature-name>/TASKS.md"` exits 0 — required sections present, ≥1 task, ≥1 checkpoint (the `## Sign-off` section feeds `/tgd-release`'s sign-off gate — its absence would silently skip that check). Resolve `$TGD_REPO_ROOT` per `tgd-rules` → **Resolving $TGD_REPO_ROOT**.
-- [ ] If this was a re-plan (TASKS.md pre-existed): every previously completed task is still present with its status and `Test:` fields intact, and no existing `AC-<task>.<n>` id was renumbered
+- [ ] `python3 "$TGD_REPO_ROOT/scripts/check-doc-sections.py" TASKS "$TGD_DIR/<feature-name>/TASKS.md"` exits 0 — required sections present, ≥1 task, ≥1 checkpoint, ≥1 `**Status:**` line (the `## Sign-off` section feeds `/tgd-release`'s sign-off gate — its absence would silently skip that check). Resolve `$TGD_REPO_ROOT` per `tgd-rules` → **Resolving $TGD_REPO_ROOT**.
+- [ ] If this was a re-plan (TASKS.md pre-existed): every task that had `**Status:** complete` is still present with its Status line and `Test:` fields intact, and no existing `AC-<task>.<n>` id was renumbered
 - [ ] Every acceptance criterion carries a stable `AC-<task>.<n>` id in BDD format — check: `grep -qE 'AC-[0-9]+[.][0-9]+' TASKS.md`. Without ids, `/tgd-verify`'s `ac-trace.py` gate fails closed.
 - [ ] Every criterion has an explicit `[R]` Yes/No regression decision
 - [ ] If UI feature: TASKS.md references DESIGN.md components

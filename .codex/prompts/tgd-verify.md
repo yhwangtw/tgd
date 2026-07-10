@@ -15,18 +15,18 @@ Verify — prove it works with debugging and test pyramid
 5. **Verify**: `$TGD_DIR/<feature-name>/SPEC.md` exists (defines scope).
 
 **🔒 Pre-flight: Artifact Check**
-- [ ] The feature branch has source changes: `git diff main...feature/<feature-name> --stat` is non-empty.
+- [ ] The feature branch has source changes: `git diff main...feature/<feature-name> --stat` is non-empty (multi-repo: in each repo with tagged tasks).
 - [ ] Test files exist for the feature — use the project's actual test layout from `CONTEXT.md` (`tests/`, `spec/`, `*_test.go`, `__tests__/`, …). Do NOT assume a `src/`+`tests/` layout.
 - **If missing:** STOP. Tell user: "No source code or tests found. Please run `/tgd-develop` first."
 
-**🌳 Worktree:** If `../project-<feature-name>` exists (created by `/tgd-develop`), run all commands in this phase inside that worktree — the feature branch is not on `main` yet.
+**🌳 Worktree:** If `../project-<feature-name>` exists (created by `/tgd-develop`), run all commands in this phase inside that worktree — the feature branch is not on `main` yet. Multi-repo features (TASKS.md has `[repo-name]` prefixes) have one worktree PER repo (`../project-<feature-name>-<repo-name>`) — run each repo's tests inside ITS worktree; verifying only one repo is a partial verify, not a pass.
 
 Run the `tgd-debugging-and-error-recovery` skill. This is the VERIFY phase. The full pipeline is:
 
 **Core flow:**
 1. `tgd-debugging-and-error-recovery` — five-step triage: reproduce → localize → reduce → fix → guard
 2. `tgd-test-driven-development` — verify with the test pyramid (80% unit, 15% integration, 5% E2E)
-   - Use `codegraph affected <changed-files>` to identify which tests to prioritize based on actual dependency paths.
+   - **If `codegraph` is available** (the `/tgd-map` Step 0.5 probe): use `codegraph affected <changed-files>` to identify which tests to prioritize based on actual dependency paths. If not installed, skip — run the full relevant suite instead; this enrichment is Tier 2, its absence is not a failure.
 
 **Conditional (Frontend Mandatory):**
 - **Frontend/UI/DOM?** → **MUST run `tgd-agent-browser`**. Unit tests are NOT sufficient for UI verification.
@@ -42,7 +42,9 @@ The gate scripts live in the **tGD repo itself** (`$TGD_REPO_ROOT/scripts/`), NO
 ```bash
 # Run from the WORKTREE (../project-<feature-name>/ — that's where the feature
 # branch's code and tests live; fall back to the repo root only if no worktree
-# exists). Creates the report file if needed, runs the suite, appends a
+# exists). Multi-repo: run once per worktree (../project-<feature-name>-<repo-name>)
+# — each run appends its own raw-output section to the same report.
+# Creates the report file if needed, runs the suite, appends a
 # "## Raw Test Output" section + meta-comment with real pass/fail counts.
 bash "$TGD_REPO_ROOT/scripts/capture-test-output.sh" "$TGD_DIR/<feature-name>/TEST-REPORT.md"
 ```
@@ -82,6 +84,8 @@ Run the machine gate — do NOT manually walk the catalog:
 # args: <client-repo> <artifacts-dir>. Pass the WORKTREE as the client repo —
 # the catalog's tests must run against the feature branch. The catalog lives in
 # the ARTIFACTS dir (../<project>-tGD/REGRESSION-CATALOG.md), not in the tGD repo.
+# Multi-repo: run once per worktree that has catalog entries touching it
+# (../project-<feature-name>-<repo-name> as the first arg).
 bash "$TGD_REPO_ROOT/scripts/regression-gate.sh" ../project-<feature-name> "$TGD_DIR"
 ```
 

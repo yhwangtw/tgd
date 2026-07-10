@@ -150,9 +150,9 @@ For isolated AI agent work, use git worktrees to keep `$TGD_DIR/` planning files
 
 **tGD Integration Rule:**
 When `/tgd-develop` is triggered:
-1. **Create**: `git worktree add ../project-<feature-name> -b feature/<feature-name> main` — the `-b` creates the branch here; no earlier phase creates it (git refuses to check out a branch already checked out elsewhere). If the branch already exists (resuming), drop the `-b ... main` part.
+1. **Create**: `git worktree add ../project-<feature-name> -b feature/<feature-name> main` — the `-b` creates the branch here; no earlier phase creates it (git refuses to check out a branch already checked out elsewhere). If the branch already exists (resuming), drop the `-b ... main` part. Multi-repo features get one worktree PER repo with tagged tasks, suffixed `../project-<feature-name>-<repo-name>` — the naming and per-repo commands are specified in `/tgd-develop` Step 1 (single source; don't re-derive them here).
 2. **Action**: All code and tests go into `../project-<feature-name>/`. The main directory stays clean with just specs/plans.
-3. **Cleanup**: Happens in `/tgd-release`, NOT here — that phase merges the branch to `main`, runs `git worktree remove ../project-<feature-name>`, and deletes the branch.
+3. **Cleanup**: Happens in `/tgd-release`, NOT here — that phase merges the branch to `main`, runs `git worktree remove ../project-<feature-name>` (per repo, for multi-repo), and deletes the branch.
 
 Benefits:
 - `$TGD_DIR/` artifacts are never polluted by code

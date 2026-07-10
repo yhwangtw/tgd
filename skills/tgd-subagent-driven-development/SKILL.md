@@ -44,20 +44,30 @@ Read TASKS.md
 │  2. Dispatch spec reviewer subagent                   │
 │     - Provide: task spec + subagent's output          │
 │     - Checks: does code match the spec?               │
-│     - If NO → implementer fixes spec gaps             │
+│     - If NO → fix round (see Review FAIL loop below)  │
 │                                                       │
 │  3. Dispatch code quality reviewer subagent           │
 │     - Provide: code diff + quality checklist           │
 │     - Checks: readability, patterns, test quality     │
-│     - If NO → implementer fixes quality issues        │
+│     - If NO → fix round (see Review FAIL loop below)  │
 │                                                       │
-│  4. Mark task complete                                │
+│  4. Flip the task's **Status:** line to `complete`    │
+│     in TASKS.md (+ backfill Test: fields)             │
 │                                                       │
 └───────────────────────────────────────────────────────┘
     │
     ▼
 Final review of entire implementation
 ```
+
+**Review FAIL loop (bounded):** the original implementer subagent is gone —
+fresh context is the point. On FAIL, the orchestrator dispatches a NEW
+implementer subagent with the same task spec PLUS the reviewer's specific
+FAIL list. **Maximum two fix rounds per review stage.** If the third review
+still FAILs, do not keep ping-ponging: set the task's `**Status:** blocked:
+review deadlock — <one-line summary>` in TASKS.md, record the disagreement
+under `## Risks & Mitigations`, and move to the next task. A deadlock usually
+means the spec is ambiguous — that's a human call, not a longer loop.
 
 ## Continuous Execution
 
@@ -79,7 +89,9 @@ You are implementing a single task from an implementation plan.
 
 WORKING DIRECTORY:
 {worktree_path}   ← all reads, writes, and commands happen HERE
-                    (the isolated worktree, not the main checkout)
+                    (the isolated worktree, not the main checkout;
+                    for a [repo-name]-tagged task this is THAT repo's
+                    worktree — ../project-<feature>-<repo-name>)
 
 TASK:
 {task_description_including_AC_ids}
@@ -98,19 +110,26 @@ RULES:
 4. Commit when the task is complete with a clear commit message
 5. Do NOT modify files outside your task scope
 6. If you encounter ambiguity, state it clearly and stop
+7. If you find a bug OUTSIDE your task scope: do NOT fix it — report it
+   in your output (file, symptom, suspected cause) and keep going. The
+   orchestrator decides whether it becomes a new task.
 
 EXPECTED OUTPUT:
 - Code changes committed
 - Tests written and passing
 - For EACH acceptance criterion: the AC id and the test file path that
   verifies it (the orchestrator records these in TASKS.md Test: fields)
+- Out-of-scope bugs found, if any (file + symptom + suspected cause)
 - Brief summary of what was done
 ```
 
 **Orchestrator duty after each implementer completes:** take the AC-id → test-path
 pairs from the output and backfill the `Test:` fields in
-`$TGD_DIR/<feature-name>/TASKS.md`. Subagents cannot reliably write outside the
-worktree — the orchestrator owns the artifacts directory.
+`$TGD_DIR/<feature-name>/TASKS.md`, then flip that task's `**Status:**` line
+from `in-progress` to `complete`. If the output reports out-of-scope bugs, record
+each under `## Risks & Mitigations` (or add a new task if it must be fixed this
+cycle) — do NOT let the report evaporate. Subagents cannot reliably write
+outside the worktree — the orchestrator owns the artifacts directory.
 
 ### Spec Reviewer Prompt Template
 
@@ -189,5 +208,6 @@ This skill is invoked by `/tgd-develop` when executing a task plan. It replaces 
 - [ ] Spec reviewer confirmed all requirements met (PASS or gaps listed)
 - [ ] Code quality reviewer found no critical issues
 - [ ] Tests are tagged with their `AC-<task>.<n>` ids and TASKS.md `Test:` fields are backfilled
-- [ ] All tasks in TASKS.md marked complete
+- [ ] Every task's `**Status:**` line reads `complete` (or `blocked: <ref>` with the blocker recorded — never left `pending`)
+- [ ] Out-of-scope bug reports from implementers were recorded in Risks & Mitigations, not dropped
 - [ ] Final integration test passes
