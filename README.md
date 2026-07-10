@@ -671,7 +671,7 @@ The commands above are entry points. The pack includes 29 skills total — 27 li
 | Skill | Purpose |
 |---|---|
 | [tgd-context-engineering](skills/tgd-context-engineering/SKILL.md) | Feed agents the right info |
-| [tgd-wiki-generation](skills/tgd-wiki-generation/SKILL.md) | DeepWiki-style multi-repo docs site |
+| [tgd-wiki-generation](skills/tgd-wiki-generation/SKILL.md) | DeepWiki-style multi-repo docs site — standalone tool, invoke directly; not part of the `/tgd-map` pipeline since v2026.07.09 |
 
 ### 📋 Define
 | Skill | Purpose |

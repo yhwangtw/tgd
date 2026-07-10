@@ -688,7 +688,7 @@ tGD/
 | Skill | 用途 |
 |---|---|
 | [tgd-context-engineering](skills/tgd-context-engineering/SKILL.md) | 餵給 agent 正確的資訊 |
-| [tgd-wiki-generation](skills/tgd-wiki-generation/SKILL.md) | DeepWiki 風格的多 repo 文件站 |
+| [tgd-wiki-generation](skills/tgd-wiki-generation/SKILL.md) | DeepWiki 風格的多 repo 文件站——獨立工具，直接呼叫使用；自 v2026.07.09 起不在 `/tgd-map` pipeline 內 |
 
 ### 📋 Define
 | Skill | 用途 |

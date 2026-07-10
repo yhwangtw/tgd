@@ -668,7 +668,7 @@ tGD/
 | スキル | 用途 |
 |--------|------|
 | [tgd-context-engineering](skills/tgd-context-engineering/SKILL.md) | 正確な情報をエージェントに供給 |
-| [tgd-wiki-generation](skills/tgd-wiki-generation/SKILL.md) | DeepWikiスタイルのマルチレポドキュメントサイト |
+| [tgd-wiki-generation](skills/tgd-wiki-generation/SKILL.md) | DeepWikiスタイルのマルチレポドキュメントサイト — スタンドアロンツール（直接呼び出し。v2026.07.09 以降 `/tgd-map` パイプライン外） |
 </details>
 
 <details>
