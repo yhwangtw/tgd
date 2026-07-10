@@ -4,6 +4,12 @@ All notable changes to tGD will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/). Versions follow [CalVer](https://calver.org/) (YYYY.MM.DD).
 
+## v2026.07.10.4
+
+### 🐛 Bug Fixes
+- incremental re-plan, TASKS.md machine check, .codegraph sweep, .env load (#40) (`8969aed`)
+
+
 ## v2026.07.10.3
 
 ### 🐛 Bug Fixes
