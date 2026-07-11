@@ -21,11 +21,17 @@ prompt = """
 - **If missing:** STOP. Tell user: "Review or tests incomplete. Please run `/tgd-review` first."
 
 **🔏 Pre-flight: Sign-off Gate (HARD GATE)**
-Release is the one phase that blocks on human sign-off (see `tgd-rules` → Human Roles & Sign-off Protocol). Check the `## Sign-off` sections:
-- [ ] `$TGD_DIR/<feature-name>/TEST-REPORT.md` — **QA** line is `[x] ... Approved`.
-- [ ] `$TGD_DIR/<feature-name>/REVIEW.md` — **QA** and **DEV** lines are `[x] ... Approved`.
-- [ ] **PM** final approval — `[x] ... Approved` in `$TGD_DIR/<feature-name>/PRD.md`'s Sign-off, or an explicit go-ahead from the user in this session (record it in the CHANGELOG entry).
-- **If any required line is unchecked, missing, or `Rejected`:** 🛑 STOP. List the pending roles and wait — humans review async. Do NOT proceed "provisionally".
+Release is the one phase that blocks on human sign-off (see `tgd-rules` → Human Roles & Sign-off Protocol). Check the `## Sign-off` sections — with grep, not by eyeballing:
+- [ ] `$TGD_DIR/<feature-name>/TEST-REPORT.md` — **QA** approved:
+      `grep -qF '[x] **QA**: Approved' "$TGD_DIR/<feature-name>/TEST-REPORT.md"`
+- [ ] `$TGD_DIR/<feature-name>/REVIEW.md` — **QA** AND **DEV** approved (run both):
+      `grep -qF '[x] **QA**: Approved' "$TGD_DIR/<feature-name>/REVIEW.md"`
+      `grep -qF '[x] **DEV**: Approved' "$TGD_DIR/<feature-name>/REVIEW.md"`
+- [ ] **PM** final approval:
+      `grep -qF '[x] **PM**: Approved' "$TGD_DIR/<feature-name>/PRD.md"`
+      — or an explicit go-ahead from the user in this session (record it in the CHANGELOG entry).
+      (The approver flips `- [ ] **ROLE**: (pending)` to `- [x] **ROLE**: Approved` — keep that exact spelling; the fixed-string greps are the gate.)
+- **If any grep exits non-zero** (line unchecked, missing, or `Rejected`): 🛑 STOP. List the pending roles and wait — humans review async. Do NOT proceed "provisionally".
 
 Run the `tgd-shipping-and-launch` skill. This is the Release phase. The full pipeline is:
 
@@ -40,9 +46,9 @@ Run the `tgd-shipping-and-launch` skill. This is the Release phase. The full pip
       Exit 0 = pass. Exit 1 = 🛑 STOP — a shipped behavior regressed; fix before merging. Exit 2 = configuration error — fix the invocation, never treat as pass. Exit 3 = no catalog yet — skip this audit.
    5. After the audit, the catalog contains ONLY entries whose test files exist and pass. This prevents the catalog from becoming a zombie file full of dead references.
 3. **🌳 Merge & worktree cleanup** — this is where the feature branch lands on `main` (NOT in `/tgd-develop`). Multi-repo features repeat all three steps in EACH repo that has a worktree:
-   1. Merge `feature/<feature-name>` into `main` (or open a PR, per team policy).
-   2. Remove the worktree: `git worktree remove ../project-<feature-name>` (multi-repo: `../project-<feature-name>-<repo-name>`).
-   3. After the merge lands, delete the branch: `git branch -d feature/<feature-name>`.
+   1. Merge `feature/<feature-name>` into `main` (or open a PR, per team policy — and WAIT for it to land before any cleanup).
+   2. **AFTER the merge lands**, remove the worktree: `git worktree remove ../project-<feature-name>` (multi-repo: `../project-<feature-name>-<repo-name>`). Not before — if the PR's CI fails, the worktree is where you fix it.
+   3. Then delete the branch: `git branch -d feature/<feature-name>`.
 4. `tgd-shipping-and-launch` — pre-launch checklist, staged rollouts, monitoring setup
 
 **Conditional (apply when relevant):**

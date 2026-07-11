@@ -138,7 +138,12 @@ Don't silently fill in ambiguous requirements. The spec's entire purpose is to s
 | Phase | Duration | Milestone |
 |-------|----------|-----------|
 | Phase 1 | [X weeks] | [Milestone] |
+
+## Sign-off
+- [ ] **PM**: (pending)
 ```
+
+The `## Sign-off` section is the PM's **final release approval** — `/tgd-release`'s hard gate greps this exact line and blocks until it reads `[x] **PM**: Approved`. It is NOT §10 Stakeholder Alignment (define-time scope alignment); it is the release-time go/no-go, same convention as TEST-REPORT.md (QA) and REVIEW.md (QA + DEV).
 
 Sections 1–8 are always required. **9 Competitive Analysis**, **10 Stakeholder Alignment**, and **11 Timeline** are marked *(if applicable)* — a solo or small feature may omit them. `/tgd-define`'s gate (`check-doc-sections.py`) enforces exactly this: the always-required sections must be present, the *(if applicable)* ones are not forced. To make another section optional, mark it *(if applicable)* here — the gate reads this template as its single source, so nothing else needs to change.
 
