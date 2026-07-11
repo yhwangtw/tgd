@@ -45,10 +45,11 @@ Run the `tgd-shipping-and-launch` skill. This is the Release phase. The full pip
       `bash "$TGD_REPO_ROOT/scripts/regression-gate.sh" ../project-<feature-name> "$TGD_DIR"` (multi-repo: once per worktree — `../project-<feature-name>-<repo-name>` as the first arg AND the repo name as the third, so entries tagged `Repo:` for other repos are skipped there instead of failing as missing)
       Exit 0 = pass. Exit 1 = 🛑 STOP — a shipped behavior regressed; fix before merging. Exit 2 = configuration error — fix the invocation, never treat as pass. Exit 3 = no catalog yet — skip this audit.
    5. After the audit, the catalog contains ONLY entries whose test files exist and pass. This prevents the catalog from becoming a zombie file full of dead references.
-3. **🌳 Merge & worktree cleanup** — this is where the feature branch lands on `main` (NOT in `/tgd-develop`). Multi-repo features repeat all three steps in EACH repo that has a worktree:
-   1. Merge `feature/<feature-name>` into `main` (or open a PR, per team policy — and WAIT for it to land before any cleanup).
-   2. **AFTER the merge lands**, remove the worktree: `git worktree remove ../project-<feature-name>` (multi-repo: `../project-<feature-name>-<repo-name>`). Not before — if the PR's CI fails, the worktree is where you fix it.
-   3. Then delete the branch: `git branch -d feature/<feature-name>`.
+3. **🌳 Merge & worktree cleanup** — this is where the feature branch lands on `main` (NOT in `/tgd-develop`). Multi-repo features repeat all steps in EACH repo that has a worktree:
+   1. **Clean-worktree check (BEFORE the merge):** `git status --porcelain` in the worktree MUST be empty. Dirty means the sign-offs were taken against a state that the merge will not ship. Modified/untracked files that ARE the verified state (e.g. verify/review edits never committed — an upstream phase violated its own gate): commit them on the feature branch so the merged code is identical to what was signed off. Tool residue (coverage output, lockfiles from gate attempts, `node_modules/`): delete it. Only then merge.
+   2. Merge `feature/<feature-name>` into `main` (or open a PR, per team policy — and WAIT for it to land before any cleanup).
+   3. **AFTER the merge lands**, remove the worktree: `git worktree remove ../project-<feature-name>` (multi-repo: `../project-<feature-name>-<repo-name>`). Not before — if the PR's CI fails, the worktree is where you fix it.
+   4. Then delete the branch: `git branch -d feature/<feature-name>`.
 4. `tgd-shipping-and-launch` — pre-launch checklist, staged rollouts, monitoring setup
 
 **Conditional (apply when relevant):**

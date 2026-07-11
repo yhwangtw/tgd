@@ -79,6 +79,8 @@ Before writing any code, operate in read-only mode to gather context from all av
 
 ## Task 1: [User Story Title] (Story ID: US-01)
 **Status:** pending <!-- pending | in-progress | complete | blocked: <ref>. The ONLY task-state marker: /tgd-develop flips it, resume + re-plan read it. Do not invent checkboxes/emoji variants. -->
+**Spec-Review:** pending <!-- pending | PASS — <one line> | FAIL — <one line>. Flipped by /tgd-develop's two-stage review; /tgd-verify fails closed on a complete task left pending. -->
+**Quality-Review:** pending <!-- same states; flipped after the code-quality review pass. -->
 
 ### 1. Context & Goal
 [What is the goal of this task? Why is it important?]
@@ -105,6 +107,17 @@ Before writing any code, operate in read-only mode to gather context from all av
   - **Regression**: [Yes `[R]` / No]
   - **Test**: [`tests/path/to/test.ts` — filled during `/tgd-develop`; MANDATORY for `[R]` criteria]
 
+- **Every criterion declares its carrier** — `Test:` for anything with runtime
+  behavior, or `Doc:` for documentation-only criteria (README sections, usage
+  examples — content with no runtime surface):
+  - **Doc**: `README.md` contains "getMonthlySummary("
+  `ac-trace.py` verifies a `Doc:` carrier by checking the named file exists and
+  contains the quoted string — no test reference is required or expected.
+  Without this, doc-only criteria force a workaround (agents paste the AC id
+  into an unrelated test file as a comment just to satisfy the trace).
+  Doc-only criteria can never be `[R]` — the regression catalog replays
+  executable tests only.
+
 - **`[R]` marking rules** — must mark `[R]` if the criterion matches ANY of:
   - (a) Verifies an acceptance criterion from the PRD's User Stories table (a US-xx row's "Acceptance Criteria" column) or a PRD Success Metric. (Note the namespaces: PRD rows are `US-xx`; the `AC-<task>.<n>` ids exist only in TASKS.md.)
   - (b) Covers a critical user path (auth, payment, data loss, security boundary)
@@ -112,7 +125,7 @@ Before writing any code, operate in read-only mode to gather context from all av
   - **SHOULD NOT mark `[R]`** if criterion is: cosmetic, internal refactor, dev-only tooling, single-use migration
   - **When in doubt**: mark `[R]`. The cost of an extra catalog entry is low; the cost of missing a regression is high.
   - **If `[R]`**: a corresponding test MUST be created during `/tgd-develop` (TDD) and its path recorded in the criterion's `Test:` field. It will be added to `$TGD_DIR/REGRESSION-CATALOG.md` during `/tgd-release`.
-  - **Enforcement (machine-gated)**: `/tgd-verify` runs `python3 $TGD_REPO_ROOT/scripts/ac-trace.py $TGD_DIR/<feature>/ <client-repo>` — it fails when any AC id is unreferenced by tests, when any `[R]` criterion lacks a `Test:` file, or when that file is missing on disk. A TASKS.md without AC ids fails closed.
+  - **Enforcement (machine-gated)**: `/tgd-verify` runs `python3 $TGD_REPO_ROOT/scripts/ac-trace.py $TGD_DIR/<feature>/ <client-repo>` — it fails when any AC id is unreferenced by tests (or, for `Doc:` criteria, when the named file is missing or lacks the quoted string), when any `[R]` criterion lacks a `Test:` file, or when that file is missing on disk. A TASKS.md without AC ids fails closed.
 
 ### 4. Files Likely Touched
 - `path/to/file.ts`
@@ -200,6 +213,14 @@ Per-task quality bar (in addition to the template fields):
   not "run the tests" (Zero-Context Rule)
 - **Dependencies declared**: task numbers this depends on, or "None"
 - **Scope estimated**: Small (1-2 files) / Medium (3-5) / Large (5+ → split it)
+- **No standalone "write tests" tasks**: tests are each task's AC carriers,
+  written inside that task's TDD cycle — never a separate task scheduled after
+  the implementation. A "Task N: write the test suite" decomposition
+  structurally encourages test-after (the implementation task completes
+  untested, then the test task rubber-stamps it) and produces meta-criteria
+  ("tests exist and pass") that trace to the same test lines as the behavior
+  criteria they duplicate. If a task's tests feel like a separate work item,
+  the task is too big — split the task, not the testing.
 
 ### Step 5: Order and Checkpoint
 

@@ -15,6 +15,10 @@ Convention (defined in skills/tgd-planning-and-task-breakdown/SKILL.md):
     docstring, or a comment:  test("AC-1.1: rejects empty password", ...)
   - Criteria marked [R] (regression) MUST additionally carry a
     "Test: <path>" line naming the concrete test file.
+  - Documentation-only criteria carry a Doc: carrier instead of a test:
+        Doc: `README.md` contains "getMonthlySummary("
+    Traced iff the named file exists in the client repo and contains the
+    quoted string. Doc: criteria cannot be [R].
 
 Usage:
     python3 scripts/ac-trace.py <feature-dir> [client-repo]
@@ -71,7 +75,13 @@ def parse_tasks(tasks_path: Path) -> Dict[str, Dict]:
         # Tolerate both markdown stylings: "**Test**: `x`" and "**Test:** `x`"
         tm = re.search(r"Test\*{0,2}:\*{0,2}\s*`?([^`\n]+)`?", block)
         test = tm.group(1).strip() if tm else None
-        acs[ac_id] = {"regression": regression, "test": test}
+        # Doc carrier for documentation-only criteria:
+        #   Doc: `README.md` contains "getMonthlySummary("
+        doc = None
+        dm = re.search(r"Doc\*{0,2}:\*{0,2}\s*`?([^`\s]+)`?\s+contains\s+\"([^\"]+)\"", block)
+        if dm:
+            doc = (dm.group(1).strip(), dm.group(2))
+        acs[ac_id] = {"regression": regression, "test": test, "doc": doc}
     return acs
 
 
@@ -121,6 +131,7 @@ def main() -> int:
     untraced: List[str] = []
     r_missing_test: List[str] = []
     r_stale_test: List[str] = []
+    r_doc_conflict: List[str] = []
 
     print(f"[ac-trace] {len(acs)} acceptance criteria in {tasks_path.name}, "
           f"{len(refs)} AC ids referenced across tests\n")
@@ -130,10 +141,23 @@ def main() -> int:
         info = acs[ac_id]
         traced = ac_id in refs
         detail = ", ".join(sorted(refs.get(ac_id, []))) or "—"
+        if not traced and info.get("doc"):
+            # Doc-carrier criterion: traced iff the named file exists and
+            # contains the quoted string — no test reference expected.
+            doc_file, needle = info["doc"]
+            doc_path = client_repo / doc_file
+            if doc_path.is_file() and needle in doc_path.read_text(
+                    encoding="utf-8", errors="replace"):
+                traced = True
+                detail = f"doc: {doc_file} contains \"{needle}\""
+            else:
+                detail = f"doc: {doc_file} missing or lacks \"{needle}\""
         flag = "R" if info["regression"] else ""
         print(f"{ac_id:<10} {flag:<4} {'yes' if traced else 'NO':<7} {detail}")
         if not traced:
             untraced.append(ac_id)
+        if info["regression"] and info.get("doc"):
+            r_doc_conflict.append(ac_id)
         if info["regression"]:
             test = info["test"]
             if not test:
@@ -161,6 +185,12 @@ def main() -> int:
         ok = False
         print(f"❌ {len(r_stale_test)} [R] 'Test:' references point to missing files: "
               + ", ".join(r_stale_test))
+    if r_doc_conflict:
+        ok = False
+        print(f"❌ {len(r_doc_conflict)} criteria are both [R] and Doc:-carried: "
+              + ", ".join(r_doc_conflict))
+        print("   The regression catalog replays executable tests only — a doc-only")
+        print("   criterion cannot be [R]. Change the carrier or drop the [R].")
 
     if ok:
         print("✅ AC TRACE PASSED: every criterion is referenced by a test; "

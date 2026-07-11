@@ -131,6 +131,14 @@ each under `## Risks & Mitigations` (or add a new task if it must be fixed this
 cycle) — do NOT let the report evaporate. Subagents cannot reliably write
 outside the worktree — the orchestrator owns the artifacts directory.
 
+**Orchestrator duty after each review stage:** record the outcome in the task's
+`Spec-Review:` / `Quality-Review:` fields in TASKS.md — `PASS — <one line>` or
+`FAIL — <one line>` (after a FAIL: implementer fixes, the stage re-runs, then
+flip to PASS). If you cannot dispatch reviewer subagents, run both review
+stages INLINE against their prompt templates — inability to delegate never
+skips a stage — and record the fields the same way. `/tgd-verify` fails closed
+on a completed task whose review fields still read `pending`.
+
 ### Spec Reviewer Prompt Template
 
 ```
