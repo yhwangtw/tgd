@@ -21,14 +21,14 @@ Release to production — faster is safer
 - **If missing:** STOP. Tell user: "Review or tests incomplete. Please run `/tgd-review` first."
 
 **🔏 Pre-flight: Sign-off Gate (HARD GATE)**
-Release is the one phase that blocks on human sign-off (see `tgd-rules` → Human Roles & Sign-off Protocol). Check the `## Sign-off` sections — with grep, not by eyeballing:
+Release is the one phase that blocks on human sign-off (see `tgd-rules` → Human Roles & Sign-off Protocol). Check the `## Sign-off` sections — with the scoped greps below, not by eyeballing. The `awk '/^## Sign-off/,0'` prefix restricts the match to the `## Sign-off` section (it sits at the bottom of each artifact): a file-wide grep would be satisfied by approval-shaped text elsewhere in the document — e.g. a PRD §6 metrics N/A sign-off written in the standard role format would pre-approve the release at define time.
 - [ ] `$TGD_DIR/<feature-name>/TEST-REPORT.md` — **QA** approved:
-      `grep -qF '[x] **QA**: Approved' "$TGD_DIR/<feature-name>/TEST-REPORT.md"`
+      `awk '/^## Sign-off/,0' "$TGD_DIR/<feature-name>/TEST-REPORT.md" | grep -qF '[x] **QA**: Approved'`
 - [ ] `$TGD_DIR/<feature-name>/REVIEW.md` — **QA** AND **DEV** approved (run both):
-      `grep -qF '[x] **QA**: Approved' "$TGD_DIR/<feature-name>/REVIEW.md"`
-      `grep -qF '[x] **DEV**: Approved' "$TGD_DIR/<feature-name>/REVIEW.md"`
+      `awk '/^## Sign-off/,0' "$TGD_DIR/<feature-name>/REVIEW.md" | grep -qF '[x] **QA**: Approved'`
+      `awk '/^## Sign-off/,0' "$TGD_DIR/<feature-name>/REVIEW.md" | grep -qF '[x] **DEV**: Approved'`
 - [ ] **PM** final approval:
-      `grep -qF '[x] **PM**: Approved' "$TGD_DIR/<feature-name>/PRD.md"`
+      `awk '/^## Sign-off/,0' "$TGD_DIR/<feature-name>/PRD.md" | grep -qF '[x] **PM**: Approved'`
       — or an explicit go-ahead from the user in this session (record it in the CHANGELOG entry).
       (The approver flips `- [ ] **ROLE**: (pending)` to `- [x] **ROLE**: Approved` — keep that exact spelling; the fixed-string greps are the gate.)
 - **If any grep exits non-zero** (line unchecked, missing, or `Rejected`): 🛑 STOP. List the pending roles and wait — humans review async. Do NOT proceed "provisionally".

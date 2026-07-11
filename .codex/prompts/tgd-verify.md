@@ -55,7 +55,7 @@ bash "$TGD_REPO_ROOT/scripts/capture-test-output.sh" "$TGD_DIR/<feature-name>/TE
 - **Exit 0** = tests passed, raw output captured. Use the real numbers from the meta-comment in the Summary table below — do NOT invent counts.
 - **Exit 1** = tests failed, raw output still captured. Fix the failures, re-run, only then proceed.
 
-The script **creates the TEST-REPORT.md skeleton if it doesn't exist** (sections: Test Summary, Coverage, Failures & Root Causes, Flaky Tests, Regression Status, Sign-off — the skeleton in the script is the single source of the template). Fill in the tables using ONLY the numbers from the appended meta-comment.
+The script **creates the TEST-REPORT.md skeleton if it doesn't exist** (sections: Test Summary, Coverage, Failures & Root Causes, Flaky Tests, Regression Status, Sign-off — the skeleton in the script is the single source of the template). Do NOT hand-create TEST-REPORT.md before running the capture — let the script emit the skeleton. (If the file somehow exists without a `## Sign-off` section, the script appends one — that section's QA line is what `/tgd-release`'s sign-off grep reads.) Fill in the tables using ONLY the numbers from the appended meta-comment.
 
 For the Coverage table, run the coverage gate first:
 
