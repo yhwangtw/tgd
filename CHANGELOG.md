@@ -4,6 +4,12 @@ All notable changes to tGD will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/). Versions follow [CalVer](https://calver.org/) (YYYY.MM.DD).
 
+## v2026.07.11
+
+### 🐛 Bug Fixes
+- multi-repo evidence, npm auto-detect, gate repo filter, cargo exit 2 (#42) (`12e875f`)
+
+
 ## v2026.07.10.5
 
 ### 🐛 Bug Fixes
