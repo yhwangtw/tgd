@@ -55,10 +55,11 @@ After completing the review, create `$TGD_DIR/<feature-name>/REVIEW.md` using th
 > **Date**: YYYY-MM-DD
  
 ## 1. Code Review Findings
-| # | Severity | File:Line | Issue | Recommendation |
-|---|----------|-----------|-------|----------------|
+| # | Severity | File:Line | Issue | Recommendation | Resolution |
+|---|----------|-----------|-------|----------------|------------|
  
 Severities: 🔴 Critical (must fix before merge) · 🟠 Important (should fix before merge) · 🟡 Nit (optional) · 🟢 FYI (informational)
+Resolution: `fixed` / `deferred — <justification>` / `open`. Every 🔴 row MUST read `fixed` before Sign-off; 🟠 may be `deferred` only with the justification written in the cell. `/tgd-release` reads this column — a row without it is indistinguishable from an unfixed finding.
  
 ## 2. Security Scan
 - **Tool**: [tool or "manual review"]
@@ -78,11 +79,14 @@ Severities: 🔴 Critical (must fix before merge) · 🟠 Important (should fix 
 - [ ] **DEV**: (pending)
 ```
  
+**🔁 Re-test after review changes:** if ANY code changed during this phase (finding fixes or simplification), re-run the capture in the affected worktree BEFORE sign-off — `bash "$TGD_REPO_ROOT/scripts/capture-test-output.sh" "$TGD_DIR/<feature-name>/TEST-REPORT.md"` (multi-repo: repo name as the 3rd arg). The TEST-REPORT green light was taken against the pre-review code; a sign-off on top of it certifies code that was never tested.
+
 If any architectural decisions were made, create an ADR at `$TGD_DIR/<feature-name>/decisions/ADR-NNN-<decision>.md` using the **canonical ADR template in the `tgd-documentation-and-adrs` skill** — it is the single source; do not hand-roll a different shape. Its sections are **Status · Date · Context · Decision · Alternatives Considered · Consequences**. The **Alternatives Considered** section is mandatory: an ADR that doesn't record the rejected options and why isn't an ADR, it's just a note.
 
 **Verification Gate:**
-- [ ] Code review feedback addressed
+- [ ] Code review feedback addressed — every 🔴 Critical row in the findings table reads `fixed`; 🟠 deferred rows carry a justification
 - [ ] No critical security or performance warnings remain
+- [ ] If code changed during review: `capture-test-output.sh` re-ran in the affected worktree(s) — TEST-REPORT.md reflects the code that ships
 - [ ] `$TGD_DIR/<feature-name>/REVIEW.md` exists and is non-empty
 - [ ] `python3 "$TGD_REPO_ROOT/scripts/check-doc-sections.py" REVIEW "$TGD_DIR/<feature-name>/REVIEW.md"` exits 0 — all required REVIEW sections present (missing ones are listed). Resolve `$TGD_REPO_ROOT` per `tgd-rules` → **Resolving $TGD_REPO_ROOT**.
 

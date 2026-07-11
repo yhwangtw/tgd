@@ -15,7 +15,7 @@ description: Release to production — faster is safer
 5. **Verify**: `$TGD_DIR/<feature-name>/SPEC.md` exists (defines scope).
 
 **🔒 Pre-flight: Artifact Check**
-- [ ] Review passed (no critical issues).
+- [ ] Review passed — no 🔴 Critical finding left unresolved: every 🔴 row in REVIEW.md's findings table reads `fixed` in its Resolution column (a 🔴 row that is `open`, empty, or `deferred` blocks release).
 - [ ] `$TGD_DIR/<feature>/REVIEW.md` exists.
 - [ ] The feature's tests exist (per the project's layout in `CONTEXT.md`) and pass.
 - **If missing:** STOP. Tell user: "Review or tests incomplete. Please run `/tgd-review` first."
