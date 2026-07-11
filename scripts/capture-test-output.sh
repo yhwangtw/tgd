@@ -78,6 +78,13 @@ Exit code: `0` (PASS) / `1` (FAIL)
 - [ ] **QA**: (pending)
 SKELETON
     echo "📝 Created TEST-REPORT skeleton: $REPORT_PATH"
+elif ! grep -qF '## Sign-off' "$REPORT_PATH"; then
+    # The agent hand-created the report before this script ran, so the skeleton
+    # (and its Sign-off section) never got emitted. /tgd-release's QA gate greps
+    # the role line — guarantee it idempotently instead of depending on the
+    # agent having run this script first.
+    printf '\n## Sign-off\n- [ ] **QA**: (pending)\n' >> "$REPORT_PATH"
+    echo "📝 Appended missing ## Sign-off section to existing report"
 fi
 
 # Resolve test runner
@@ -127,6 +134,19 @@ SKIPPED=${SKIPPED:-0}
 JEST_SUMMARY=$(grep -E "^Tests:.*(passed|failed)" "$RAW" | tail -1)
 PYTEST_SUMMARY=$(grep -E "=+ .* (passed|failed) in" "$RAW" | tail -1)
 GO_SUMMARY=$(grep -E "^(ok|FAIL|---)" "$RAW" | tail -1)
+
+# TAP runners (node:test) print exact totals as "# pass N" / "# fail N" /
+# "# skipped N" — use them verbatim. The line-grep heuristics above overcount
+# here (e.g. the literal summary line "# skipped 0" matches the "skipped"
+# pattern and scores 1 even when zero tests were skipped).
+TAP_PASS=$(grep -E "^# pass [0-9]+" "$RAW" | tail -1 | grep -oE "[0-9]+" || true)
+if [ -n "$TAP_PASS" ]; then
+    PASSED=$TAP_PASS
+    FAILED=$(grep -E "^# fail [0-9]+" "$RAW" | tail -1 | grep -oE "[0-9]+" || true)
+    FAILED=${FAILED:-0}
+    SKIPPED=$(grep -E "^# skipped [0-9]+" "$RAW" | tail -1 | grep -oE "[0-9]+" || true)
+    SKIPPED=${SKIPPED:-0}
+fi
 
 if [ -n "$JEST_SUMMARY" ]; then
     PASSED=$(echo "$JEST_SUMMARY" | grep -oE "[0-9]+ passed" | grep -oE "[0-9]+" | head -1)

@@ -79,7 +79,7 @@ Resolution: `fixed` / `deferred — <justification>` / `open`. Every 🔴 row MU
 - [ ] **DEV**: (pending)
 ```
  
-**🔁 Re-test after review changes:** if ANY code changed during this phase (finding fixes or simplification), re-run the capture in the affected worktree BEFORE sign-off — `bash "$TGD_REPO_ROOT/scripts/capture-test-output.sh" "$TGD_DIR/<feature-name>/TEST-REPORT.md"` (multi-repo: repo name as the 3rd arg). The TEST-REPORT green light was taken against the pre-review code; a sign-off on top of it certifies code that was never tested.
+**🔁 Re-test after review changes:** if ANY code changed during this phase (finding fixes or simplification), re-run the capture in the affected worktree BEFORE sign-off — `bash "$TGD_REPO_ROOT/scripts/capture-test-output.sh" "$TGD_DIR/<feature-name>/TEST-REPORT.md"` (multi-repo: repo name as the 3rd arg). The TEST-REPORT green light was taken against the pre-review code; a sign-off on top of it certifies code that was never tested. **Then COMMIT the changes on the feature branch** — a review fix left uncommitted is invisible to the release merge: the sign-offs certify a state that never lands on `main`.
 
 If any architectural decisions were made, create an ADR at `$TGD_DIR/<feature-name>/decisions/ADR-NNN-<decision>.md` using the **canonical ADR template in the `tgd-documentation-and-adrs` skill** — it is the single source; do not hand-roll a different shape. Its sections are **Status · Date · Context · Decision · Alternatives Considered · Consequences**. The **Alternatives Considered** section is mandatory: an ADR that doesn't record the rejected options and why isn't an ADR, it's just a note.
 
@@ -87,6 +87,7 @@ If any architectural decisions were made, create an ADR at `$TGD_DIR/<feature-na
 - [ ] Code review feedback addressed — every 🔴 Critical row in the findings table reads `fixed`; 🟠 deferred rows carry a justification
 - [ ] No critical security or performance warnings remain
 - [ ] If code changed during review: `capture-test-output.sh` re-ran in the affected worktree(s) — TEST-REPORT.md reflects the code that ships
+- [ ] Each worktree is clean at the end of this phase: `git status --porcelain` is empty — review changes are committed on the feature branch (the sign-offs certify committed state, nothing else survives the merge)
 - [ ] `$TGD_DIR/<feature-name>/REVIEW.md` exists and is non-empty
 - [ ] `python3 "$TGD_REPO_ROOT/scripts/check-doc-sections.py" REVIEW "$TGD_DIR/<feature-name>/REVIEW.md"` exits 0 — all required REVIEW sections present (missing ones are listed). Resolve `$TGD_REPO_ROOT` per `tgd-rules` → **Resolving $TGD_REPO_ROOT**.
 

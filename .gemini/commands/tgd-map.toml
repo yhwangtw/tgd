@@ -2,6 +2,8 @@ description = "Map — scan and understand the existing project context before m
 
 prompt = """
 
+**⚠️ Closing requirement — read this FIRST:** the run's LAST message MUST be the **Step 8 Final Report** (exact format at the end of this command). Plan for it from the start — a run that ends with a free-form summary instead fails the Verification Gate.
+
 **🔑 Step 0: $TGD_DIR Resolution**
 
 $TGD_DIR is where ALL tGD artifacts live. It is a **sibling directory** outside your code repo.
@@ -65,13 +67,15 @@ Probe the environment BEFORE starting, and decide which tiers run. Do this expli
 ```bash
 command -v codegraph && echo "codegraph: OK" || echo "codegraph: MISSING"
 command -v node && command -v npm && echo "node/npm: OK" || echo "node/npm: MISSING"
-# understand skill: check whether the `understand` skill is loadable in this session
+# understand skill — loadable iff EITHER holds; otherwise it is MISSING:
+#   (a) `understand` appears in this session's available-skills list, or
+#   (b) the tGD install location exists: [ -d ~/.understand-anything/repo ]
 ```
 
 | Tier | Steps | Runs when | Output |
 |------|-------|-----------|--------|
 | **Tier 1 — Core** (always) | 1, 2, 6, 7 | Every `/tgd-map` run, no dependencies | `CONTEXT.md` |
-| **Tier 2 — Deep scan + dashboards** | 3, 4, 5 | `codegraph` CLI / `understand` skill available; Step 5 dashboards additionally need `node`/`npm` | `.scans/<repo>/` symbol index + knowledge graph + domain graph + one live localhost dashboard per repo |
+| **Tier 2 — Deep scan + dashboards** | 3, 4, 5 | Per-step, each with its own skip condition: Step 3 needs the `codegraph` CLI; Step 4 needs the `understand` skill; Step 5 needs Step 4's knowledge graph AND `node`/`npm`. One tool present + one missing = run the step you can, skip-and-log the other | `.scans/<repo>/` symbol index + knowledge graph + domain graph + one live localhost dashboard per repo |
 
 **Degradation rule:** If a tier cannot run, you MUST record it in `CONTEXT.md` under `## Degraded Mode` — which steps were skipped, why (missing tool), and how to enable them later. A skipped step that is not logged is a verification failure. Silent skipping is the failure mode this rule exists to prevent.
 

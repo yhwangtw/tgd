@@ -17,6 +17,7 @@ description: Verify — prove it works with debugging and test pyramid
 **🔒 Pre-flight: Artifact Check**
 - [ ] The feature branch has source changes: `git diff main...feature/<feature-name> --stat` is non-empty (multi-repo: in each repo with tagged tasks).
 - [ ] Test files exist for the feature — use the project's actual test layout from `CONTEXT.md` (`tests/`, `spec/`, `*_test.go`, `__tests__/`, …). Do NOT assume a `src/`+`tests/` layout.
+- [ ] Every task with `**Status:** complete` in TASKS.md has `Spec-Review:` and `Quality-Review:` fields reading `PASS — …` (not `pending`) — a pending review field means `/tgd-develop` skipped its two-stage review. 🛑 STOP: send it back to `/tgd-develop`; do not verify unreviewed work.
 - **If missing:** STOP. Tell user: "No source code or tests found. Please run `/tgd-develop` first."
 
 **🌳 Worktree:** If `../project-<feature-name>` exists (created by `/tgd-develop`), run all commands in this phase inside that worktree — the feature branch is not on `main` yet. Multi-repo features (TASKS.md has `[repo-name]` prefixes) have one worktree PER repo (`../project-<feature-name>-<repo-name>`) — run each repo's tests inside ITS worktree; verifying only one repo is a partial verify, not a pass.
@@ -55,7 +56,7 @@ bash "$TGD_REPO_ROOT/scripts/capture-test-output.sh" "$TGD_DIR/<feature-name>/TE
 - **Exit 0** = tests passed, raw output captured. Use the real numbers from the meta-comment in the Summary table below — do NOT invent counts.
 - **Exit 1** = tests failed, raw output still captured. Fix the failures, re-run, only then proceed.
 
-The script **creates the TEST-REPORT.md skeleton if it doesn't exist** (sections: Test Summary, Coverage, Failures & Root Causes, Flaky Tests, Regression Status, Sign-off — the skeleton in the script is the single source of the template). Fill in the tables using ONLY the numbers from the appended meta-comment.
+The script **creates the TEST-REPORT.md skeleton if it doesn't exist** (sections: Test Summary, Coverage, Failures & Root Causes, Flaky Tests, Regression Status, Sign-off — the skeleton in the script is the single source of the template). Do NOT hand-create TEST-REPORT.md before running the capture — let the script emit the skeleton. (If the file somehow exists without a `## Sign-off` section, the script appends one — that section's QA line is what `/tgd-release`'s sign-off grep reads.) Fill in the tables using ONLY the numbers from the appended meta-comment.
 
 For the Coverage table, run the coverage gate first:
 
@@ -73,7 +74,7 @@ Line coverage is not requirement coverage — verify every acceptance criterion 
 python3 "$TGD_REPO_ROOT/scripts/ac-trace.py" "$TGD_DIR/<feature-name>/" .
 ```
 
-- **Exit 0** = every `AC-<task>.<n>` id in TASKS.md is referenced by at least one test, and every `[R]` criterion names an existing test file. Proceed.
+- **Exit 0** = every `AC-<task>.<n>` id in TASKS.md is referenced by at least one test (or, for documentation-only criteria with a `Doc:` carrier, the named file exists and contains the quoted string), and every `[R]` criterion names an existing test file. Proceed.
 - **Exit 1** = untraced criteria or `[R]` entries without valid `Test:` files — the output lists exactly which. 🛑 Write the missing tests (or tag the existing ones with the AC id), re-run, only then proceed.
 - **Exit 2** = TASKS.md missing or carries no AC ids. A plan without AC ids fails closed — fix TASKS.md (see `tgd-planning-and-task-breakdown`).
 
@@ -113,5 +114,6 @@ The gate executes **every catalog entry individually** (jest/vitest/npm/pytest/g
 - [ ] `ac-trace.py` exits 0 — every acceptance criterion traced to a test
 - [ ] If TRACKING-PLAN.md has entries for this feature: each event owned by this platform has a test asserting it fires with the expected properties
 - [ ] `regression-gate.sh` exits 0 (or 3 = no catalog yet); FLAKY entries recorded in "## Flaky Tests"
+- [ ] Each worktree is clean at the end of this phase: `git status --porcelain` is empty. Any change made during verify (new tests, AC tagging, fixes) MUST be committed on the feature branch — every gate result above must be reproducible from committed state, and untracked tool residue (coverage output, lockfiles from gate attempts) must be removed, or the release merge ships something other than what was verified.
 
 End with the closing report per `tgd-rules` → **Command Closing Report**: 📦 產出 (TEST-REPORT.md — real passed/failed + coverage) · 🔎 檢查 (gate as one line) · ➡️ 下一步 `/tgd-review` — 檢查程式碼品質. Don't paste the raw checklist above.

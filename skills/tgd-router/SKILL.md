@@ -21,8 +21,11 @@ Task arrives
     ├── Don't know what you want yet? ──────→ tgd-interview-me
     ├── Have a rough concept, need variants? → tgd-idea-refine
     ├── New project/feature/change? ──→ tgd-spec-driven-development
+    │   └── UI feature? Mock variants → tgd-sketch
     ├── Have a spec, need tasks? ──────→ tgd-planning-and-task-breakdown
+    │   └── Want Jira tickets from TASKS.md? → tgd-jira-auto-sync
     ├── Implementing code? ────────────→ tgd-incremental-implementation
+    │   ├── Multi-task plan / high-stakes path? → tgd-subagent-driven-development
     │   ├── UI work? ─────────────────→ tgd-frontend-ui-engineering
     │   ├── API work? ────────────────→ tgd-api-and-interface-design
     │   ├── Need better context? ─────→ tgd-context-engineering
@@ -31,12 +34,15 @@ Task arrives
     ├── Writing/running tests? ────────→ tgd-test-driven-development
     │   └── Browser-based? ───────────→ tgd-agent-browser
     ├── Something broke? ──────────────→ tgd-debugging-and-error-recovery
+    ├── About to claim "done"? ────────→ tgd-verification-before-completion
     ├── Reviewing code? ───────────────→ tgd-code-review-and-quality
+    │   ├── Works but overly complex? → tgd-code-simplification
     │   ├── Security concerns? ───────→ tgd-security-and-hardening
     │   └── Performance concerns? ────→ tgd-performance-optimization
     ├── Committing/branching? ─────────→ tgd-git-workflow-and-versioning
     ├── CI/CD pipeline work? ──────────→ tgd-ci-cd-and-automation
     ├── Writing docs/ADRs? ───────────→ tgd-documentation-and-adrs
+    ├── Removing/migrating old systems? → tgd-deprecation-and-migration
     └── Deploying/launching? ─────────→ tgd-shipping-and-launch
 ```
 
@@ -145,13 +151,15 @@ For a complete feature, the typical skill sequence is:
 4.  tgd-planning-and-task-breakdown → Break into verifiable chunks
 5.  tgd-context-engineering         → Load the right context
 6.  tgd-source-driven-development   → Verify against official docs
-7.  tgd-incremental-implementation  → Build slice by slice
+7.  tgd-subagent-driven-development OR tgd-incremental-implementation
+                                    → Fresh subagents per task, or build slice by slice
 8.  tgd-doubt-driven-development    → Cross-examine non-trivial decisions in-flight
 9.  tgd-test-driven-development     → Prove each slice works
-10. tgd-code-review-and-quality     → Review before merge
-11. tgd-git-workflow-and-versioning → Clean commit history
-12. tgd-documentation-and-adrs      → Document decisions
-13. tgd-shipping-and-launch         → Deploy safely
+10. tgd-verification-before-completion → Evidence before claiming any task done
+11. tgd-code-review-and-quality     → Review before merge
+12. tgd-git-workflow-and-versioning → Clean commit history
+13. tgd-documentation-and-adrs      → Document decisions
+14. tgd-shipping-and-launch         → Deploy safely
 ```
 
 Not every task needs every skill. A bug fix might only need: `tgd-debugging-and-error-recovery` → `tgd-test-driven-development` → `tgd-code-review-and-quality`.
@@ -163,8 +171,12 @@ Not every task needs every skill. A bug fix might only need: `tgd-debugging-and-
 | Define | tgd-interview-me | Surface what the user actually wants before any plan, spec, or code exists |
 | Define | tgd-idea-refine | Refine ideas through structured divergent and convergent thinking |
 | Define | tgd-spec-driven-development | Requirements and acceptance criteria before code |
+| Define | tgd-sketch | Throwaway HTML mockups — 2-3 design variants to compare |
 | Plan | tgd-planning-and-task-breakdown | Decompose into small, verifiable tasks |
+| Plan | tgd-jira-auto-sync | Auto-create Jira issues from TASKS.md (opt-in, after /tgd-plan) |
 | Build | tgd-incremental-implementation | Thin vertical slices, test each before expanding |
+| Build | tgd-subagent-driven-development | Fresh subagent per task with two-stage review |
+| Build | tgd-verification-before-completion | Evidence before completion claims, always |
 | Build | tgd-source-driven-development | Verify against official docs before implementing |
 | Build | tgd-doubt-driven-development | Adversarial fresh-context review of every non-trivial decision |
 | Build | tgd-context-engineering | Right context at the right time |
@@ -176,7 +188,9 @@ Not every task needs every skill. A bug fix might only need: `tgd-debugging-and-
 | Review | tgd-code-review-and-quality | Five-axis review with quality gates |
 | Review | tgd-security-and-hardening | OWASP prevention, input validation, least privilege |
 | Review | tgd-performance-optimization | Measure first, optimize only what matters |
+| Review | tgd-code-simplification | Simplify for clarity without changing behavior |
 | Release | tgd-git-workflow-and-versioning | Atomic commits, clean history |
 | Release | tgd-ci-cd-and-automation | Automated quality gates on every change |
 | Release | tgd-documentation-and-adrs | Document the why, not just the what |
+| Release | tgd-deprecation-and-migration | Sunset old systems and migrate users safely |
 | Release | tgd-shipping-and-launch | Pre-launch checklist, monitoring, rollback plan |

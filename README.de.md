@@ -668,7 +668,7 @@ Die obigen Commands sind Einstiegspunkte. Das Paket enthält insgesamt 29 Skills
 | Skill | Zweck |
 |-------|-------|
 | [tgd-context-engineering](skills/tgd-context-engineering/SKILL.md) | Richtige Infos an Agent liefern |
-| [tgd-wiki-generation](skills/tgd-wiki-generation/SKILL.md) | Doku-Site im DeepWiki-Stil für mehrere Repos |
+| [tgd-wiki-generation](skills/tgd-wiki-generation/SKILL.md) | Doku-Site im DeepWiki-Stil für mehrere Repos — eigenständiges Tool, direkt aufrufen; seit v2026.07.09 nicht Teil der `/tgd-map`-Pipeline |
 </details>
 
 <details>

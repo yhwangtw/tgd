@@ -203,6 +203,7 @@ tGD has three human roles. Each artifact has a `## Sign-off` section at the bott
 - Each role only modifies their own checkbox line in the `## Sign-off` section
 - Approve: `- [x] **PM**: Approved — YYYY-MM-DD — comment`
 - Reject: `- [x] **PM**: Rejected — YYYY-MM-DD — reason`
+- The `[x] **ROLE**: Approved` line format is RESERVED for `## Sign-off` sections. In-document approvals elsewhere (e.g. the PRD §6 metrics N/A sign-off) MUST use different wording (`Approved N/A — PM (name), date — reason`) — `/tgd-release`'s gate reads only the `## Sign-off` section, and reserving the format keeps any sign-off search unambiguous
 - Agent checks for `[x]` in required role lines before proceeding (Gate 3)
 - Release is the hard gate: all required Sign-offs must be `[x]`
 - One person can hold multiple roles (common in small teams)

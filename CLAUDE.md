@@ -15,12 +15,13 @@ docs/         → Setup guides for different tools
 
 ## Skills by Phase
 
-**Define:** interview-me, idea-refine, spec-driven-development
-**Plan:** planning-and-task-breakdown
-**Build:** incremental-implementation, test-driven-development, context-engineering, source-driven-development, doubt-driven-development, frontend-ui-engineering, api-and-interface-design
+**Define:** interview-me, idea-refine, spec-driven-development, sketch
+**Plan:** planning-and-task-breakdown, jira-auto-sync
+**Build:** incremental-implementation, subagent-driven-development, test-driven-development, context-engineering, source-driven-development, doubt-driven-development, frontend-ui-engineering, api-and-interface-design, verification-before-completion
 **Verify:** agent-browser, debugging-and-error-recovery
 **Review:** code-review-and-quality, code-simplification, security-and-hardening, performance-optimization
 **Release:** git-workflow-and-versioning, ci-cd-and-automation, deprecation-and-migration, documentation-and-adrs, shipping-and-launch
+**Meta (always-on):** router, rules
 
 ## Conventions
 
@@ -39,6 +40,7 @@ docs/         → Setup guides for different tools
 ## Boundaries
 
 - Always: Follow the skill-anatomy.md format for new skills
+- Always: When adding or removing a skill, update `skills/tgd-router/SKILL.md` (decision tree + Quick Reference), the pipeline table in `skills/tgd-rules/SKILL.md`, and the Skills by Phase list above — the router must know every routable skill
 - Always: Edit lifecycle commands in `.claude/commands/` only, then run `python3 scripts/generate-mirrors.py`
 - Never: Hand-edit the platform mirrors (`.codex/prompts/`, `.opencode/commands/`, `.gemini/commands/`, `.pi/prompts/`) — they are generated
 - Never: Add skills that are vague advice instead of actionable processes

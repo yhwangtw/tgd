@@ -74,6 +74,8 @@ This ensures each task is assigned to the correct repo and can be executed in th
    🔗 要同步到 Jira 嗎？
    1. 同步（我會逐項問缺少的連線設定）
    2. 略過
+
+   Choose one (default 2):
    ```
    - **If 1:** Ask for each missing value one at a time:
      - `JIRA_URL`（例：https://jira.company.com）

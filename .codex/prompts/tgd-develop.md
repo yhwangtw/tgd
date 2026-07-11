@@ -48,6 +48,7 @@ Route on risk first, then size:
 4. `tgd-test-driven-development` — Red-Green-Refactor, write tests alongside each task
    - Every test verifying a criterion MUST mention its `AC-<task>.<n>` id in the test name, docstring, or a comment (`ac-trace.py` cross-references them in `/tgd-verify`).
 5. **Backfill `Test:` fields + flip `Status:`** — after each task's tests pass, record the test file path in the corresponding criterion's `Test:` field in `$TGD_DIR/<feature-name>/TASKS.md` AND flip the task's `**Status:**` line to `complete` (set it to `in-progress` when starting a task). This is the state the resume rule and `/tgd-plan`'s re-plan protocol read — a finished task without `Status: complete` will be treated as unfinished on the next run. `Test:` backfill is MANDATORY for `[R]` criteria — they feed REGRESSION-CATALOG.md at release, and `/tgd-verify` fails closed on `[R]` criteria without a `Test:` file.
+   - **Also flip the review fields.** Each task's two-stage review (spec-compliance first, then code-quality — run both INLINE if you cannot dispatch subagents; per `tgd-rules`, inability to delegate moves *where* work runs, never *whether*) records its outcome in the task's `Spec-Review:` and `Quality-Review:` fields: `PASS — <one line>` or `FAIL — <one line>` (fix, re-review, then flip to PASS). A task is not complete while either field reads `pending` — `/tgd-verify` fails closed on it. This is what makes "the reviews actually ran" machine-checkable instead of a claim.
 6. `tgd-verification-before-completion` — evidence before claims, no exceptions
 
 **Conditional (apply when relevant):**
@@ -75,6 +76,8 @@ After completing the implementation, verify the outputs.
 - [ ] The feature branch has source changes: `git diff main...feature/<feature-name> --stat` is non-empty — in EACH repo that has tagged tasks, not just one (use the project's actual layout from CONTEXT.md — do NOT assume `src/` + `tests/`)
 - [ ] Tests written AND passing for new logic, each tagged with its `AC-<task>.<n>` id
 - [ ] Every completed task's criteria have their `Test:` fields filled in TASKS.md (all `[R]` criteria without exception), and its `**Status:**` line reads `complete` (blocked tasks read `blocked: <issue-ref>` — never left as `pending`)
+- [ ] Every completed task's `Spec-Review:` and `Quality-Review:` fields read `PASS — <one line>` (never `pending`) — a pending field means the two-stage review did not run for that task
+- [ ] Each worktree is clean: `git status --porcelain` is empty — everything the gates above certified is committed on the feature branch
 - [ ] Verification commands run and output confirmed (no "should work")
 
 End with the closing report per `tgd-rules` → **Command Closing Report**: 📦 產出 (實作的任務數 + 檔案摘要；worktree 保留、未 merge) · 🔎 檢查 (gate as one line) · ➡️ 下一步 `/tgd-verify` — 證明它能動. Don't paste the raw checklist above.
