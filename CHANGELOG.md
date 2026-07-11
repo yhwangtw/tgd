@@ -4,6 +4,19 @@ All notable changes to tGD will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/). Versions follow [CalVer](https://calver.org/) (YYYY.MM.DD).
 
+## v2026.07.11.3
+
+### ✨ Features
+- machine-checkable two-stage review, clean-worktree gates, Doc: carrier for doc-only ACs (`9f41255`)
+### 🐛 Bug Fixes
+- scope sign-off greps to the Sign-off section (`667ab45`)
+- node:test native coverage, TAP-exact counts, idempotent Sign-off skeleton (`ee7d6e6`)
+- route to all lifecycle skills — 6 were undiscoverable (`85c6686`)
+### 📝 Documentation
+- forward closing-report reminder in map, per-step Tier 2 conditions, understand probe, Jira default (`c24579a`)
+- mark tgd-wiki-generation as a standalone tool in all four languages (`f75c509`)
+
+
 ## v2026.07.11.2
 
 ### 🐛 Bug Fixes
