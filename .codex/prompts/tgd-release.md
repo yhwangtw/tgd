@@ -36,7 +36,7 @@ Run the `tgd-shipping-and-launch` skill. This is the Release phase. The full pip
    2. **Test file exists?** If the path is broken (file deleted, moved, or renamed): remove the entry. Log the removal in `$TGD_DIR/CHANGELOG.md` under a `## Catalog Cleanup` subsection.
    3. **Feature deprecated?** If the feature's code was removed or deprecated in this cycle (`tgd-deprecation-and-migration` ran): remove its entries from the catalog.
    4. **Every entry still passes?** Run the machine gate — do NOT eyeball it (resolve `$TGD_REPO_ROOT` per `tgd-rules` → **Resolving $TGD_REPO_ROOT**):
-      `bash "$TGD_REPO_ROOT/scripts/regression-gate.sh" ../project-<feature-name> "$TGD_DIR"` (multi-repo: once per worktree, `../project-<feature-name>-<repo-name>` as the first arg)
+      `bash "$TGD_REPO_ROOT/scripts/regression-gate.sh" ../project-<feature-name> "$TGD_DIR"` (multi-repo: once per worktree — `../project-<feature-name>-<repo-name>` as the first arg AND the repo name as the third, so entries tagged `Repo:` for other repos are skipped there instead of failing as missing)
       Exit 0 = pass. Exit 1 = 🛑 STOP — a shipped behavior regressed; fix before merging. Exit 2 = configuration error — fix the invocation, never treat as pass. Exit 3 = no catalog yet — skip this audit.
    5. After the audit, the catalog contains ONLY entries whose test files exist and pass. This prevents the catalog from becoming a zombie file full of dead references.
 3. **🌳 Merge & worktree cleanup** — this is where the feature branch lands on `main` (NOT in `/tgd-develop`). Multi-repo features repeat all three steps in EACH repo that has a worktree:
@@ -92,6 +92,7 @@ After releasing, scan `$TGD_DIR/<feature-name>/TASKS.md` for Acceptance Criteria
    ### [<feature-name>] Short description
    - **Criterion:** Given X, When Y, Then Z
    - **Test:** `tests/path/to/test.ts`
+   - **Repo:** <repo-name>   (multi-repo features ONLY — from the task's `[repo-name]` tag; omit for single-repo. `regression-gate.sh` uses it to run each entry against the right worktree.)
    - **Shipped:** vYYYY.MM.DD
    ```
 This catalog is cumulative — every shipped feature's `[R]` tests are preserved for future regression checks. Future features will re-run ALL catalog entries during `/tgd-verify` (and again in this command's pre-merge audit).

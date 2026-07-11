@@ -5,7 +5,7 @@
 # explicitly and individually. Fails closed if any catalog entry is missing
 # its test file, cannot be executed, or fails.
 #
-# Usage: bash scripts/regression-gate.sh [client-repo] [artifacts-dir]
+# Usage: bash scripts/regression-gate.sh [client-repo] [artifacts-dir] [repo-name]
 #   client-repo:   optional. Defaults to current working directory.
 #                  The project that *uses* tGD (e.g. my-app/).
 #   artifacts-dir: optional. Where tGD artifacts live (CONTEXT.md, feature
@@ -13,6 +13,16 @@
 #                    1. second argument
 #                    2. $TGD_DIR environment variable
 #                    3. ../<client-repo-name>-tGD (if it exists)
+#   repo-name:     optional, multi-repo projects only. Catalog entries carry
+#                  a "- **Repo:** <name>" field (written by /tgd-release from
+#                  the task's [repo-name] tag); entries whose Repo does NOT
+#                  match this argument are SKIPPED (listed loudly) — they run
+#                  when the gate is invoked against THEIR worktree. Entries
+#                  without a Repo field always run (single-repo catalogs).
+#                  Without this argument every entry runs (single-repo mode);
+#                  a multi-repo catalog run without it will fail on the other
+#                  repos' entries as "missing" — that failure is your cue to
+#                  pass the repo name, not to delete the entries.
 #
 #   NOTE: the artifacts dir is NOT the cloned tGD repo. A previous version
 #   of this script looked for the catalog inside the tGD repo itself, where
@@ -45,6 +55,7 @@ TGD_REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 
 CLIENT_REPO="${1:-$(pwd)}"
 ARTIFACTS_DIR="${2:-${TGD_DIR:-}}"
+REPO_FILTER="${3:-}"
 
 if [ ! -d "$CLIENT_REPO" ]; then
     echo "❌ Client repo not found: $CLIENT_REPO"
@@ -131,7 +142,9 @@ for b in blocks:
     # Tolerate both markdown stylings: "**Test:** `x`" and "**Test**: `x`"
     m = re.search(r"Test\*{0,2}:\*{0,2}\s*`?([^`\n]+)`?", b)
     test = m.group(1).strip() if m else ""
-    print(f"{title}\t{test}")
+    rm = re.search(r"Repo\*{0,2}:\*{0,2}\s*`?([^`\n]+)`?", b)
+    repo = rm.group(1).strip() if rm else ""
+    print(f"{title}\t{test}\t{repo}")
 PYEOF
 )
 
@@ -141,17 +154,23 @@ if [ -z "$ENTRY_TSV" ]; then
     exit 0
 fi
 
-TOTAL=0; PASSED=0; FAILED=0; STALE=0; FLAKY=0
-FAILED_LIST=""; STALE_LIST=""; FLAKY_LIST=""
+TOTAL=0; PASSED=0; FAILED=0; STALE=0; FLAKY=0; SKIPPED=0
+FAILED_LIST=""; STALE_LIST=""; FLAKY_LIST=""; SKIPPED_LIST=""
 
 echo "🔍 Regression gate (per-entry execution)"
 echo "   Client repo:   $CLIENT_REPO"
 echo "   Artifacts dir: $ARTIFACTS_DIR"
 echo "   Runner:        $RUNNER"
+[ -n "$REPO_FILTER" ] && echo "   Repo filter:   $REPO_FILTER (entries tagged for other repos are skipped here)"
 echo ""
 
-while IFS=$'\t' read -r title testref; do
+while IFS=$'\t' read -r title testref entryrepo; do
     TOTAL=$((TOTAL + 1))
+    if [ -n "$REPO_FILTER" ] && [ -n "$entryrepo" ] && [ "$entryrepo" != "$REPO_FILTER" ]; then
+        echo "⏭️  [$title] — Repo: $entryrepo, runs in that repo's worktree, not here"
+        SKIPPED=$((SKIPPED + 1)); SKIPPED_LIST="$SKIPPED_LIST\n   - $title (Repo: $entryrepo)"
+        continue
+    fi
     if [ -z "$testref" ]; then
         echo "❌ [$title] — no 'Test:' reference in catalog entry"
         STALE=$((STALE + 1)); STALE_LIST="$STALE_LIST\n   - $title (no Test: reference)"
@@ -190,7 +209,13 @@ while IFS=$'\t' read -r title testref; do
 done <<< "$ENTRY_TSV"
 
 echo ""
-echo "📊 Catalog entries: $TOTAL total, $PASSED passed, $FAILED failed, $STALE stale, $FLAKY flaky"
+echo "📊 Catalog entries: $TOTAL total, $PASSED passed, $FAILED failed, $STALE stale, $FLAKY flaky, $SKIPPED skipped (other repos)"
+
+if [ $SKIPPED -ne 0 ]; then
+    echo ""
+    echo "⏭️  Skipped entries (MUST be gated by running this script against their own worktrees):"
+    echo -e "$SKIPPED_LIST"
+fi
 
 if [ $FLAKY -ne 0 ]; then
     echo ""
@@ -207,5 +232,10 @@ if [ $FAILED -ne 0 ] || [ $STALE -ne 0 ]; then
 fi
 
 echo ""
-echo "✅ REGRESSION GATE PASSED: $TOTAL entries executed individually, all green"
+EXECUTED=$((TOTAL - SKIPPED))
+if [ $SKIPPED -ne 0 ]; then
+    echo "✅ REGRESSION GATE PASSED: $EXECUTED of $TOTAL entries executed individually here, all green ($SKIPPED deferred to other repos' worktrees)"
+else
+    echo "✅ REGRESSION GATE PASSED: $TOTAL entries executed individually, all green"
+fi
 exit 0

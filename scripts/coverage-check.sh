@@ -82,10 +82,11 @@ elif [ -f "Cargo.toml" ]; then
     elif command -v cargo-tarpaulin &> /dev/null; then
         COV_CMD="cargo tarpaulin --skip-clean --out Stdout"
     else
-        echo "⚠️  Cargo project but cargo-tarpaulin not installed"
+        echo "❌ Cargo project but cargo-tarpaulin not installed"
         echo "   Install: cargo install cargo-tarpaulin"
-        echo "   Skipping coverage check (manual review required)"
-        exit 0
+        # exit 2 like the npm/python branches — a missing tool is a
+        # configuration problem to fix, never a silent pass
+        exit 2
     fi
 else
     echo "❌ No package manager or test runner detected"

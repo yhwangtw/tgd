@@ -6,15 +6,24 @@
 # so a follow-up "check-test-report.sh" can verify the agent didn't lie
 # about results in the summary.
 #
-# Usage: bash scripts/capture-test-output.sh <test-report-path> [test-cmd]
+# Usage: bash scripts/capture-test-output.sh <test-report-path> [test-cmd] [label]
 #   test-report-path: absolute path to the TEST-REPORT.md to update
-#   test-cmd: optional override. Default: auto-detect (npm/pytest/go/cargo)
+#   test-cmd: optional override. Default: auto-detect (npm/pytest/go/cargo).
+#             Pass "" to auto-detect when you only need the label argument.
+#   label:    optional section label — multi-repo features run this script
+#             once per worktree with the repo name as label, giving each repo
+#             its own "## Raw Test Output (<label>)" section. Runs with the
+#             SAME label replace each other; different labels coexist.
+#             Without a label the single unlabeled section is replaced
+#             (single-repo behavior, unchanged).
 #
 # What it writes into TEST-REPORT.md:
-#   - A new "## Raw Test Output" section (overwriting any prior one)
+#   - A new "## Raw Test Output" / "## Raw Test Output (<label>)" section
+#     (overwriting any prior section with the same label)
 #   - Parsed counts: TOTAL_TESTS, PASSED, FAILED, SKIPPED
 #   - A "<!-- test-output-meta: {...} -->" HTML comment with the same
-#     numbers, so a check script can grep them without re-parsing.
+#     numbers (and the label), so a check script can grep them without
+#     re-parsing.
 #
 # Exit codes:
 #   0 = test suite passed AND output was captured
@@ -23,8 +32,9 @@
 
 set -e
 
-REPORT_PATH="${1:?Usage: bash $0 <test-report-path> [test-cmd]}"
+REPORT_PATH="${1:?Usage: bash $0 <test-report-path> [test-cmd] [label]}"
 TEST_CMD="${2:-}"
+LABEL="${3:-}"
 
 if [ ! -f "$REPORT_PATH" ]; then
     # Create the skeleton so /tgd-verify's "creates the report if needed"
@@ -73,7 +83,10 @@ fi
 # Resolve test runner
 if [ -z "$TEST_CMD" ]; then
     if [ -f "package.json" ] && grep -q '"test"' package.json; then
-        TEST_CMD=$(node -e "try { console.log(require('./package.json').scripts.test || '') } catch(e) {}" 2>/dev/null || echo "")
+        # Run via npm, NOT the extracted script body: npm puts node_modules/.bin
+        # on PATH — a script like "jest" executed directly is command-not-found
+        # (exit 127) and gets misreported as a test failure.
+        TEST_CMD="npm test"
     elif [ -f "pyproject.toml" ] || [ -f "pytest.ini" ] || [ -f "setup.py" ]; then
         if command -v pytest &> /dev/null; then
             TEST_CMD="pytest -v --tb=short"
@@ -128,16 +141,31 @@ if [ -n "$PYTEST_SUMMARY" ]; then
     FAILED=${FAILED:-0}
 fi
 
-# Strip any prior raw-output block
-python3 - "$REPORT_PATH" <<'PYEOF'
-import sys, re, pathlib
+# Strip the prior raw-output block WITH THE SAME LABEL (only). Sections with
+# other labels are evidence from other repos' runs — they must survive.
+python3 - "$REPORT_PATH" "$LABEL" <<'PYEOF'
+import sys, pathlib
 p = pathlib.Path(sys.argv[1])
-text = p.read_text()
-# Remove prior "## Raw Test Output" block (if any)
-text = re.sub(r"\n## Raw Test Output.*?(?=\n## |\Z)", "\n", text, flags=re.DOTALL)
-# Remove prior meta comment
-text = re.sub(r"\n<!-- test-output-meta:.*?-->\n", "\n", text)
-p.write_text(text)
+label = sys.argv[2]
+heading = "## Raw Test Output" + (f" ({label})" if label else "")
+out, skipping = [], False
+for line in p.read_text().splitlines(keepends=True):
+    stripped = line.rstrip("\n")
+    if skipping:
+        # A section ends at the next level-2 heading (any, including another
+        # raw-output section) — the meta comment and fence live inside it.
+        if stripped.startswith("## "):
+            skipping = False
+        else:
+            continue
+    if stripped == heading:
+        skipping = True
+        # Drop the blank line that precedes the section we append
+        while out and out[-1].strip() == "":
+            out.pop()
+        continue
+    out.append(line)
+p.write_text("".join(out))
 PYEOF
 
 # Append the new raw output + meta comment
@@ -145,13 +173,17 @@ TMP=$(mktemp)
 {
     cat "$REPORT_PATH"
     echo ""
-    echo "## Raw Test Output"
+    if [ -n "$LABEL" ]; then
+        echo "## Raw Test Output ($LABEL)"
+    else
+        echo "## Raw Test Output"
+    fi
     echo ""
     echo "**Captured**: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
     echo "**Command**: \`$TEST_CMD\`"
     echo "**Exit code**: $TEST_EXIT"
     echo ""
-    echo "<!-- test-output-meta: {\"exit\": $TEST_EXIT, \"passed\": $PASSED, \"failed\": $FAILED, \"skipped\": $SKIPPED} -->"
+    echo "<!-- test-output-meta: {\"label\": \"$LABEL\", \"exit\": $TEST_EXIT, \"passed\": $PASSED, \"failed\": $FAILED, \"skipped\": $SKIPPED} -->"
     echo ""
     echo '```'
     cat "$RAW"

@@ -42,11 +42,14 @@ The gate scripts live in the **tGD repo itself** (`$TGD_REPO_ROOT/scripts/`), NO
 ```bash
 # Run from the WORKTREE (../project-<feature-name>/ — that's where the feature
 # branch's code and tests live; fall back to the repo root only if no worktree
-# exists). Multi-repo: run once per worktree (../project-<feature-name>-<repo-name>)
-# — each run appends its own raw-output section to the same report.
-# Creates the report file if needed, runs the suite, appends a
+# exists). Creates the report file if needed, runs the suite, appends a
 # "## Raw Test Output" section + meta-comment with real pass/fail counts.
 bash "$TGD_REPO_ROOT/scripts/capture-test-output.sh" "$TGD_DIR/<feature-name>/TEST-REPORT.md"
+# Multi-repo: run once per worktree, passing the repo name as the LABEL (3rd
+# arg; "" = auto-detect the test command). Each repo gets its own
+# "## Raw Test Output (<repo-name>)" section — without the label, the second
+# repo's run REPLACES the first repo's evidence.
+bash "$TGD_REPO_ROOT/scripts/capture-test-output.sh" "$TGD_DIR/<feature-name>/TEST-REPORT.md" "" "<repo-name>"
 ```
 
 - **Exit 0** = tests passed, raw output captured. Use the real numbers from the meta-comment in the Summary table below — do NOT invent counts.
@@ -60,7 +63,7 @@ For the Coverage table, run the coverage gate first:
 bash "$TGD_REPO_ROOT/scripts/coverage-check.sh"
 ```
 
-Exit 0 = all floors met, use the printed numbers. Exit 1 = gate failed, do not proceed. Floors default to 80/60/90 (lines/branches/functions); overrides via `COVERAGE_*_FLOOR` env vars MUST be documented in a "## Coverage Exceptions" section with a ramp-up plan.
+Exit 0 = all floors met, use the printed numbers. Exit 1 = gate failed, do not proceed. Exit 2 = no coverage tool installed or output unparseable — a configuration problem: install the tool it names (e.g. `npm i -D @vitest/coverage-v8`, `pip install pytest-cov`, `cargo install cargo-tarpaulin`), then re-run. NEVER treat exit 2 as a pass. Floors default to 80/60/90 (lines/branches/functions); overrides via `COVERAGE_*_FLOOR` env vars MUST be documented in a "## Coverage Exceptions" section with a ramp-up plan.
 
 **🎯 AC Traceability Gate (MANDATORY)**
 
@@ -84,8 +87,10 @@ Run the machine gate — do NOT manually walk the catalog:
 # args: <client-repo> <artifacts-dir>. Pass the WORKTREE as the client repo —
 # the catalog's tests must run against the feature branch. The catalog lives in
 # the ARTIFACTS dir (../<project>-tGD/REGRESSION-CATALOG.md), not in the tGD repo.
-# Multi-repo: run once per worktree that has catalog entries touching it
-# (../project-<feature-name>-<repo-name> as the first arg).
+# Multi-repo: run once per worktree, passing the repo name as the 3rd arg —
+# entries carry a "Repo:" field and the gate skips (loudly) the ones that
+# belong to other repos:
+#   bash .../regression-gate.sh ../project-<feature>-<repo-name> "$TGD_DIR" <repo-name>
 bash "$TGD_REPO_ROOT/scripts/regression-gate.sh" ../project-<feature-name> "$TGD_DIR"
 ```
 
