@@ -15,7 +15,9 @@
 #   2 = no coverage tool detected
 #
 # Tooling detection:
-#   - npm:   nyc / jest --coverage / vitest --coverage (looks for nyc/jest/vitest binary)
+#   - npm:   nyc / jest --coverage / vitest --coverage (looks for nyc/jest/vitest
+#            binary); falls back to Node >= 20 native test-runner coverage
+#            (node --experimental-test-coverage --test) when none is installed
 #   - py:    coverage.py (pip install coverage)
 #   - go:    go test -cover
 #   - cargo: cargo tarpaulin (if installed; otherwise warns and skips)
@@ -23,6 +25,7 @@
 # Parsing:
 #   - jest/vitest: "All files | 85.7 | 72.3 | 90.5 | ..."  (Lines/Branch/Funcs)
 #   - nyc:         "=====" summary table
+#   - node:test:   "# all files | 100.00 | 100.00 | 100.00 |" (line/branch/funcs)
 #   - coverage.py: "TOTAL    1234    567    54%"
 #   - go:          "coverage: 78.5% of statements"
 
@@ -55,9 +58,14 @@ if [ -f "package.json" ]; then
         # nyc wraps whatever test script
         BASE=$(node -e "try { console.log(require('./package.json').scripts.test || 'echo') } catch(e) { console.log('echo') }" 2>/dev/null)
         COV_CMD="npx nyc --reporter=text-summary $BASE"
+    elif node -e 'process.exit(parseInt(process.versions.node) >= 20 ? 0 : 1)' 2>/dev/null; then
+        # No coverage package installed, but Node >= 20 ships a native
+        # test-runner coverage reporter — zero extra dependencies. Projects
+        # using node:test (`"test": "node --test"`) land here.
+        COV_CMD="node --experimental-test-coverage --test"
     else
         echo "❌ npm project but no coverage tool found"
-        echo "   Install one: npm i -D @vitest/coverage-v8 || npm i -D nyc"
+        echo "   Install one: npm i -D @vitest/coverage-v8 || npm i -D nyc (or use Node >= 20 native coverage)"
         exit 2
     fi
 elif [ -f "pyproject.toml" ] || [ -f "pytest.ini" ] || [ -f "setup.py" ]; then
@@ -141,6 +149,15 @@ if [ "$RUNNER" = "npm" ]; then
         LINES=$(num_or_na "$(echo "$SUMMARY"    | awk -F'|' '{gsub(/ /,"",$5); print $5}')")
         # nyc text-summary variants can have fewer columns — fall back to Stmts
         [ "$LINES" = "N/A" ] && LINES=$(num_or_na "$STMTS")
+    else
+        # node:test native coverage — TAP comment table, column order:
+        # "# all files | <line %> | <branch %> | <funcs %> |"
+        SUMMARY=$(grep -E "^# all files" "$RAW" | tail -1 || echo "")
+        if [ -n "$SUMMARY" ]; then
+            LINES=$(num_or_na "$(echo "$SUMMARY"    | awk -F'|' '{gsub(/ /,"",$2); print $2}')")
+            BRANCHES=$(num_or_na "$(echo "$SUMMARY" | awk -F'|' '{gsub(/ /,"",$3); print $3}')")
+            FUNCS=$(num_or_na "$(echo "$SUMMARY"    | awk -F'|' '{gsub(/ /,"",$4); print $4}')")
+        fi
     fi
 elif [ "$RUNNER" = "pytest" ]; then
     # coverage.py: "TOTAL    1234    567    54%" — last field is line coverage.
