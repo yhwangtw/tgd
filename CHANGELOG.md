@@ -4,6 +4,12 @@ All notable changes to tGD will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/). Versions follow [CalVer](https://calver.org/) (YYYY.MM.DD).
 
+## v2026.07.11.1
+
+### 🐛 Bug Fixes
+- resolution column, re-test after review changes, stale severity term (#43) (`e8cfef9`)
+
+
 ## v2026.07.11
 
 ### 🐛 Bug Fixes
