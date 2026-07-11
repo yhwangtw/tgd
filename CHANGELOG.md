@@ -4,6 +4,12 @@ All notable changes to tGD will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/). Versions follow [CalVer](https://calver.org/) (YYYY.MM.DD).
 
+## v2026.07.11.2
+
+### 🐛 Bug Fixes
+- prd sign-off section, grep-checked gate, cleanup after merge lands (#44) (`fefcc40`)
+
+
 ## v2026.07.11.1
 
 ### 🐛 Bug Fixes
