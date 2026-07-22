@@ -360,7 +360,7 @@ footer { padding: 56px 0 40px; }
 
     <div class="stage-grid">
       <div class="stage"><div class="n">01</div><div class="nm">Map</div><div class="cmd">/tgd-map</div><div class="out">CONTEXT.md</div></div>
-      <div class="stage"><div class="n">02</div><div class="nm">Define</div><div class="cmd">/tgd-define</div><div class="out">PRD · SPEC · DESIGN</div></div>
+      <div class="stage"><div class="n">02</div><div class="nm">Define</div><div class="cmd">/tgd-define</div><div class="out">PRD → DESIGN (UI) → SPEC</div></div>
       <div class="stage"><div class="n">03</div><div class="nm">Plan</div><div class="cmd">/tgd-plan</div><div class="out">TASKS.md</div></div>
       <div class="stage"><div class="n">04</div><div class="nm">Develop</div><div class="cmd">/tgd-develop</div><div class="out">src/ + tests/</div></div>
       <div class="stage"><div class="n">05</div><div class="nm">Verify</div><div class="cmd">/tgd-verify</div><div class="out">TEST-REPORT.md</div></div>
@@ -379,23 +379,23 @@ footer { padding: 56px 0 40px; }
         </tr></thead>
         <tbody>
           <tr><td class="stg">01 Map</td><td><code>src/</code> + codebase</td><td><code>CONTEXT.md</code></td>
-            <td data-i18n="io.1a">Scans codebase, builds understanding</td>
+            <td data-i18n="io.1a">Scans codebase, maps real UI sources</td>
             <td><span class="role">DEV</span> — <span data-i18n="io.1h">reviews CONTEXT.md</span></td></tr>
-          <tr><td class="stg">02 Define</td><td><code>CONTEXT.md</code> + <span data-i18n="io.intent">intent</span></td><td><code>PRD</code> <code>SPEC</code> <code>DESIGN</code></td>
-            <td data-i18n="io.2a">Interviews user, drafts specs</td>
-            <td><span class="role">PM</span> — <span data-i18n="io.2h">signs off PRD + SPEC</span></td></tr>
-          <tr><td class="stg">03 Plan</td><td><code>CONTEXT</code> · <code>PRD</code> · <code>SPEC</code></td><td><code>TASKS.md</code> + BDD AC</td>
-            <td data-i18n="io.3a">Triple-source task decomposition</td>
+          <tr><td class="stg">02 Define</td><td><code>CONTEXT.md</code> + <span data-i18n="io.intent">intent</span></td><td><code>PRD</code> → <code>DESIGN (UI)</code> → <code>SPEC</code></td>
+            <td data-i18n="io.2a">Writes PRD, routes 0/2/3 UI design, finalizes SPEC</td>
+            <td><span class="role">PM + DESIGN (UI)</span> — <span data-i18n="io.2h">own product and UI direction</span></td></tr>
+          <tr><td class="stg">03 Plan</td><td><code>CONTEXT</code> · <code>PRD</code> · <code>DESIGN (UI)</code> · <code>SPEC</code></td><td><code>TASKS.md</code> + BDD AC</td>
+            <td data-i18n="io.3a">Context-grounded task decomposition</td>
             <td><span class="role">DEV</span> — <span data-i18n="io.3h">signs off TASKS.md</span></td></tr>
           <tr><td class="stg">04 Develop</td><td><code>TASKS</code> · <code>SPEC</code> + <code>src/</code></td><td><code>src/</code> + <code>tests/</code></td>
             <td data-i18n="io.4a">TDD in a worktree sandbox</td>
             <td><span class="role">DEV</span> — <span data-i18n="io.4h">reviews code, signs off</span></td></tr>
           <tr><td class="stg">05 Verify</td><td><code>src/</code> · <code>tests/</code> + <code>CATALOG</code></td><td><code>TEST-REPORT.md</code></td>
-            <td data-i18n="io.5a">All tests + E2E + regression</td>
+            <td data-i18n="io.5a">Tests + E2E + regression + design QA</td>
             <td><span class="role">QA</span> — <span data-i18n="io.5h">signs off or blocks</span></td></tr>
           <tr><td class="stg">06 Review</td><td><code>src/</code> · <code>TEST-REPORT</code></td><td><code>REVIEW.md</code></td>
-            <td data-i18n="io.6a">5-axis code quality review</td>
-            <td><span class="role">QA + DEV</span> — <span data-i18n="io.6h">sign off REVIEW.md</span></td></tr>
+            <td data-i18n="io.6a">5-axis code review + UI conformance</td>
+            <td><span class="role">QA + DEV + DESIGN (UI)</span> — <span data-i18n="io.6h">sign off REVIEW.md</span></td></tr>
           <tr><td class="stg">07 Release</td><td data-i18n="io.7i">All signed-off artifacts</td><td><code>CHANGELOG</code> · <code>METRICS</code> + deploy</td>
             <td>Commit → CI → deploy</td>
             <td><span class="role">PM</span> — <span data-i18n="io.7h">final sign-off gate</span></td></tr>
@@ -522,7 +522,7 @@ bash setup.sh</div>
         <div class="num">2</div>
         <div>
           <h3 data-i18n="qs.2t">Map your codebase</h3>
-          <p data-i18n="qs.2d">The agent scans your project and writes CONTEXT.md — context before changes.</p>
+          <p data-i18n="qs.2d">The agent scans your project and writes CONTEXT.md, including a UI Landscape when frontend code exists.</p>
           <div class="codeblock"><span class="p">/tgd-map</span></div>
         </div>
       </div>
@@ -530,7 +530,7 @@ bash setup.sh</div>
         <div class="num">3</div>
         <div>
           <h3 data-i18n="qs.3t">Define your first feature</h3>
-          <p data-i18n="qs.3d">The agent interviews you and drafts the PRD + SPEC. The pipeline takes it from there.</p>
+          <p data-i18n="qs.3d">The agent completes PRD → 0/2/3 UI design → SPEC inside the same Define stage.</p>
           <div class="codeblock"><span class="p">/tgd-define</span> I want to add user authentication</div>
         </div>
       </div>
@@ -616,12 +616,12 @@ const I18N = {
     "why.good.t":"有了 tGD","why.good.1":"「34/34 通過」——附上輸出證明","why.good.2":"先讀程式碼庫，交出 50 行能通過的程式","why.good.3":"規格 → 規劃 → 程式 → 驗證——沒有階段可以跳過",
     "pipe.kicker":"運作方式","pipe.title":"七個階段，每一關都有守門。","pipe.sub":"每個階段把簽核過的 artifact 交給下一階段。Verify 不過，pipeline 就停下、工作退回 Develop——壞掉的東西到不了 Release。",
     "io.stage":"階段","io.input":"輸入","io.output":"產出","io.agent":"Agent 負責","io.human":"人類簽核","io.intent":"意圖",
-    "io.1a":"掃描程式碼庫、建立理解","io.1h":"審閱 CONTEXT.md",
-    "io.2a":"訪談使用者、起草規格","io.2h":"簽核 PRD + SPEC",
-    "io.3a":"三源任務拆解","io.3h":"簽核 TASKS.md",
+    "io.1a":"掃描程式碼庫、建立理解與 UI 來源導航","io.1h":"審閱 CONTEXT.md",
+    "io.2a":"撰寫 PRD、路由 0/2/3 UI 設計、完成 SPEC","io.2h":"分別負責產品與 UI 方向",
+    "io.3a":"依真實 context 拆解任務","io.3h":"簽核 TASKS.md",
     "io.4a":"在 worktree 沙盒中 TDD","io.4h":"審閱程式碼並簽核",
-    "io.5a":"全部測試 + E2E + 回歸","io.5h":"簽核或擋下",
-    "io.6a":"5 軸程式碼品質審查","io.6h":"簽核 REVIEW.md",
+    "io.5a":"測試 + E2E + 回歸 + 設計 QA","io.5h":"簽核或擋下",
+    "io.6a":"5 軸程式碼審查 + UI 一致性","io.6h":"簽核 REVIEW.md",
     "io.7i":"所有已簽核的 artifacts","io.7h":"最終簽核關卡",
     "res.kicker":"為什麼值得","res.title":"採用之後會改變什麼","res.sub":"PDLC 效率增益示意——非實測數據。",
     "res.chart.t":"每人每個 sprint 釋出的功能數","res.leg.pre":"導入前","res.leg.post":"導入 tGD","res.leg.proj":"預估",
@@ -632,8 +632,8 @@ const I18N = {
     "res.k3":"規格到部署更快——數週縮短為數天，全程留有稽核軌跡（PRD → TASKS → CHANGELOG）。","res.k3t":"速度",
     "qs.kicker":"快速開始","qs.title":"三十秒裝好，一個指令開跑。",
     "qs.1t":"Clone 並安裝","qs.1d":"自動偵測你已安裝的 CLI，連結所有 skills 和指令。",
-    "qs.2t":"掃描你的程式碼庫","qs.2d":"Agent 掃描專案並寫出 CONTEXT.md——先有 context 再動手。",
-    "qs.3t":"定義第一個功能","qs.3d":"Agent 訪談你並起草 PRD + SPEC，之後交給 pipeline。",
+    "qs.2t":"掃描你的程式碼庫","qs.2d":"Agent 掃描專案並寫出 CONTEXT.md；有前端時包含 UI Landscape。",
+    "qs.3t":"定義第一個功能","qs.3d":"Agent 在同一個 Define 階段完成 PRD → 0/2/3 UI 設計 → SPEC。",
     "faq.title":"常見問題",
     "faq.0q":"tGD 支援哪些工具？","faq.0a":"Claude Code、Codex CLI、Gemini CLI、OpenCode、Pi、Hermes。執行一次 bash setup.sh 會自動偵測你裝了什麼，並為每個工具連結對應的格式。",
     "faq.5q":"tGD 會把我的程式碼傳到哪裡嗎？","faq.5a":"不會。tGD 只是純 Markdown skills 和 shell 腳本，在你自己的 agent 裡執行——沒有伺服器、沒有遙測、不用帳號。程式碼不會離開你原本使用的工具。",
@@ -656,12 +656,12 @@ const I18N = {
     "why.good.t":"tGDあり","why.good.1":"「34/34 パス」— 出力を添えて証明","why.good.2":"まずコードベースを読み、通る50行を出す","why.good.3":"仕様 → 計画 → コード → 検証 — どの段階も飛ばせない",
     "pipe.kicker":"仕組み","pipe.title":"7つのステージ。すべてにゲート。","pipe.sub":"各ステージはサインオフ済みのアーティファクトを次へ渡します。Verifyが失敗するとパイプラインは停止し、作業はDevelopへ戻ります — 壊れたものはReleaseに到達しません。",
     "io.stage":"ステージ","io.input":"入力","io.output":"出力","io.agent":"エージェント","io.human":"人間のサインオフ","io.intent":"意図",
-    "io.1a":"コードベースをスキャンし理解を構築","io.1h":"CONTEXT.mdをレビュー",
-    "io.2a":"ユーザーにインタビューし仕様を起草","io.2h":"PRD + SPECをサインオフ",
-    "io.3a":"三源タスク分解","io.3h":"TASKS.mdをサインオフ",
+    "io.1a":"コードベースをスキャンしUIソースへのナビゲーションを構築","io.1h":"CONTEXT.mdをレビュー",
+    "io.2a":"PRD作成、0/2/3 UIデザインのルーティング、SPEC確定","io.2h":"製品とUI方向をそれぞれ担当",
+    "io.3a":"実際のコンテキストに基づくタスク分解","io.3h":"TASKS.mdをサインオフ",
     "io.4a":"WorktreeサンドボックスでTDD","io.4h":"コードをレビューしサインオフ",
-    "io.5a":"全テスト + E2E + リグレッション","io.5h":"サインオフまたはブロック",
-    "io.6a":"5軸コード品質レビュー","io.6h":"REVIEW.mdをサインオフ",
+    "io.5a":"テスト + E2E + リグレッション + デザインQA","io.5h":"サインオフまたはブロック",
+    "io.6a":"5軸コードレビュー + UI適合性","io.6h":"REVIEW.mdをサインオフ",
     "io.7i":"全サインオフ済みアーティファクト","io.7h":"最終サインオフゲート",
     "res.kicker":"導入する価値","res.title":"採用すると何が変わるか","res.sub":"PDLC効率向上のイメージ — 実測値ではありません。",
     "res.chart.t":"1人あたり・スプリントあたりのリリース機能数","res.leg.pre":"導入前","res.leg.post":"tGD導入後","res.leg.proj":"予測",
@@ -672,8 +672,8 @@ const I18N = {
     "res.k3":"仕様からデプロイまでを短縮 — 数週間が数日に、完全な監査証跡つき（PRD → TASKS → CHANGELOG）。","res.k3t":"ベロシティ",
     "qs.kicker":"クイックスタート","qs.title":"インストール30秒。コマンド1つで開始。",
     "qs.1t":"Clone & セットアップ","qs.1d":"インストール済みCLIを自動検出し、全スキルとコマンドをリンクします。",
-    "qs.2t":"コードベースをマップ","qs.2d":"エージェントがプロジェクトをスキャンしCONTEXT.mdを作成 — 変更の前にコンテキスト。",
-    "qs.3t":"最初の機能を定義","qs.3d":"エージェントがインタビューしPRD + SPECを起草。あとはパイプラインが引き継ぎます。",
+    "qs.2t":"コードベースをマップ","qs.2d":"エージェントがプロジェクトをスキャンし、フロントエンドがあればUI Landscapeを含むCONTEXT.mdを作成。",
+    "qs.3t":"最初の機能を定義","qs.3d":"同じDefineステージ内でPRD → 0/2/3 UIデザイン → SPECを完了します。",
     "faq.title":"よくある質問",
     "faq.0q":"tGDはどのエージェントに対応？","faq.0a":"Claude Code、Codex CLI、Gemini CLI、OpenCode、Pi Coding Agent、Hermes。bash setup.shを1回実行すれば、インストール済みのツールを検出し、それぞれに適した形式でリンクします。",
     "faq.5q":"tGDは私のコードをどこかへ送信する？","faq.5a":"いいえ。tGDはプレーンなMarkdownスキルとシェルスクリプトで、あなた自身のエージェント内で動作します — サーバーなし、テレメトリなし、アカウント不要。コードが今使っているツールの外に出ることはありません。",
@@ -696,12 +696,12 @@ const I18N = {
     "why.good.t":"Mit tGD","why.good.1":"„34/34 bestanden“ — mit der Ausgabe als Beweis","why.good.2":"Liest zuerst die Codebasis, liefert 50 Zeilen, die bestehen","why.good.3":"Spec → Plan → Code → Verify — keine Stufe wird übersprungen",
     "pipe.kicker":"So funktioniert es","pipe.title":"Sieben Stufen. Jede mit Gate.","pipe.sub":"Jede Stufe übergibt ein abgezeichnetes Artefakt an die nächste. Schlägt Verify fehl, stoppt die Pipeline und die Arbeit geht zurück zu Develop — nichts Kaputtes erreicht Release.",
     "io.stage":"Stufe","io.input":"Input","io.output":"Output","io.agent":"Agent","io.human":"Mensch","io.intent":"Intention",
-    "io.1a":"Scannt die Codebasis, baut Verständnis auf","io.1h":"prüft CONTEXT.md",
-    "io.2a":"Interviewt den User, entwirft Specs","io.2h":"zeichnet PRD + SPEC ab",
-    "io.3a":"Drei-Quellen-Zerlegung","io.3h":"zeichnet TASKS.md ab",
+    "io.1a":"Scannt die Codebasis und baut Navigation zu UI-Quellen auf","io.1h":"prüft CONTEXT.md",
+    "io.2a":"Schreibt PRD, routet 0/2/3 UI-Design, finalisiert SPEC","io.2h":"verantworten Produkt- und UI-Richtung",
+    "io.3a":"Kontextbasierte Task-Zerlegung","io.3h":"zeichnet TASKS.md ab",
     "io.4a":"TDD in der Worktree-Sandbox","io.4h":"prüft Code, zeichnet ab",
-    "io.5a":"Alle Tests + E2E + Regression","io.5h":"zeichnet ab oder blockiert",
-    "io.6a":"5-Achsen-Review","io.6h":"zeichnen REVIEW.md ab",
+    "io.5a":"Tests + E2E + Regression + Design-QA","io.5h":"zeichnet ab oder blockiert",
+    "io.6a":"5-Achsen-Review + UI-Konformität","io.6h":"zeichnen REVIEW.md ab",
     "io.7i":"Alle abgezeichneten Artefakte","io.7h":"finales Sign-off-Gate",
     "res.kicker":"Warum es sich lohnt","res.title":"Was sich mit tGD ändert","res.sub":"Illustrative PDLC-Effizienzgewinne — keine Messdaten.",
     "res.chart.t":"Features pro Person, pro Sprint","res.leg.pre":"Vor tGD","res.leg.post":"Mit tGD","res.leg.proj":"Projiziert",
@@ -712,8 +712,8 @@ const I18N = {
     "res.k3":"Schnellerer Spec-zu-Deploy-Zyklus — aus Wochen werden Tage, mit vollständigem Audit-Trail (PRD → TASKS → CHANGELOG).","res.k3t":"Tempo",
     "qs.kicker":"Schnellstart","qs.title":"In 30 Sekunden installiert. Ein Befehl zum Start.",
     "qs.1t":"Klonen & einrichten","qs.1d":"Erkennt Ihre installierten CLIs automatisch und verlinkt alle Skills und Commands.",
-    "qs.2t":"Codebasis mappen","qs.2d":"Der Agent scannt Ihr Projekt und schreibt CONTEXT.md — Kontext vor Änderungen.",
-    "qs.3t":"Erstes Feature definieren","qs.3d":"Der Agent interviewt Sie und entwirft PRD + SPEC. Ab da übernimmt die Pipeline.",
+    "qs.2t":"Codebasis mappen","qs.2d":"Der Agent scannt Ihr Projekt und schreibt CONTEXT.md, bei Frontend-Code inklusive UI Landscape.",
+    "qs.3t":"Erstes Feature definieren","qs.3d":"Der Agent erledigt PRD → 0/2/3 UI-Design → SPEC innerhalb derselben Define-Stufe.",
     "faq.title":"Häufige Fragen",
     "faq.0q":"Welche Agenten unterstützt tGD?","faq.0a":"Claude Code, Codex CLI, Gemini CLI, OpenCode, Pi Coding Agent und Hermes. Ein bash setup.sh erkennt, was installiert ist, und verlinkt für jedes Tool das richtige Format.",
     "faq.5q":"Sendet tGD meinen Code irgendwohin?","faq.5a":"Nein. tGD besteht aus reinen Markdown-Skills und Shell-Skripten, die in Ihrem eigenen Agent laufen — kein Server, keine Telemetrie, kein Account. Ihr Code verlässt nie die Tools, die Sie bereits nutzen.",

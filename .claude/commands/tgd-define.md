@@ -9,7 +9,7 @@ description: Start spec-driven development — write a structured specification 
 
 **📊 FYI (non-blocking):** If any `$TGD_DIR/*/METRICS.md` still has a blank Actual column, mention it in ONE line ("N features shipped with metrics not yet filled in — the sheets are ready for whoever owns the data") and move on. Do NOT stop, do NOT ask, do NOT start filling them — reviewing metrics belongs to the team's own rituals, not to this command.
 
-Run the `tgd-spec-driven-development` skill. Write a PRD (product requirements document) covering objectives, commands, structure, code style, testing strategy, and boundaries before any code is written.
+Run the `tgd-spec-driven-development` skill. Define the product first, resolve the design direction when the feature has UI, then write the technical specification. No code is written in this phase.
 
 This is the DEFINE phase. The full pipeline is:
 1. `tgd-interview-me` — if the ask is underspecified, extract what the user actually wants
@@ -32,8 +32,16 @@ This is the DEFINE phase. The full pipeline is:
    - Option 3: Domain-specific if applicable (e.g., `auth-flow`)
    
    **Wait for the user to select one by number or provide their own before proceeding.** Once locked, create `$TGD_DIR/<feature-name>/`.
-5. `tgd-spec-driven-development` — write the structured spec (PRD + SPEC)
-6. **UI Design Gate** — see below, after SPEC.md is written
+5. `tgd-spec-driven-development` — **write PRD.md** from the validated product intent
+6. **UI Design Routing** — after PRD.md and before SPEC.md; see below. UI work uses `CONTEXT.md` to locate the real design-system source files, then uses those files plus PRD.md as its inputs.
+7. `tgd-spec-driven-development` — **write/finalize SPEC.md** from CONTEXT.md + PRD.md + approved DESIGN.md (when UI), so the technical contract reflects the selected interaction, states, components, and data needs
+
+**Resume inside DEFINE — role hand-offs do not create a new lifecycle phase:**
+- PRD.md missing → start with product definition.
+- PRD.md exists and its `## UI Design` status is `pending`, or the required DESIGN.md is missing → resume at UI Design Routing; do not rewrite the approved PRD.
+- DESIGN.md has `[x] **DESIGN**: Direction Approved` and SPEC.md is missing/incomplete → resume at SPEC finalization.
+- PRD.md + required DESIGN.md + SPEC.md already pass their gates → run verification only; do not regenerate artifacts.
+- A resumed run must update sections in place. Never append a duplicate PRD, DESIGN, or SPEC template.
 
 **📊 §6 Success Metrics rule** (see the filling rules in `tgd-spec-driven-development`): every metric's Measurement Method must be one of — (a) a concrete query in an existing tool, (b) a named tracking event (registered in `$TGD_DIR/TRACKING-PLAN.md` by `/tgd-plan`, which also creates the instrumentation tasks), or (c) `N/A — no user-measurable outcome` with a named PM sign-off line. "Check analytics" is a placeholder, not a source. Do not invent filler metrics for refactors — an honest N/A beats a fabricated KPI.
 
@@ -51,15 +59,22 @@ This is the DEFINE phase. The full pipeline is:
 ```
 Each section header uses `## <repo-name>` so tasks can be traced to their target repo.
 
-**Step 6: UI Design Gate (MANDATORY CHECK via Selection Protocol)**
-After writing SPEC.md, you MUST ask the user: "Does this feature have a UI component requiring DESIGN.md?"
-**Format:** "1. Yes (Generate design) 2. No (Backend only)"
-- If YES: 
-  1. Run the `tgd-sketch` skill to generate the **3 stance variants** (`conservative/` · `strong-fit/` · `divergent/`) in `$TGD_DIR/<feature-name>/prototype/` — see `tgd-spec-driven-development` Phase 1.5
-  2. Present comparison table → user picks one by letter (or requests iteration)
-  3. Write DESIGN.md documenting the chosen design decisions and component tree
-  4. Wait for user confirmation before proceeding.
-- If NO: skip DESIGN.md and prototype. **You cannot skip this step without explicit user approval.**
+**Step 6: UI Design Routing (MANDATORY CHECK via Selection Protocol)**
+After PRD.md is written and before SPEC.md is finalized, ask which route matches the feature:
+
+1. **Existing approved design** — use a versioned Figma frame, screenshot/PDF, or other approved source; generate **0 variants**.
+2. **Extend existing product UI** — inspect the design system and representative components named by CONTEXT.md, then use `tgd-sketch` to generate **2 variants** (`conservative/` and `strong-fit/`).
+3. **Explore a new experience** — inspect the same real source files, then use `tgd-sketch` to generate **3 variants** (`conservative/`, `strong-fit/`, and `divergent/`).
+4. **No user-facing UI** — skip DESIGN.md and prototypes, then finalize SPEC.md.
+
+Record the choice in PRD.md under `## UI Design` with `Mode`, `Owner`, `Existing system`, and `Status`. Use `pending` initially for modes 1–3 and `not-applicable` for mode 4. Do not infer "backend only" silently; the user chooses. For modes 1-3:
+
+1. Read `$TGD_DIR/CONTEXT.md` to locate UI sources, then open the actual token, component, global-style, responsive, and external-design sources. CONTEXT.md is a map, not visual truth. If a frontend exists but its UI Landscape is missing (legacy/stale context), STOP and refresh `/tgd-map` instead of guessing.
+2. Use PRD.md for the target user, problem, core action, and success criteria. Do not wait for a completed SPEC.md to invent the user experience.
+3. Produce or extract the selected direction according to the chosen mode. Present a head-to-head table only when variants exist.
+4. Write DESIGN.md, including the source revision, existing design-system mapping, user flow, state matrix, responsive behavior, content/copy, accessibility, and justified new tokens.
+5. Present the direction to the Design owner. DESIGN.md remains pending until its `## Sign-off` contains `[x] **DESIGN**: Direction Approved`; then update PRD `## UI Design` Status to `direction-approved`.
+6. Only after direction approval, write/finalize SPEC.md and reconcile its components, API/data contracts, states, events, and testing strategy against DESIGN.md.
 
 After completing the spec, verify the outputs. The gate scripts live in the tGD clone — resolve `$TGD_REPO_ROOT` per `tgd-rules` → **Resolving $TGD_REPO_ROOT**.
 
@@ -71,7 +86,9 @@ After completing the spec, verify the outputs. The gate scripts live in the tGD 
 - [ ] `python3 "$TGD_REPO_ROOT/scripts/check-doc-sections.py" SPEC "$TGD_DIR/<feature-name>/SPEC.md"` exits 0 — every required SPEC section is present
 - [ ] PRD §6 Success Metrics: at least one row names a real data source (concrete tool query or named event) — OR the section is `N/A` with a named PM sign-off line. Placeholder rows (`[Metric 1]`, "check analytics") fail this gate.
 - [ ] No feature branch was created or checked out (that happens in `/tgd-develop`)
-- [ ] If UI feature: `python3 "$TGD_REPO_ROOT/scripts/check-doc-sections.py" DESIGN "$TGD_DIR/<feature-name>/DESIGN.md"` exits 0 — every required DESIGN section is present (Source, Visual Direction, Component Tree, Design Tokens, …)
-- [ ] If UI feature: `$TGD_DIR/<feature-name>/prototype/` contains the 3 stance variants (`conservative/` · `strong-fit/` · `divergent/`), each with an `index.html`
+- [ ] PRD.md records one UI Design mode and status: modes 1–3 = `direction-approved`; mode 4 = `not-applicable` and is the only route that omits DESIGN.md
+- [ ] If UI mode 1-3: `python3 "$TGD_REPO_ROOT/scripts/check-doc-sections.py" DESIGN "$TGD_DIR/<feature-name>/DESIGN.md"` exits 0 and the DESIGN Sign-off contains `[x] **DESIGN**: Direction Approved`
+- [ ] Variant count matches the recorded mode: mode 1 = 0; mode 2 = `conservative/` + `strong-fit/`; mode 3 = those two + `divergent/`; every required variant has `index.html` + `README.md`
+- [ ] If UI mode 1-3: SPEC.md was written or reconciled after direction approval and references DESIGN.md for UI decisions
 
 End with the closing report per `tgd-rules` → **Command Closing Report**: 📦 產出 (PRD.md + SPEC.md, and DESIGN.md/prototype if UI) · 🔎 檢查 (gate as one line) · ➡️ 下一步 `/tgd-plan` — 拆解成任務. Don't paste the raw checklist above.

@@ -101,13 +101,13 @@ hermes
 ```
 /tgd-map
 ```
-> Agent scans your codebase and creates `CONTEXT.md` with project overview.
+> Agent scans your codebase and creates `CONTEXT.md`, including a UI Landscape that points to the real design-system, token, style, and component sources when frontend code exists.
 
 ### 4. Build Your First Feature
 ```
 /tgd-define I want to add user authentication
 ```
-> Agent interviews you, creates PRD + SPEC, then you're ready to build.
+> Agent interviews you and completes PRD → design → SPEC inside the same Define stage. UI work routes to 0 / 2 / 3 prototypes based on how much design exploration is actually needed.
 
 ### Claude Desktop (No Terminal)
 
@@ -150,28 +150,30 @@ Agent: What endpoints need auth?
   3. Role-based (admin vs user)
 User: 1
 
-Agent: Creating PRD + SPEC...
+Agent: Creating PRD...
 → $TGD_DIR/jwt-auth/PRD.md
-→ $TGD_DIR/jwt-auth/SPEC.md
 
-Agent: Does this feature have a UI component?
-  1. Yes (Generate design)
-  2. No (Backend only)
-User: 1
+Agent: Pick the UI design mode:
+  1. Existing approved design (0 prototypes)
+  2. Extend the existing product UI (2 prototypes)
+  3. Explore a new experience (3 prototypes)
+  4. No user-facing UI
+User: 2
 
-Agent: Generating 3 HTML prototypes...
-→ $TGD_DIR/jwt-auth/prototype/variant-a.html
-→ $TGD_DIR/jwt-auth/prototype/variant-b.html
-→ $TGD_DIR/jwt-auth/prototype/variant-c.html
+Agent: Reading CONTEXT.md UI Landscape, then opening the real tokens and components...
+Agent: Generating 2 context-grounded HTML prototypes...
+→ $TGD_DIR/jwt-auth/prototype/conservative/index.html
+→ $TGD_DIR/jwt-auth/prototype/strong-fit/index.html
 
 Agent: Pick a design direction:
-  A. Minimal card-based (clean, focused)
-  B. Dense dashboard (power-user oriented)
-  C. Split-pane (context-rich)
+  A. Conservative (closest to the current product)
+  B. Strong-fit (clearer change within the current system)
 User: A
 
-Agent: Writing DESIGN.md...
+Agent: Writing DESIGN.md and recording design direction approval...
 → $TGD_DIR/jwt-auth/DESIGN.md
+Agent: Finalizing the technical SPEC against the approved design...
+→ $TGD_DIR/jwt-auth/SPEC.md
 → Ready for /tgd-plan
 ```
 
@@ -243,13 +245,16 @@ During `/tgd-develop`, tGD routes the work intelligently based on task count:
 | **< 3 tasks** | ⚡ Fast Mode | Main agent implements directly in the worktree. Quick and token-efficient. |
 | **≥ 3 tasks** | 🔀 Quality Mode | Dispatches subagents with two-stage review (spec compliance → code quality). Highest quality. |
 
-### 🧠 Triple-Source Planning
-During `/tgd-plan`, the agent reads **three documents** before creating tasks:
+### 🧠 Context-Grounded Planning
+During `/tgd-plan`, the agent reads **three core documents** before creating tasks:
 1. **`CONTEXT.md`** — Existing project structure, conventions, and tech stack.
 2. **`PRD.md`** — Business goals, user pain points, and scope boundaries.
 3. **`SPEC.md`** — Technical requirements, API contracts, and database schemas.
 
-This ensures `TASKS.md` reflects real-world constraints, not just theoretical specs.
+For UI modes, it also reads approved `DESIGN.md` plus the actual design-system sources linked from CONTEXT.md. This ensures `TASKS.md` reflects real-world constraints, not just theoretical specs.
+
+### 🎨 Context-Grounded UI Design
+`/tgd-map` records a **UI Landscape** as navigation to the product's real tokens, styles, typography, and representative components. Within the existing Define stage, `/tgd-define` follows **PRD → design → SPEC** and selects **0 / 2 / 3** prototypes: zero for an already approved design, two when extending the existing UI, three for a new experience, and none for non-UI work. PM, DESIGN, DEV, and QA can resume the same feature from their own artifacts without adding another lifecycle stage.
 
 ### 🎯 3-Option Feature Naming
 When running `/tgd-define`, the agent proposes **three distinct kebab-case names** for your feature and waits for you to pick one (or suggest your own). No more guessing — you control the naming from day one.
@@ -284,8 +289,8 @@ The `tgd` CLI manages installation, updates, and diagnostics:
 | 🎯 What you're doing | ⌨️ Command | 💡 Key principle | 🔧 Invokes |
 |---|---|---|---|
 | Understand the project | `/tgd-map` | Context before changes + live dashboard | `tgd-context-engineering` + `codegraph init` + `understand-dashboard` |
-| Define what to build | `/tgd-define` | 3-option naming + Product + Spec | `tgd-interview-me` → `tgd-idea-refine` → `tgd-spec-driven-development` |
-| Plan how to build it | `/tgd-plan` | Read CONTEXT + PRD + SPEC → atomic tasks | `tgd-planning-and-task-breakdown` → `tgd-jira-auto-sync` |
+| Define what to build | `/tgd-define` | PRD → conditional 0/2/3 design → final SPEC | `tgd-interview-me` → `tgd-idea-refine` → `tgd-spec-driven-development` + `tgd-sketch` (if needed) |
+| Plan how to build it | `/tgd-plan` | Read CONTEXT + PRD + SPEC + approved design → atomic tasks | `tgd-planning-and-task-breakdown` → `tgd-jira-auto-sync` |
 | Develop in sandbox | `/tgd-develop` | **Mandatory Worktree** + smart routing | `tgd-source-driven-development` → (`subagent` OR `incremental`) → `tgd-test-driven-development` |
 | Prove it works | `/tgd-verify` | Tests are proof | `tgd-debugging-and-error-recovery` → `tgd-test-driven-development` → **Cross-Feature Regression Gate** |
 | Review before merge | `/tgd-review` | Improve code health | `tgd-code-review-and-quality` → `tgd-code-simplification` |
@@ -388,7 +393,7 @@ Command: pytest -v --tb=short
 
 TEST-REPORT.md is **auto-generated** from test runner output, NOT hand-maintained.
 
-**Frontend requirement:** If SPEC.md has UI, Verify MUST run `tgd-agent-browser` for E2E browser testing.
+**Frontend requirement:** If DESIGN.md exists, Verify MUST run `tgd-agent-browser` and append design-conformance evidence for the named viewports, runtime states, and accessibility checks to TEST-REPORT.md.
 
 ### 🏷️ Regression: The Safety Net
 
@@ -436,15 +441,17 @@ Sign-off: **QA + DEV** both sign.
 
 ### 🚀 Release: The Regression Gate
 
-Release is the only hard gate in tGD. Before executing, agent verifies:
+Release is tGD's final cross-role hard gate. (UI direction is approved earlier inside Define so planning does not build on an unresolved design.) Before executing, the agent verifies:
 
 ```
 PRD.md        → PM signed?      ✅
+DESIGN.md     → Direction signed? ✅ (UI only)
 TASKS.md      → DEV signed?     ✅
 TEST-REPORT   → QA signed?      ✅
               → Regression 100%? ✅
               → Failed = 0?      ✅
 REVIEW.md     → QA + DEV signed? ✅
+              → DESIGN implementation signed? ✅ (UI only)
 
 All ✅ → proceed to Release
 Any ❌ → STOP: "X has not approved Y yet"
@@ -454,17 +461,19 @@ Any ❌ → STOP: "X has not approved Y yet"
 
 ## 👥 Human Roles & Sign-off
 
-tGD has three human roles. Each artifact has a `## Sign-off` section at the bottom:
+tGD has four human roles. They can use the workflow independently through shared artifacts; one person can still hold multiple roles. Each artifact has a `## Sign-off` section at the bottom:
 
 | Role | Focus | Reviews | Signs off on |
 |------|-------|---------|-------------|
 | **PM** | Product direction | PRD (what & why) | PRD.md, Release |
+| **DESIGN** | Experience direction & conformance | DESIGN, prototype, built UI evidence | DESIGN.md, REVIEW.md (UI only) |
 | **DEV** | Implementation quality | TASKS, code | TASKS.md, code, REVIEW.md |
 | **QA** | Test quality & coverage | TEST-REPORT, test quality | TEST-REPORT.md, REVIEW.md |
 
 **How it works:**
 - Agent produces artifact → human reviews on their own machine → edits `## Sign-off` (checkbox format) → commits & pushes
 - Agent checks for `[x]` in required role lines before proceeding (Gate 3)
+- UI work requires DESIGN direction approval before Plan and DESIGN implementation approval in Review; non-UI work skips both
 - Release is the hard gate: all required Sign-offs must be `[x]`
 - Approve: `- [x] **PM**: Approved — date — comment`
 - One person can hold multiple roles (common in small teams)
@@ -600,8 +609,12 @@ workspace/
     │   ├── SPEC.md                     # Backend: JWT + bcrypt / Frontend: LoginForm
     │   ├── DESIGN.md                   # Login page mockup
     │   ├── prototype/
-    │   │   ├── variant-a.html          # Minimal login form
-    │   │   └── variant-b.html          # Login with social buttons
+    │   │   ├── conservative/
+    │   │   │   ├── index.html          # Closest to the current product
+    │   │   │   └── README.md           # Rationale and trade-offs
+    │   │   └── strong-fit/
+    │   │       ├── index.html          # Recommended product-fit evolution
+    │   │       └── README.md           # Rationale and trade-offs
     │   ├── TASKS.md                    # 5 tasks, all done
     │   ├── REVIEW.md                   # Passed: 87% coverage
     │   └── decisions/
@@ -612,8 +625,12 @@ workspace/
         ├── SPEC.md                     # Backend: Stripe API / Frontend: PaymentForm
         ├── DESIGN.md                   # Checkout page mockup
         ├── prototype/
-        │   ├── variant-a.html          # Single-page checkout
-        │   └── variant-b.html          # Multi-step checkout
+        │   ├── conservative/
+        │   │   ├── index.html          # Closest to the current product
+        │   │   └── README.md
+        │   └── strong-fit/
+        │       ├── index.html          # Recommended product-fit evolution
+        │       └── README.md
         └── TASKS.md                    # 8 tasks, not started
 ```
 
@@ -634,7 +651,7 @@ my-project-backend/.codegraph → my-project-tGD/.scans/my-project-backend/.code
 | Phase | Command | Artifacts | Location |
 |-------|---------|-----------|----------|
 | Map | `/tgd-map` | CONTEXT.md | `$TGD_DIR/CONTEXT.md` |
-| Define | `/tgd-define` | PRD.md, SPEC.md, DESIGN.md, prototype/ | `$TGD_DIR/<feature>/` |
+| Define | `/tgd-define` | PRD.md → DESIGN.md + prototype/ (if UI) → SPEC.md | `$TGD_DIR/<feature>/` |
 | Plan | `/tgd-plan` | TASKS.md (+ TRACKING-PLAN.md entries) | `$TGD_DIR/<feature>/TASKS.md` · `$TGD_DIR/TRACKING-PLAN.md` |
 | Develop | `/tgd-develop` | src/ + tests/ | Code repo (worktree) |
 | Verify | `/tgd-verify` | TEST-REPORT.md | `$TGD_DIR/<feature>/TEST-REPORT.md` |
@@ -678,8 +695,8 @@ The commands above are entry points. The pack includes 29 skills total — 27 li
 |---|---|
 | [tgd-interview-me](skills/tgd-interview-me/SKILL.md) | Extract user intent via Q&A |
 | [tgd-idea-refine](skills/tgd-idea-refine/SKILL.md) | Divergent/convergent thinking |
-| [tgd-spec-driven-development](skills/tgd-spec-driven-development/SKILL.md) | Write PRD + SPEC + DESIGN.md before code (UI: 3 variants via claude-design, user confirmation gate) |
-| [tgd-sketch](skills/tgd-sketch/SKILL.md) | Throwaway HTML mockups: 2-3 design variants |
+| [tgd-spec-driven-development](skills/tgd-spec-driven-development/SKILL.md) | Write PRD → route UI design (0/2/3 variants) → finalize SPEC |
+| [tgd-sketch](skills/tgd-sketch/SKILL.md) | Context-grounded HTML mockups: 0/2/3 variants by design mode |
 
 ### 📐 Plan
 | Skill | Purpose |

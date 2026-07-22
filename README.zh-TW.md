@@ -104,13 +104,13 @@ hermes
 ```
 /tgd-map
 ```
-> Agent 掃描你的程式碼庫，建立 `CONTEXT.md` 專案總覽。
+> Agent 掃描你的程式碼庫並建立 `CONTEXT.md`；若有前端，會附上 UI Landscape，指向真正的 design system、tokens、styles 與元件來源。
 
 ### 4. 建造你的第一個功能
 ```
 /tgd-define 我想加上使用者認證
 ```
-> Agent 訪談你，建立 PRD + SPEC，然後就可以開始建造了。
+> Agent 訪談你，並在同一個 Define 階段完成 PRD → 設計 → SPEC。UI 依需要走 0 / 2 / 3 個 prototype，不會多一個階段。
 
 ### Claude Desktop（無需終端機）
 
@@ -153,28 +153,30 @@ Agent：哪些端點需要認證？
   3. 角色導向 (admin vs user)
 使用者：1
 
-Agent：建立 PRD + SPEC...
+Agent：建立 PRD...
 → $TGD_DIR/jwt-auth/PRD.md
-→ $TGD_DIR/jwt-auth/SPEC.md
 
-Agent：這個功能有 UI 元件嗎？
-  1. 是（產生設計）
-  2. 否（純後端）
-使用者：1
+Agent：選擇 UI 設計模式：
+  1. 已有核准設計（0 個 prototype）
+  2. 延伸現有產品 UI（2 個 prototype）
+  3. 探索全新體驗（3 個 prototype）
+  4. 無使用者介面
+使用者：2
 
-Agent：產生 3 個 HTML 原型...
-→ $TGD_DIR/jwt-auth/prototype/variant-a.html
-→ $TGD_DIR/jwt-auth/prototype/variant-b.html
-→ $TGD_DIR/jwt-auth/prototype/variant-c.html
+Agent：先從 CONTEXT.md 的 UI Landscape 找到並讀取真正的 tokens 與元件...
+Agent：產生 2 個符合既有 context 的 HTML prototype...
+→ $TGD_DIR/jwt-auth/prototype/conservative/index.html
+→ $TGD_DIR/jwt-auth/prototype/strong-fit/index.html
 
 Agent：選擇設計方向：
-  A. 極簡卡片式（乾淨、專注）
-  B. 密集儀表板（進階用戶導向）
-  C. 分割面板（上下文豐富）
+  A. Conservative（最貼近現有產品）
+  B. Strong-fit（在既有系統內做明顯改善）
 使用者：A
 
-Agent：撰寫 DESIGN.md...
+Agent：撰寫 DESIGN.md 並記錄設計方向核准...
 → $TGD_DIR/jwt-auth/DESIGN.md
+Agent：依核准設計完成技術 SPEC...
+→ $TGD_DIR/jwt-auth/SPEC.md
 → 準備執行 /tgd-plan
 ```
 
@@ -257,13 +259,16 @@ flowchart LR
 | **< 3 個** | ⚡ 快速模式 | 主 Agent 直接在 worktree 實作。省 token、省時間。 |
 | **≥ 3 個** | 🔀 高品質模式 | 派發 Subagent 並執行雙重審查（規格合規 → 程式碼品質）。最高品質。 |
 
-### 🧠 三源規劃
-`/tgd-plan` 在拆解任務前會讀取**三份文件**：
+### 🧠 Context-grounded 規劃
+`/tgd-plan` 在拆解任務前會讀取**三份核心文件**：
 1. **`CONTEXT.md`** — 現有專案結構、技術堆疊、專案慣例。
 2. **`PRD.md`** — 商業目標、使用者痛點、範圍邊界。
 3. **`SPEC.md`** — 技術需求、API 合約、資料庫結構。
 
-確保產出的 `TASKS.md` 反映真實限制，不是紙上談兵。
+若是 UI 模式，還會讀取已核准的 `DESIGN.md`，以及 CONTEXT.md 所連到的實際 design-system 原始檔。確保產出的 `TASKS.md` 反映真實限制，不是紙上談兵。
+
+### 🎨 依產品 Context 做 UI 設計
+`/tgd-map` 會把 **UI Landscape** 寫成通往實際 tokens、styles、字體與代表性元件的導航。`/tgd-define` 在原有 Define 階段內走 **PRD → 設計 → SPEC**：已有核准設計為 0 個 prototype、延伸既有 UI 為 2 個、新體驗為 3 個，非 UI 則跳過。PM、DESIGN、DEV、QA 可從各自 artifact 接續同一功能，不增加第八階段。
 
 ### 🎯 3 選 1 功能命名
 執行 `/tgd-define` 時，Agent 會提出 **3 個 kebab-case 名稱候選**，等老大挑選或自訂。不盲猜，名稱從第一天就由你掌控。
@@ -300,8 +305,8 @@ flowchart LR
 | 🎯 做什麼 | ⌨️ 指令 | 💡 核心原則 | 🔧 呼叫的 Skills |
 |---|---|---|---|
 | 了解專案 | `/tgd-map` | 先有 context 再動手 + 即時 dashboard | `tgd-context-engineering` + `codegraph init` + `understand-dashboard` |
-| 定義要做什麼 | `/tgd-define` | 3 選 1 命名 + 產品 + 規格 | `tgd-interview-me` → `tgd-idea-refine` → `tgd-spec-driven-development` |
-| 規劃怎麼做 | `/tgd-plan` | 讀 CONTEXT + PRD + SPEC → 原子任務 | `tgd-planning-and-task-breakdown` → `tgd-jira-auto-sync` |
+| 定義要做什麼 | `/tgd-define` | PRD → 條件式 0/2/3 設計 → 最終 SPEC | `tgd-interview-me` → `tgd-idea-refine` → `tgd-spec-driven-development` + `tgd-sketch`（需要時） |
+| 規劃怎麼做 | `/tgd-plan` | 讀 CONTEXT + PRD + SPEC + 核准設計 → 原子任務 | `tgd-planning-and-task-breakdown` → `tgd-jira-auto-sync` |
 | 沙盒建造 | `/tgd-develop` | **強制 Worktree** + 智能路由 | `tgd-source-driven-development` → (`subagent` OR `incremental`) → `tgd-test-driven-development` |
 | 證明它能跑 | `/tgd-verify` | 測試就是證明 | `tgd-debugging-and-error-recovery` → `tgd-test-driven-development` → **Cross-Feature Regression Gate** |
 | 合併前審查 | `/tgd-review` | 改善程式碼健康 | `tgd-code-review-and-quality` → `tgd-code-simplification` |
@@ -404,7 +409,7 @@ Command: pytest -v --tb=short
 
 TEST-REPORT.md 是**自動產生**的，不是手寫的。Agent 解析 test runner 輸出（JSON / TAP / plain text）轉成固定格式。
 
-**Frontend 額外要求：** 如果 SPEC.md 有 UI，Verify 階段必須跑 `tgd-agent-browser` 做 E2E 瀏覽器測試。
+**Frontend 額外要求：** 若 DESIGN.md 存在，Verify 必須跑 `tgd-agent-browser`，並把指定 viewport、runtime state 與 accessibility 的設計一致性證據寫進 TEST-REPORT.md。
 
 ### 🏷️ Regression：安全網
 
@@ -452,15 +457,17 @@ Sign-off：**QA + DEV** 都要簽。
 
 ### 🚀 Release：Regression Gate
 
-Release 是 tGD 唯一的硬性門檻。執行前，Agent 驗證：
+Release 是 tGD 最後一道跨角色硬門檻。（UI 方向會先在 Define 內核准，避免 Plan 建立在未定設計上。）執行前，Agent 驗證：
 
 ```
 PRD.md        → PM 簽了？       ✅
+DESIGN.md     → 方向簽了？       ✅（僅 UI）
 TASKS.md      → DEV 簽了？      ✅
 TEST-REPORT   → QA 簽了？       ✅
               → Regression 100%？ ✅
               → Failed = 0？      ✅
 REVIEW.md     → QA+DEV 都簽了？  ✅
+              → DESIGN 實作簽了？ ✅（僅 UI）
 
 全部 ✅ → 執行 Release
 任何 ❌ → 🛑 擋住：「X 還沒簽 Y」
@@ -470,17 +477,19 @@ REVIEW.md     → QA+DEV 都簽了？  ✅
 
 ## 👥 人類角色與簽核
 
-tGD 有三個角色。每個 artifact 底部都有 `## Sign-off` 區塊：
+tGD 有四個角色。各角色可只使用自己需要的共享 artifacts，一人也可兼任多角。每個 artifact 底部都有 `## Sign-off` 區塊：
 
 | 角色 | 職責 | 審查項目 | 簽核對象 |
 |------|------|----------|----------|
 | **PM** | 產品方向 | PRD（做什麼、為什麼） | PRD.md、Release |
+| **DESIGN** | 體驗方向與實作一致性 | DESIGN、prototype、成品 UI 證據 | DESIGN.md、REVIEW.md（僅 UI） |
 | **DEV** | 實作品質 | TASKS、程式碼 | TASKS.md、程式碼、REVIEW.md |
 | **QA** | 測試品質與覆蓋率 | TEST-REPORT、測試品質 | TEST-REPORT.md、REVIEW.md |
 
 **運作方式：**
 - Agent 產出 artifact → 人類在自己的電腦上審查 → 編輯 artifact 裡的 `## Sign-off` → commit & push
 - Agent 在進入下一階段前檢查 Sign-off checkbox（Gate 3）
+- UI 工作在 Plan 前要有 DESIGN 方向核准，Review 要有 DESIGN 實作核准；非 UI 兩者都跳過
 - Release 是硬門檻：所有必要 Sign-offs 必須為 `[x]`
 - 格式：`- [x] **PM**: Approved — 日期 — 備註` 或 `- [x] **QA**: Rejected — 日期 — 原因`
 - 一人可兼多角（小團隊常見）
@@ -616,8 +625,12 @@ workspace/
     │   ├── SPEC.md                     # Backend: JWT + bcrypt / Frontend: LoginForm
     │   ├── DESIGN.md                   # Login page mockup
     │   ├── prototype/
-    │   │   ├── variant-a.html          # Minimal login form
-    │   │   └── variant-b.html          # Login with social buttons
+    │   │   ├── conservative/
+    │   │   │   ├── index.html          # 最貼近現有產品
+    │   │   │   └── README.md           # 理由與取捨
+    │   │   └── strong-fit/
+    │   │       ├── index.html          # 建議的產品延伸方向
+    │   │       └── README.md           # 理由與取捨
     │   ├── TASKS.md                    # 5 tasks, all done
     │   ├── REVIEW.md                   # Passed: 87% coverage
     │   └── decisions/
@@ -628,8 +641,12 @@ workspace/
         ├── SPEC.md                     # Backend: Stripe API / Frontend: PaymentForm
         ├── DESIGN.md                   # Checkout page mockup
         ├── prototype/
-        │   ├── variant-a.html          # Single-page checkout
-        │   └── variant-b.html          # Multi-step checkout
+        │   ├── conservative/
+        │   │   ├── index.html          # 最貼近現有產品
+        │   │   └── README.md
+        │   └── strong-fit/
+        │       ├── index.html          # 建議的產品延伸方向
+        │       └── README.md
         └── TASKS.md                    # 8 tasks, not started
 ```
 
@@ -650,7 +667,7 @@ my-project-backend/.codegraph → my-project-tGD/.scans/my-project-backend/.code
 | 階段 | 指令 | 產出 | 位置 |
 |------|------|------|------|
 | Map | `/tgd-map` | CONTEXT.md | `$TGD_DIR/CONTEXT.md` |
-| Define | `/tgd-define` | PRD.md, SPEC.md, DESIGN.md, prototype/ | `$TGD_DIR/<feature>/` |
+| Define | `/tgd-define` | PRD.md → DESIGN.md + prototype/（UI）→ SPEC.md | `$TGD_DIR/<feature>/` |
 | Plan | `/tgd-plan` | TASKS.md (+ TRACKING-PLAN.md entries) | `$TGD_DIR/<feature>/TASKS.md` · `$TGD_DIR/TRACKING-PLAN.md` |
 | Develop | `/tgd-develop` | src/ + tests/ | Code repo (worktree) |
 | Verify | `/tgd-verify` | TEST-REPORT.md | `$TGD_DIR/<feature>/TEST-REPORT.md` |
@@ -695,8 +712,8 @@ tGD/
 |---|---|
 | [tgd-interview-me](skills/tgd-interview-me/SKILL.md) | 透過 Q&A 提取使用者意圖 |
 | [tgd-idea-refine](skills/tgd-idea-refine/SKILL.md) | 發散/收斂思考 |
-| [tgd-spec-driven-development](skills/tgd-spec-driven-development/SKILL.md) | 寫 code 前先寫 PRD + SPEC + DESIGN.md（UI: claude-design 3 變體 + 使用者確認關卡） |
-| [tgd-sketch](skills/tgd-sketch/SKILL.md) | 拋棄式 HTML mockup：2-3 個設計變體 |
+| [tgd-spec-driven-development](skills/tgd-spec-driven-development/SKILL.md) | PRD → UI 設計路由（0/2/3 變體）→ 最終 SPEC |
+| [tgd-sketch](skills/tgd-sketch/SKILL.md) | 依產品 context 產生 HTML mockup：按模式 0/2/3 個變體 |
 
 ### 📐 Plan
 | Skill | 用途 |

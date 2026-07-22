@@ -1,6 +1,6 @@
 ---
 name: tgd-sketch
-description: "Throwaway HTML mockups: 2-3 design variants to compare."
+description: "Throwaway HTML mockups: context-grounded design variants to compare when a UI direction is not already approved."
 version: 1.0.0
 author: Hermes Agent (adapted from gsd-build/get-shit-done)
 license: MIT
@@ -59,7 +59,7 @@ Use this skill when the user wants to **see a design direction before committing
 
 ## Where variants live
 
-- **Inside the tGD lifecycle** (called from `/tgd-define`'s UI Design Gate): save variants to `$TGD_DIR/<feature-name>/prototype/` — this is the directory the define/plan verification gates check. Name the three variants after the mandated stances: `conservative/`, `strong-fit/`, `divergent/` (see `tgd-spec-driven-development` Phase 1.5).
+- **Inside the tGD lifecycle** (called from `/tgd-define`'s UI Design Routing): save variants to `$TGD_DIR/<feature-name>/prototype/` — this is the directory the define gate checks. The recorded PRD mode controls the count: existing approved design = **0 variants** and this skill is not run; extend existing product UI = **2 variants** (`conservative/`, `strong-fit/`); explore a new experience = **3 variants** (add `divergent/`).
 - **Ad-hoc sketching** (user just wants mockups, no feature in flight): ask where to put them, defaulting to a scratch location. **Never write into the code repo root** — sketches are throwaway artifacts, not source.
 
 ## If the user has the full GSD system installed
@@ -74,6 +74,8 @@ intake  →  variants  →  head-to-head  →  pick winner (or iterate)
 
 ### 1. Intake (skip if the user already gave you enough)
 
+Inside tGD, read `$TGD_DIR/CONTEXT.md` before asking aesthetic questions. **CONTEXT.md is navigation, not the visual source of truth.** Follow its `UI Landscape` paths and inspect the actual design-system components, token files, global styles, responsive definitions, and approved external design source. Then read PRD.md for the primary user, problem, and core action. Never invent a new theme when an established product system exists.
+
 Before generating variants, get three things — one question at a time, not all at once:
 
 1. **Feel.** "What should this feel like? Adjectives, emotions, a vibe." — *"calm, editorial, like Linear"* tells you more than *"minimal"*.
@@ -82,9 +84,9 @@ Before generating variants, get three things — one question at a time, not all
 
 Reflect each answer briefly before the next question. If the user already gave you all three upfront, skip straight to variants.
 
-### 2. Variants (2-3, never 1, rarely 4+)
+### 2. Variants (0/2/3 by lifecycle mode; 2-3 ad hoc)
 
-Produce **2-3 variants** in one go. Each variant is a complete, standalone HTML file. Don't describe variants — build them. The point is comparison.
+For tGD lifecycle work, obey the recorded mode exactly: **0 variants** for an existing approved design, **2 variants** for an extension, and **3 variants** for a new experience. For ad-hoc work, produce 2-3. Each generated variant is a complete, standalone HTML file. Don't describe variants — build them. The point is comparison.
 
 Each variant should take a **different design stance**, not different pixel values. Three good variant axes:
 
@@ -96,7 +98,7 @@ Each variant should take a **different design stance**, not different pixel valu
 
 Pick one axis and pull apart from it. Two variants that differ only in accent color are wasted effort — the user can't distinguish them.
 
-**Variant naming:** in the tGD lifecycle, use the mandated stance names; ad-hoc, describe the stance, not the number.
+**Variant naming:** in the tGD lifecycle, `conservative` stays closest to the current product, `strong-fit` is the recommended evolution, and `divergent` exists only in 3-variant exploration. Ad-hoc variants describe the stance, not the number.
 
 ```
 $TGD_DIR/<feature-name>/prototype/

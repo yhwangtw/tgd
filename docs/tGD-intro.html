@@ -91,11 +91,11 @@ if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
     <h2 class="h2 mt-s">Seven stages. Every output feeds the next.</h2>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:28px">
       <div class="phase"><div class="p-icon">🗺️</div><div><div class="p-name">1 · MAP</div><div class="p-desc">Scan the codebase → <b>CONTEXT.md</b></div><div class="p-skills">tgd-context-engineering + codegraph</div></div></div>
-      <div class="phase"><div class="p-icon">📋</div><div><div class="p-name">2 · DEFINE</div><div class="p-desc">Interview → <b>PRD + SPEC + DESIGN</b></div><div class="p-skills">tgd-interview-me → spec-driven</div></div></div>
-      <div class="phase"><div class="p-icon">📐</div><div><div class="p-name">3 · PLAN</div><div class="p-desc">Triple-source breakdown → <b>TASKS.md</b></div><div class="p-skills">planning → jira-sync</div></div></div>
+      <div class="phase"><div class="p-icon">📋</div><div><div class="p-name">2 · DEFINE</div><div class="p-desc"><b>PRD → 0/2/3 design → SPEC</b></div><div class="p-skills">interview → spec-driven + sketch</div></div></div>
+      <div class="phase"><div class="p-icon">📐</div><div><div class="p-name">3 · PLAN</div><div class="p-desc">Context-grounded breakdown → <b>TASKS.md</b></div><div class="p-skills">planning → jira-sync</div></div></div>
       <div class="phase"><div class="p-icon">⚡</div><div><div class="p-name">4 · DEVELOP</div><div class="p-desc">Worktree + TDD → <b>src/ + tests/</b></div><div class="p-skills">source-driven → TDD</div></div></div>
-      <div class="phase"><div class="p-icon">🧪</div><div><div class="p-name">5 · VERIFY</div><div class="p-desc">All tests + regression → <b>TEST-REPORT.md</b></div><div class="p-skills">debugging → regression gate</div></div></div>
-      <div class="phase"><div class="p-icon">🔎</div><div><div class="p-name">6 · REVIEW</div><div class="p-desc">Five-axis review → <b>REVIEW.md</b></div><div class="p-skills">code-review → simplification</div></div></div>
+      <div class="phase"><div class="p-icon">🧪</div><div><div class="p-name">5 · VERIFY</div><div class="p-desc">Tests + UI evidence → <b>TEST-REPORT.md</b></div><div class="p-skills">debugging → regression + design QA</div></div></div>
+      <div class="phase"><div class="p-icon">🔎</div><div><div class="p-name">6 · REVIEW</div><div class="p-desc">Code + design conformance → <b>REVIEW.md</b></div><div class="p-skills">code-review → simplification</div></div></div>
       <div class="phase"><div class="p-icon">🚀</div><div><div class="p-name">7 · RELEASE</div><div class="p-desc">Commit + CI → <b>CHANGELOG + METRICS</b></div><div class="p-skills">git-workflow → catalog</div></div></div>
       <div class="phase" style="border:1px dashed var(--border-strong);background:transparent"><div class="p-icon">🔁</div><div><div class="p-name">THE LOOP</div><div class="p-desc">Verify fails? Work goes back to Develop.<br>Nothing broken reaches Release.</div></div></div>
     </div>
@@ -107,17 +107,20 @@ if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
     <p class="num-tag">HUMAN GATES</p>
     <h2 class="h2 mt-s">Agents do the work.<br><span class="gradient-text">Humans hold the keys.</span></h2>
     <p class="lede mt-m">Every stage produces an artifact with a sign-off section. The next stage will not start until the right person checks the box.</p>
-    <div class="grid g3 mt-l">
+    <div class="grid g3 mt-l" style="grid-template-columns:repeat(4,1fr)">
       <div class="card" style="border-top:3px solid #60a5fa"><h4>PM — Product</h4><p>Owns direction and acceptance.<br>Signs <b>PRD.md</b> and the final <b>Release</b>.</p></div>
+      <div class="card" style="border-top:3px solid #f472b6"><h4>DESIGN — Experience</h4><p>Approves direction in <b>DESIGN.md</b> and built-UI conformance in <b>REVIEW.md</b>.</p></div>
       <div class="card" style="border-top:3px solid #34d399"><h4>DEV — Implementation</h4><p>Owns code quality.<br>Signs <b>TASKS.md</b>, the code, and <b>REVIEW.md</b>.</p></div>
       <div class="card" style="border-top:3px solid #fbbf24"><h4>QA — Evidence</h4><p>Owns test quality and coverage.<br>Signs <b>TEST-REPORT.md</b> and <b>REVIEW.md</b>.</p></div>
     </div>
     <div class="terminal mt-l" style="max-width:640px">
       <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>Release gate — all must be [x]</span></div>
 <pre>PRD.md         → - [x] <b>PM</b>  ✓
+DESIGN.md      → - [x] <b>DESIGN direction</b> ✓   (UI)
 TASKS.md       → - [x] <b>DEV</b> ✓
 TEST-REPORT.md → - [x] <b>QA</b>  ✓   (regression 100%)
 REVIEW.md      → - [x] <b>QA + DEV</b> ✓
+               → - [x] <b>DESIGN implementation</b> ✓   (UI)
 <span class="dim-t">One person can hold multiple roles — git is the only coordination tool.</span></pre>
     </div>
     <div class="deck-footer"><span>Human gates — sign-off before the next stage</span><span class="slide-number" data-current="5" data-total="13"></span></div>
@@ -135,12 +138,12 @@ REVIEW.md      → - [x] <b>QA + DEV</b> ✓
       </div>
       <div class="card">
         <h4><span class="cmd-name">/tgd-define</span></h4>
-        <p class="mt-s">Proposes three feature names, interviews you for intent, then drafts the requirements and the technical spec.</p>
-        <div class="artifact mt-m">→ PRD.md · SPEC.md · DESIGN.md</div>
+        <p class="mt-s">Interviews for intent, writes the PRD, routes UI to 0/2/3 prototypes, gets direction approval, then finalizes the technical spec.</p>
+        <div class="artifact mt-m">→ PRD.md · DESIGN.md (UI) · SPEC.md</div>
       </div>
       <div class="card">
         <h4><span class="cmd-name">/tgd-plan</span></h4>
-        <p class="mt-s">Reads CONTEXT + PRD + SPEC and decomposes the work into atomic tasks with BDD acceptance criteria.</p>
+        <p class="mt-s">Reads CONTEXT + PRD + approved DESIGN (UI) + SPEC and decomposes the work into atomic tasks with BDD acceptance criteria.</p>
         <div class="artifact mt-m">→ TASKS.md <span class="dim-t">(Given/When/Then, [R] markers)</span></div>
       </div>
     </div>
@@ -184,7 +187,7 @@ REVIEW.md      → - [x] <b>QA + DEV</b> ✓
     <p class="lede mt-s">Tests are proof. Not confidence, not "looks right" — output.</p>
     <div class="grid g2 mt-l" style="align-items:start">
       <div class="stack" style="gap:14px">
-        <div class="card"><h4>1 · Run everything</h4><p>Unit, integration, and E2E. UI features get real browser verification with a screenshot as evidence.</p></div>
+        <div class="card"><h4>1 · Run everything</h4><p>Unit, integration, E2E, and design conformance. UI evidence is tied to the tested commit, viewport, and runtime state.</p></div>
         <div class="card"><h4>2 · Cross-feature regression</h4><p>Reads <b>REGRESSION-CATALOG.md</b> and re-runs every <span class="cmd-name">[R]</span> test from every previously shipped feature.</p></div>
         <div class="card" style="border-top:3px solid #ef4444"><h4>3 · Block on failure</h4><p>Any red test stops the pipeline. Work goes back to Develop. No merge, no ship, no exceptions.</p></div>
       </div>
@@ -222,7 +225,7 @@ Sign-off:
           <div>4 · <b>Performance</b> — no N+1, no waste</div>
           <div>5 · <b>Test coverage</b> — 80% unit · 15% integration · 5% E2E</div>
         </div>
-        <div class="artifact mt-m">→ REVIEW.md <span class="dim-t">(QA + DEV sign)</span></div>
+        <div class="artifact mt-m">→ REVIEW.md <span class="dim-t">(QA + DEV; DESIGN signs UI conformance)</span></div>
       </div>
       <div class="card">
         <h4><span class="cmd-name">/tgd-release</span> — faster is safer</h4>

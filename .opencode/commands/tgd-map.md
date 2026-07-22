@@ -198,6 +198,16 @@ Record every dashboard URL for the final report and the CONTEXT.md `## See Also`
 ### Summary
 <tech stack, architecture, and the dominant patterns — synthesized from the UA knowledge graph, not guessed>
 
+### UI Landscape (if frontend exists)
+<CONTEXT.md is navigation, not the visual source of truth. Inspect the real files below before producing UI work; never copy stale token values into CONTEXT.md. Repeat this subsection for every mapped repo that owns a frontend surface.>
+- **Frontend surfaces:** <routes/apps/packages that render user-facing UI>
+- **Design-system source:** <real path to the component library/theme package, or "not detected">
+- **Token source:** <real path to CSS variables/theme/tokens, or "not detected">
+- **Global styles / typography:** <real paths, or "not detected">
+- **Representative components:** <2-4 real files that establish current patterns>
+- **Responsive source:** <real breakpoint/layout source, or "not detected">
+- **External design source:** <Figma/design docs/screenshots if found, or "none found">
+
 ### Code Entry Points
 <the real entry points from CodeGraph: main()/CLI/HTTP routes/exported API — with file:symbol>
 
@@ -267,6 +277,7 @@ Full detail: `.scans/<repo>/.understand-anything/domain-graph.json` · dashboard
 - [ ] **No section is blank and no `<...>` placeholder survives** — every heading has real content or an explicit "not detected" / "none found" line (Authoring rule 2)
 - [ ] `## 2. Build / Test / Run` names build, test, lint, and run — each a real command with its source, or "not detected"
 - [ ] `## 3. Conventions & Rules` lists any rules files (or "none found") and where tests live
+- [ ] If any mapped repo has a frontend surface: its `### UI Landscape` names the real design-system, token, global-style, representative-component, and responsive source paths (or explicitly says "not detected" / "none found")
 - [ ] `### Analysis Coverage` is present for every repo — either a real file count from the UA run or the exact string "not analyzed — understand skill unavailable (see ## Degraded Mode)"
 - [ ] `### Business Flows` is present for every repo — either a real table extracted from `domain-graph.json` or the exact string "not analyzed — see ## Degraded Mode"
 - [ ] If any Tier 2 step was skipped: `## Degraded Mode` section in CONTEXT.md lists every skip with its reason

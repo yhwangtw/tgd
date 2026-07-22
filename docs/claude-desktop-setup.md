@@ -12,12 +12,12 @@ Use tGD's 7-stage PDLC pipeline in Claude Desktop — no terminal required.
 
 | Stage | Claude Does | You Do |
 |-------|------------|--------|
-| **Map** | Guides you through codebase analysis, produces `CONTEXT.md` | Paste your directory tree or repo structure |
-| **Define** | Asks questions, produces `PRD.md` / `SPEC.md` / `DESIGN.md` | Answer questions, review & sign off |
+| **Map** | Guides codebase analysis and records a UI Landscape in `CONTEXT.md` when relevant | Paste your directory tree, repo structure, and real UI source paths |
+| **Define** | Runs PRD → 0/2/3 UI design routing → final SPEC in one stage | PM and DESIGN answer/review their own handoffs |
 | **Plan** | Decomposes work into `TASKS.md` with BDD acceptance criteria | Review & sign off |
 | **Develop** | Generates code + tests as artifacts | Copy code to your IDE, run tests, paste results back |
-| **Verify** | Analyzes test results, produces `TEST-REPORT.md` | Run tests, paste output |
-| **Review** | 5-axis code review, produces `REVIEW.md` | Paste `git diff` or PR content |
+| **Verify** | Analyzes tests and UI design-conformance evidence, produces `TEST-REPORT.md` | Run tests/browser checks, paste output and evidence |
+| **Review** | 5-axis code review plus conditional design conformance, produces `REVIEW.md` | Paste `git diff` or PR content; DESIGN reviews built UI if applicable |
 | **Release** | Produces `CHANGELOG.md` + `METRICS.md`, guides deployment | Run CI/CD, final sign-off |
 
 ---
@@ -80,7 +80,7 @@ Upload these files from the `skills/` directory. You can multi-select in Finder 
 
 | File | What it does |
 |------|-------------|
-| `skills/tgd-planning-and-task-breakdown/SKILL.md` | Triple-source task decomposition |
+| `skills/tgd-planning-and-task-breakdown/SKILL.md` | Context-grounded task decomposition (includes approved UI design when applicable) |
 
 **Develop Stage:**
 
@@ -143,12 +143,12 @@ You: I want to build a user authentication feature
 Claude: Entering Define stage. A few questions:
   1. Authentication method? JWT / OAuth / Session-based?
   2. What user roles exist?
-  3. Is there any UI design?
+  3. UI mode? Approved design (0) / Extend existing UI (2) / New experience (3) / No UI
 ```
 
 ```
 You: plan the work
-Claude: Reading CONTEXT.md + PRD.md + SPEC.md, decomposing tasks...
+Claude: Reading CONTEXT.md + PRD.md + approved DESIGN.md (if UI) + SPEC.md, decomposing tasks...
 → Produces TASKS.md (with BDD acceptance criteria)
 ```
 
@@ -171,6 +171,7 @@ Every artifact ends with a sign-off section. Review the artifact, then approve:
 ```markdown
 ## Sign-off
 - [x] **PM**: Approved — 2026-06-26 — Looks good
+- [ ] **DESIGN**: — (UI artifacts only)
 - [ ] **DEV**: — (pending)
 - [ ] **QA**: — (pending)
 ```
@@ -191,12 +192,12 @@ You are a tGD pipeline assistant. tGD is an Agentic PDLC (Product Development Li
 
 | Stage | Name | Input | Output | Agent Does | Human Does |
 |-------|------|-------|--------|------------|------------|
-| 01 | Map | src/ + codebase | CONTEXT.md | Scans codebase, builds understanding | Reviews CONTEXT.md |
-| 02 | Define | CONTEXT.md + intent | PRD.md · SPEC.md · DESIGN.md | Interviews user, drafts specs | Signs off PRD + SPEC |
-| 03 | Plan | CONTEXT.md · PRD.md · SPEC.md | TASKS.md + BDD AC | Triple-source decomposition | Signs off TASKS.md |
+| 01 | Map | src/ + codebase | CONTEXT.md | Scans codebase, maps real UI sources | Reviews CONTEXT.md |
+| 02 | Define | CONTEXT.md + intent | PRD.md → DESIGN.md/prototype (if UI) → SPEC.md | Interviews, routes 0/2/3 design, finalizes spec | PM owns product; DESIGN approves UI direction |
+| 03 | Plan | CONTEXT.md · PRD.md · DESIGN.md (if UI) · SPEC.md | TASKS.md + BDD AC | Context-grounded decomposition | DEV signs off TASKS.md |
 | 04 | Develop | TASKS.md · SPEC.md + src/ | src/ + tests/ | TDD in sandbox | Reviews code, signs off |
-| 05 | Verify | src/ · tests/ + REGRESSION-CATALOG.md | TEST-REPORT.md | All tests + E2E + regression | Signs off or blocks |
-| 06 | Review | src/ · TEST-REPORT.md | REVIEW.md — 5-axis | 5-axis code quality review | Signs off REVIEW.md |
+| 05 | Verify | src/ · tests/ + REGRESSION-CATALOG.md | TEST-REPORT.md | Tests + E2E + regression + UI evidence | QA signs off or blocks |
+| 06 | Review | src/ · TEST-REPORT.md | REVIEW.md — 5-axis + design conformance | Code quality and UI conformance review | QA + DEV; DESIGN if UI |
 | 07 | Release | All signed-off artifacts | CHANGELOG.md · METRICS.md + deploy | Commit → CI → deploy | Final sign-off |
 
 ## Intent Mapping
@@ -244,6 +245,7 @@ Match your tone to the current stage:
 | Role | Focus | Stages |
 |------|-------|--------|
 | PM | Product direction & acceptance | Define (PRD), Release (final sign-off) |
+| DESIGN | Experience direction & implementation conformance | Define (DESIGN + prototype), Review (built UI evidence) |
 | DEV | Implementation quality | Plan (TASKS), Develop (code), Review |
 | QA | Test quality & coverage | Verify (TEST-REPORT), Review (REVIEW.md) |
 
@@ -256,11 +258,11 @@ Since this is Claude Desktop (not a coding agent), adapt each stage:
 | Stage | You produce | User does manually |
 |-------|-------------|-------------------|
 | Map | Guide user to paste directory tree, then produce CONTEXT.md | Save CONTEXT.md to their repo |
-| Define | Ask questions, produce PRD.md / SPEC.md / DESIGN.md | Review and sign off |
+| Define | Ask questions, produce PRD.md → conditional DESIGN/prototype → SPEC.md | PM and DESIGN review their handoffs |
 | Plan | Decompose into TASKS.md with BDD acceptance criteria | Review and sign off |
 | Develop | Generate code + tests as Artifacts | User copies to IDE, runs tests, reports back |
-| Verify | Analyze test results user pastes, produce TEST-REPORT.md | Run tests, paste output |
-| Review | 5-axis code review of pasted code/diff | Paste git diff or PR content |
+| Verify | Analyze test results and UI evidence, produce TEST-REPORT.md | Run tests/browser checks, paste output and evidence |
+| Review | 5-axis review plus conditional design conformance | Paste git diff/PR; DESIGN reviews the UI evidence |
 | Release | Produce CHANGELOG.md + METRICS.md, guide deployment | Run CI/CD, sign off |
 
 ## Artifact Format

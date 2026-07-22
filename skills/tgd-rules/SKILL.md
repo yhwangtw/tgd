@@ -38,7 +38,7 @@ If none resolves to a directory containing `scripts/generate-mirrors.py`, STOP a
 | Command | Phase | Pipeline | Artifacts |
 |---------|-------|----------|-----------|
 | `/tgd-map` | Map | `tgd-context-engineering` → `codegraph init` → `understand` (MANDATORY) | `CONTEXT.md` + `.scans/<repo>/` |
-| `/tgd-define` | Define | `tgd-interview-me` → `tgd-idea-refine` → `tgd-spec-driven-development` → `tgd-sketch` (if UI) | `PRD.md` · `SPEC.md` · `DESIGN.md` + `prototype/` (if UI) — interview/ideation outputs are conversational and absorbed into PRD.md, not saved as files |
+| `/tgd-define` | Define | `tgd-interview-me` → `tgd-idea-refine` → PRD → UI design routing (`tgd-sketch`, modes 0/2/3) → final SPEC | `PRD.md` · `DESIGN.md` + `prototype/` (UI modes 1–3) · `SPEC.md` — role handoffs resume the same Define phase; they do not create an eighth phase |
 | `/tgd-plan` | Plan | `tgd-planning-and-task-breakdown` | `TASKS.md` (+ `TRACKING-PLAN.md` entries if PRD §6 names new events) |
 | `/tgd-develop` | Develop | `tgd-context-engineering` → `tgd-source-driven-development` → (`tgd-subagent-driven-development` OR `tgd-incremental-implementation`) → `tgd-test-driven-development` → `tgd-verification-before-completion` | Code + Tests (on `feature/<name>` branch) |
 | `/tgd-verify` | Verify | `tgd-debugging-and-error-recovery` → `tgd-test-driven-development` → `tgd-agent-browser` (if UI) | `TEST-REPORT.md` |
@@ -52,7 +52,7 @@ If the user types a command, invoke it. If they use natural language, map their 
 Use these commands in order. Do not skip phases:
 
 1. `/tgd-map` → Understand the project
-2. `/tgd-define` → Write PRD + SPEC
+2. `/tgd-define` → Write PRD → approve design direction when UI → finalize SPEC
 3. `/tgd-plan` → Break into tasks (Zero-Context Rule)
 4. `/tgd-develop` → Build with subagents or incremental
 5. `/tgd-verify` → Run all tests, prove it works
@@ -131,7 +131,7 @@ When you need the user to pick an option (Feature Name, Design Variant, etc.), D
 |---|---|---|
 | Naming | "What should we name this feature?" | "Pick a name: 1. `user-login` 2. `auth-flow` 3. `sign-in-module` (or type your own)" |
 | Design | "Which design do you like?" | "Pick a direction: A (Conservative), B (Strong-fit), C (Divergent)" |
-| UI Gate | "Is this a UI feature?" | "Does this feature have a UI component? 1. Yes (Generate design) 2. No (Backend only)" |
+| UI routing | "Is this a UI feature?" | "Pick a UI mode: 1. Approved design (0 variants) 2. Extend existing UI (2) 3. New experience (3) 4. No UI" |
 
 This ensures the user can reply with a simple "1" or "B" instead of typing a paragraph.
 
@@ -191,11 +191,12 @@ Suggested shape (adapt it; this is guidance, not a rigid template):
 
 ## Human Roles & Sign-off Protocol
 
-tGD has three human roles. Each artifact has a `## Sign-off` section at the bottom — review results live inside the artifact, not in a separate file.
+tGD has four human roles. One person may hold several roles, and each role can use only the artifacts relevant to its work. Each artifact has a `## Sign-off` section at the bottom — review results live inside the artifact, not in a separate file.
 
 | Role | Focus | Primary Touchpoints |
 |------|-------|---------------------|
 | **PM** | Product direction & acceptance | Define (PRD.md), Release (final sign-off) |
+| **DESIGN** | Experience direction & implementation conformance | Define (DESIGN.md + prototype), Review (built UI evidence) |
 | **DEV** | Implementation quality | Plan (TASKS.md), Develop (code), Review |
 | **QA** | Test quality & coverage | Verify (TEST-REPORT.md), Review (REVIEW.md) |
 
@@ -205,10 +206,11 @@ tGD has three human roles. Each artifact has a `## Sign-off` section at the bott
 - Reject: `- [x] **PM**: Rejected — YYYY-MM-DD — reason`
 - The `[x] **ROLE**: Approved` line format is RESERVED for `## Sign-off` sections. In-document approvals elsewhere (e.g. the PRD §6 metrics N/A sign-off) MUST use different wording (`Approved N/A — PM (name), date — reason`) — `/tgd-release`'s gate reads only the `## Sign-off` section, and reserving the format keeps any sign-off search unambiguous
 - Agent checks for `[x]` in required role lines before proceeding (Gate 3)
+- UI work has two DESIGN approvals: `[x] **DESIGN**: Direction Approved` in DESIGN.md before Plan, then `[x] **DESIGN**: Implementation Approved` in REVIEW.md after Design Conformance passes. Non-UI work requires neither.
 - Release is the hard gate: all required Sign-offs must be `[x]`
 - One person can hold multiple roles (common in small teams)
 
-**Async workflow:** Agent runs all phases but blocks at Release until sign-offs are complete. Humans review on their own schedule — no real-time blocking.
+**Async workflow:** Humans review on their own schedule. For UI modes 1–3, Define pauses at the DESIGN direction handoff and resumes there after approval; Release later blocks on the remaining required sign-offs, including DESIGN implementation approval. These are artifact handoffs inside the same seven phases, not extra lifecycle stages.
 
 ## Orchestration: Personas, Skills, and Commands
 

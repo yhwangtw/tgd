@@ -118,6 +118,12 @@ Don't silently fill in ambiguous requirements. The spec's entire purpose is to s
 - **Phase 3:** [Future]
 - **Out of Scope:** See §3 Non-Goals
 
+## UI Design
+- **Mode:** [1 — Existing approved design / 2 — Extend existing product UI / 3 — Explore a new experience / 4 — No user-facing UI]
+- **Owner:** [Design role/person, or N/A]
+- **Existing system:** [CONTEXT.md path pointers / external approved source / none]
+- **Status:** [pending / direction-approved / not-applicable]
+
 ## 8. Risks & Mitigations
 | Risk | Impact | Mitigation |
 |------|--------|------------|
@@ -145,7 +151,7 @@ Don't silently fill in ambiguous requirements. The spec's entire purpose is to s
 
 The `## Sign-off` section is the PM's **final release approval** — `/tgd-release`'s hard gate greps this exact line and blocks until it reads `[x] **PM**: Approved`. It is NOT §10 Stakeholder Alignment (define-time scope alignment); it is the release-time go/no-go, same convention as TEST-REPORT.md (QA) and REVIEW.md (QA + DEV).
 
-Sections 1–8 are always required. **9 Competitive Analysis**, **10 Stakeholder Alignment**, and **11 Timeline** are marked *(if applicable)* — a solo or small feature may omit them. `/tgd-define`'s gate (`check-doc-sections.py`) enforces exactly this: the always-required sections must be present, the *(if applicable)* ones are not forced. To make another section optional, mark it *(if applicable)* here — the gate reads this template as its single source, so nothing else needs to change.
+Sections 1–8 plus **UI Design** are always required. **9 Competitive Analysis**, **10 Stakeholder Alignment**, and **11 Timeline** are marked *(if applicable)* — a solo or small feature may omit them. `/tgd-define`'s gate (`check-doc-sections.py`) enforces exactly this: the always-required sections must be present, the *(if applicable)* ones are not forced. To make another section optional, mark it *(if applicable)* here — the gate reads this template as its single source, so nothing else needs to change.
 
 **§6 Success Metrics — filling rules (enforced by `/tgd-define`'s gate):**
 
@@ -157,7 +163,7 @@ A metric whose number has no named source is not a metric. Every row's **Measure
 
 At `/tgd-release`, the §6 table becomes `$TGD_DIR/<feature-name>/METRICS.md` — a handoff sheet whose Actual column is filled by whoever owns the data (PM, analyst), on their schedule, in their rituals. tGD's responsibility ends at making that sheet accurate and cheap to fill.
 
-**SPEC.md template (save to `$TGD_DIR/<feature-name>/SPEC.md`):**
+**SPEC.md template (save to `$TGD_DIR/<feature-name>/SPEC.md`):** For backend-only work, write it immediately after PRD approval. For UI modes 1-3, this is the final technical artifact: do not write/finalize it until the Design Routing below has an approved direction. A pre-existing draft may be reconciled in place, but it must not remain stale after DESIGN.md changes the flow, states, components, data needs, or events.
 
 ```markdown
 # SPEC: [Feature Name]
@@ -194,136 +200,120 @@ At `/tgd-release`, the §6 table becomes `$TGD_DIR/<feature-name>/METRICS.md` �
 - Never: [...]
 ```
 
-### Phase 1.5: UI Design Gate (MANDATORY USER PROMPT)
+### Phase 1.5: UI Design Routing (inside DEFINE; not a new lifecycle phase)
 
-After writing SPEC.md, you MUST stop and ask the user via **Selection Protocol**:
-"**Does this feature have a UI component requiring DESIGN.md?**"
-**Format:** "1. Yes (Generate design) 2. No (Backend only)"
-**Do NOT skip this step. You cannot self-determine UI vs Backend — the user decides.**
+After PRD.md and before SPEC.md is finalized, ask via the Selection Protocol:
 
-**If user confirms YES:**
-1. **Check existing design** in SPEC.md:
-   - If `[Figma URL]` → fetch the URL with your platform's web-fetch capability and extract the component structure; if the platform cannot render it, ask the user for a screenshot export → skip to step 3
-   - If `[Screenshot/PDF]` → read the image with vision and extract the UI elements → skip to step 3
-   - If `[None]` → proceed to step 2
+1. **Existing approved design** — use a versioned Figma frame, screenshot/PDF, or approved design source; **0 variants**.
+2. **Extend existing product UI** — ground both alternatives in the current product; **2 variants** (`conservative`, `strong-fit`).
+3. **Explore a new experience** — compare materially different UX directions; **3 variants** (`conservative`, `strong-fit`, `divergent`).
+4. **No user-facing UI** — no DESIGN.md or prototypes; proceed directly to SPEC.md.
 
-2. **Generate design mockups** (via the `tgd-sketch` skill):
-   - Read the SPEC.md for feature requirements
-   - Generate 3 variants (Conservative / Strong-fit / Divergent) as self-contained HTML files
-   - Save to `$TGD_DIR/<feature-name>/prototype/` — the same directory `/tgd-define`'s verification gate checks
-   - Present the 3 variants to the user with a comparison table
-   - **STOP. Ask user to pick a direction** (or request a hybrid)
+Write the selected Mode, Owner, Existing system, and Status into PRD.md `## UI Design`. Use `pending` initially for modes 1–3 and `not-applicable` for mode 4. The user owns this classification; never silently choose backend-only.
 
-3. **Write DESIGN.md** based on chosen design:
-   - Extract from chosen variant (or existing design if step 1 was used)
-   - Apply anti-slop rules from the template below
-   - Save to `$TGD_DIR/<feature-name>/DESIGN.md`
+**Source contract for modes 1-3:**
 
-4. **Confirm with user:**
-   - Present DESIGN.md summary: Visual Direction, Font choices, Color palette, Spacing
-   - **STOP. Ask user:** "DESIGN.md confirmed? Ready to proceed to PLAN?"
-   - If not satisfied → modify DESIGN.md → re-confirm
+1. Read `$TGD_DIR/CONTEXT.md` as navigation. Open the real design-system, token, global-style, representative-component, responsive, and external-design sources listed under `UI Landscape`. If a frontend exists but this mapping is missing (legacy/stale context), STOP and refresh `/tgd-map` instead of guessing.
+2. Read PRD.md for the target user, problem, core action, scope, and success criteria.
+3. Apply this exact precedence: **Existing design system > approved DESIGN.md additions > tGD fallback defaults**. Existing brand rules may legitimately use Inter, system fonts, current breakpoints, gradients, or other choices that fallback heuristics would avoid.
+4. If an external source is inaccessible or unversioned, request a specific frame export/screenshot and record its path plus revision/date. Do not pretend a fetched page is a stable design specification.
 
-**If user confirms NO:**
-- Skip DESIGN.md entirely and proceed to PLAN.
+For modes 2-3, run `tgd-sketch`, save the required variants under `$TGD_DIR/<feature-name>/prototype/`, visually verify each one, present the comparison, and let the Design owner select or request a hybrid. Mode 1 skips `tgd-sketch` entirely.
+
+Write DESIGN.md from the approved source/direction, then stop for the Design owner. Its Sign-off remains pending until the role records `[x] **DESIGN**: Direction Approved`; then update PRD `## UI Design` Status to `direction-approved`. Only then write or reconcile SPEC.md against the approved user flow, component mapping, state matrix, responsive behavior, content/copy, API/data needs, events, and test strategy.
 
 **DESIGN.md template (save to `$TGD_DIR/<feature-name>/DESIGN.md`):**
 ```markdown
 # DESIGN: [Feature Name]
 
-## Source
-- **Type**: [Figma / Mockup / Screenshot]
-- **URL/Path**: [link or file path]
-- **Variant**: [Conservative / Strong-fit / Divergent]
+## Source & Revision
+- **Type:** [Figma / Mockup / Screenshot / PDF]
+- **URL/Path:** [stable link or artifact path]
+- **Frame/Variant:** [frame/node id or Conservative / Strong-fit / Divergent]
+- **Revision/Reviewed:** [source revision, commit, export hash, or YYYY-MM-DD]
+- **Context:** [`$TGD_DIR/CONTEXT.md` mapping revision/date]
+
+## Design-System Precedence
+**Existing design system > approved DESIGN.md additions > tGD fallback defaults**
+- **Component source:** [real path / none]
+- **Token source:** [real path / none]
+- **Global style / typography source:** [real paths / none]
+- **Responsive source:** [real path / none]
+- **Fallbacks used:** [none, or list each fallback and why no product source existed]
 
 ## Visual Direction
-- **Reference**: [Product name, e.g. Linear / Stripe / Vercel]
-- **Vibe**: [e.g. "ultra-minimal dark, precise, purple accent"]
-- **Anti-patterns** (MUST NOT):
-  - Fonts: Inter, Roboto, Arial, Open Sans, system defaults
-  - Colors: pure black (#000), pure white (#fff), cyan-on-dark, purple-to-blue gradients, neon accents
-  - Layout: everything in cards, cards inside cards, identical card grids, center everything
-  - Visual: glassmorphism, gradient text, rounded rectangles with thick colored border on one side
-  - Motion: bounce/elastic easing, animate layout properties (width/height/padding)
-  - Content: lorem ipsum, fake metrics, placeholder testimonials, decorative SVG illustrations
+- **Product fit:** [how this continues or intentionally changes the existing product]
+- **Vibe:** [specific adjectives grounded in product/user context]
+- **Chosen direction:** [why this direction wins]
+- **Rejected alternatives:** [what was rejected and the concrete trade-off]
 
-## Component Tree
-- Page
-  - Header
-  - LoginForm
-    - InputField × 2
-    - SubmitButton
-  - Footer
+## Primary User & Core Job
+- **Primary user:** [specific role/context]
+- **Core job:** [single most important action/outcome]
+- **Success signal:** [what the user sees/does when the job is complete]
 
-## Design Tokens
-| Token | Value | Notes |
-|-------|-------|-------|
-| color-bg | #0a0a0a | tinted, not pure black |
-| color-surface | #111111 | |
-| color-text | #e5e5e5 | |
-| color-text-muted | #737373 | |
-| color-accent | #3b82f6 | one primary accent only |
-| color-success | #22c55e | |
-| color-danger | #ef4444 | |
-| color-border | #262626 | |
-| font-heading | [Choose: Space Grotesk / DM Sans / Geist / etc.] | NOT Inter/Roboto |
-| font-body | [Choose: DM Sans / Source Sans 3 / Geist / etc.] | NOT Inter/Roboto |
-| font-mono | JetBrains Mono | code only, not everywhere |
-| radius-sm | 4px | |
-| radius-md | 8px | |
-| radius-lg | 12px | |
+## User Flow
+1. [Entry point]
+2. [Primary action]
+3. [System response]
+4. [Success and recoverable failure exits]
 
-## Typography Scale
-| Level | Size | Weight | Letter-spacing | Usage |
-|-------|------|--------|----------------|-------|
-| h1 | clamp(36px, 5vw, 64px) | 800 | -0.03em | Page title (one per page) |
-| h2 | clamp(24px, 3vw, 40px) | 700 | -0.02em | Section title |
-| h3 | 20px | 600 | -0.01em | Subsection |
-| body | 16px | 400 | 0 | Default text |
-| small | 13px | 400 | 0 | Helper / secondary |
-| code | 14px | 400 | 0 | Monospace, inline |
+## Information Hierarchy
+1. [Highest-priority content/action]
+2. [Secondary context]
+3. [Progressive disclosure / tertiary controls]
 
-## Spacing System
-| Token | Value | Usage |
-|-------|-------|-------|
-| space-xs | 4px | Tight gaps |
-| space-sm | 8px | Inner padding |
-| space-md | 16px | Card padding, gaps |
-| space-lg | 24px | Section gaps |
-| space-xl | 32px | Section padding |
-| space-2xl | 48px | Major sections |
-| space-3xl | 64px | Hero / page margins |
+## Component Mapping
+| UI responsibility | Existing component/pattern | New component | Source path / rationale |
+|---|---|---|---|
+| [Primary action] | [Button/Form/etc. or none] | [name or none] | [path or reason] |
+
+## Token Changes
+| Token | Existing value/source | New value | Why a new/overridden token is necessary |
+|---|---|---|---|
+| [token or "none"] | [path/value] | [value] | [reason] |
 
 ## Responsive
-| Breakpoint | Layout | Notes |
-|------------|--------|-------|
-| mobile (<768px) | Stack vertically | Touch targets ≥ 44px |
-| tablet (768-1024px) | 2-column where appropriate | |
-| desktop (≥1024px) | Full layout | |
+| Product breakpoint / condition | Layout and priority changes | Source / rationale |
+|---|---|---|
+| [existing breakpoint or content condition] | [behavior] | [path or reason] |
 
 ## Interactions
-- Submit button: idle → loading → success/error
-- Hover: subtle lift + shadow (use transform, not layout properties)
-- Focus: visible focus ring (2px accent, 2px offset)
-- Transitions: 0.2s ease for micro-interactions, 0.3s ease for state changes
+- [Trigger → response → completion/recovery]
+- [Keyboard and focus behavior]
 
-## States
-| State | Treatment |
-|-------|-----------|
-| Loading | Skeleton placeholders, NOT spinners for content |
-| Empty | Icon + message + CTA button |
-| Error | Message + retry button, NOT just red text |
-| Success | Brief confirmation, auto-dismiss |
+## State Matrix
+| State | Trigger/data condition | Treatment | User recovery/action |
+|---|---|---|---|
+| Default | [condition] | [treatment] | [action] |
+| Loading | [condition] | [treatment] | [action] |
+| Empty | [condition] | [treatment] | [action] |
+| Error | [condition] | [treatment] | [action] |
+| Success | [condition] | [treatment] | [action] |
+
+## Content & Copy
+| Surface | Approved copy / content rule | Localization or length constraint |
+|---|---|---|
+| [title/CTA/error/empty state] | [real text or rule] | [constraint] |
 
 ## Accessibility
-- Contrast ratio ≥ 4.5:1 for normal text, ≥ 3:1 for large text
-- All interactive elements keyboard navigable (Tab/Enter/Space)
-- Visible focus indicators on all focusable elements
-- `prefers-reduced-motion` disables non-essential animations
-- `aria-label` on icon-only buttons
-- Semantic HTML: `<button>` not `<div onClick>`, `<nav>`, `<main>`, `<section>`
-- Color is NOT the sole indicator of state (always pair with text/icon)
+- **Keyboard/focus:** [tab order, focus movement, escape behavior]
+- **Semantics/name:** [landmarks, headings, accessible names]
+- **Contrast/color:** [source tokens and non-color indicators]
+- **Motion:** [reduced-motion behavior]
+
+## Allowed Deviations
+| Deviation | Reason | Owner approval |
+|---|---|---|
+| [none or explicit constraint] | [reason] | [pending/approved] |
+
+## Sign-off
+- [ ] **DESIGN**: Direction Approved — YYYY-MM-DD — comment
 ```
+
+### Phase 1.75: Finalize the Technical Specification
+
+For UI modes 1-3, write or reconcile SPEC.md only after DESIGN Direction approval. Explicitly carry over the chosen component mapping, states, responsive behavior, accessibility constraints, data/API needs, events, and testing implications. For mode 4, write SPEC.md immediately after PRD approval. In both cases, SPEC.md is the final DEFINE artifact consumed by `/tgd-plan`.
 
 **Reframe instructions as success criteria.** When receiving vague requirements, translate them into concrete conditions:
 
@@ -390,6 +380,8 @@ Before proceeding to implementation, confirm:
 - [ ] Boundaries (Always/Ask First/Never) are defined
 - [ ] The spec is saved to `$TGD_DIR/<feature-name>/SPEC.md`
 - [ ] No feature branch was created or checked out (that happens in `/tgd-develop`'s worktree step)
-- [ ] If UI feature: 3 design variants generated, user picked a direction
+- [ ] PRD.md records one UI Design mode and its status
+- [ ] If UI mode 1-3: variant count matches the mode (0 / 2 / 3), the Design owner selected a direction, and source revisions are recorded
 - [ ] If UI feature: `$TGD_DIR/<feature-name>/DESIGN.md` exists with all required sections
-- [ ] If UI feature: user confirmed DESIGN.md before proceeding to PLAN
+- [ ] If UI feature: DESIGN.md contains `[x] **DESIGN**: Direction Approved` before SPEC finalization or PLAN
+- [ ] If UI feature: SPEC.md reflects the approved DESIGN user flow, components, states, responsive behavior, data needs, events, and testing implications

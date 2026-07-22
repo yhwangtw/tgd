@@ -18,8 +18,9 @@ Plan — decompose specs into small, verifiable tasks with acceptance criteria
 - [ ] `$TGD_DIR/<feature-name>/PRD.md` exists and is non-empty.
 - [ ] `$TGD_DIR/<feature-name>/SPEC.md` exists and is non-empty.
 - **If missing:** STOP. Tell user: "Specs are missing. Please run `/tgd-define` first."
-- [ ] If SPEC has Frontend/Full-stack: `$TGD_DIR/<feature-name>/DESIGN.md` exists.
-- **If missing:** STOP. Tell user: "Design is missing. Please run `/tgd-define` first."
+- [ ] Read PRD `## UI Design`. If the section is missing, STOP and resume `/tgd-define` to classify it in place. If the mode is **1, 2, or 3**: Status is `direction-approved`, `$TGD_DIR/<feature-name>/DESIGN.md` exists, `check-doc-sections.py DESIGN` exits 0, and its Sign-off contains `[x] **DESIGN**: Direction Approved`.
+- [ ] If the PRD mode is **4 — No user-facing UI**, no DESIGN.md is required.
+- **If a required design artifact or direction approval is missing:** STOP. Tell user: "Design direction is incomplete. Resume `/tgd-define`; this is a role handoff inside Define, not a new lifecycle phase."
 
 **🔁 Re-plan check (BEFORE writing anything):** if `$TGD_DIR/<feature-name>/TASKS.md` already exists, do NOT regenerate it from scratch — `/tgd-develop` backfills `Test:` fields and flips `**Status:**` lines in it, and a fresh rewrite destroys them (breaking the `ac-trace` / regression chain). Count from the file — `M` = tasks with `**Status:** complete` — then ask (Selection Protocol):
 
@@ -38,7 +39,7 @@ Run the `tgd-planning-and-task-breakdown` skill. Decompose the specification int
 1. **Read `$TGD_DIR/CONTEXT.md`**: Understand existing project structure and tech stack.
 2. **Read `$TGD_DIR/<feature-name>/PRD.md`**: Understand business goals and user pain points.
 3. **Read `$TGD_DIR/<feature-name>/SPEC.md`**: Analyze technical requirements and API contracts.
-4. **Read `$TGD_DIR/<feature-name>/DESIGN.md` (if present)**: Review UI flows and components.
+4. **For UI modes 1–3, read `$TGD_DIR/<feature-name>/DESIGN.md` and the real UI source files linked by CONTEXT.md**: Review the approved flow, component mapping, tokens, responsive rules, states, and allowed deviations. CONTEXT.md locates the sources; it does not replace them.
 
 **Output:** `$TGD_DIR/<feature-name>/TASKS.md`.
 
@@ -56,7 +57,7 @@ Each task should be implementable in isolation with clear success criteria. Orde
 ```
 This ensures each task is assigned to the correct repo and can be executed in the right context.
 
-**If UI feature:** Read `DESIGN.md` to understand Component Tree, Design Tokens, Responsive Breakpoints, and Interaction Patterns. Use these to inform task breakdown.
+**If UI feature:** Derive tasks from the approved DESIGN.md sections and the actual design-system sources. Acceptance criteria MUST cover observable runtime states (loading, empty, error, success, disabled), named viewports, keyboard/focus behavior, and every approved deviation that requires implementation. Cite the relevant DESIGN.md heading in each UI task so implementation and review can trace it without interpretation.
 
 **📊 Instrumentation Tasks (only if PRD §6 names a tracking event that does not exist yet):**
 1. Register each new event in `$TGD_DIR/TRACKING-PLAN.md` (create on first use) — the cumulative, platform-agnostic event dictionary. Entry format and the three cross-platform rules (one semantic = one name + `platform` property; semantic triggers, not UI triggers; declared source of truth) are in `tgd-planning-and-task-breakdown`.
@@ -90,7 +91,8 @@ This ensures each task is assigned to the correct repo and can be executed in th
 - [ ] If this was a re-plan (TASKS.md pre-existed): every task that had `**Status:** complete` is still present with its Status line and `Test:` fields intact, and no existing `AC-<task>.<n>` id was renumbered
 - [ ] Every acceptance criterion carries a stable `AC-<task>.<n>` id in BDD format — check: `grep -qE 'AC-[0-9]+[.][0-9]+' TASKS.md`. Without ids, `/tgd-verify`'s `ac-trace.py` gate fails closed.
 - [ ] Every criterion has an explicit `[R]` Yes/No regression decision
-- [ ] If UI feature: TASKS.md references DESIGN.md components
+- [ ] If UI mode is 1–3: DESIGN.md passes its section check, `[x] **DESIGN**: Direction Approved` is present, and every UI task cites the relevant DESIGN.md section/component
+- [ ] If UI mode is 1–3: UI acceptance criteria cover required runtime states, responsive viewports, and keyboard/focus behavior from DESIGN.md
 - [ ] If PRD §6 names new events: each has a `$TGD_DIR/TRACKING-PLAN.md` entry (Status: planned) and an instrumentation task with its own AC
 
 End with the closing report per `tgd-rules` → **Command Closing Report**: 📦 產出 (TASKS.md — N 個任務、M 條驗收標準；Jira keys 或「略過」) · 🔎 檢查 (gate as one line) · ➡️ 下一步 `/tgd-develop` — 實作第一片. Don't paste the raw checklist above.

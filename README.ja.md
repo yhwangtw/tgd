@@ -93,13 +93,13 @@ hermes   # Hermes Agent
 ```
 /tgd-map
 ```
-> エージェントがコードベースをスキャンし、`CONTEXT.md` を作成。
+> エージェントがコードベースをスキャンし、フロントエンドがある場合は実際のデザインシステム、トークン、スタイル、コンポーネントを指す UI Landscape を含む `CONTEXT.md` を作成します。
 
 ### 4. 最初の機能を構築
 ```
 /tgd-define ユーザー認証を追加したい
 ```
-> エージェントがインタビューし、PRD + SPEC を作成。
+> 同じ Define ステージ内でインタビューから PRD → デザイン → SPEC まで進みます。UI は必要な探索量に応じて 0 / 2 / 3 個のプロトタイプにルーティングされます。
 
 ### Claude Desktop（ターミナル不要）
 
@@ -142,28 +142,30 @@ hermes   # Hermes Agent
   3. ロールベース (admin vs user)
 ユーザー：1
 
-エージェント：PRD + SPEC を作成中...
+エージェント：PRD を作成中...
 → $TGD_DIR/jwt-auth/PRD.md
-→ $TGD_DIR/jwt-auth/SPEC.md
 
-エージェント：この機能にUIコンポーネントはありますか？
-  1. はい（デザインを生成）
-  2. いいえ（バックエンドのみ）
-ユーザー：1
+エージェント：UIデザインモードを選択してください：
+  1. 承認済みデザインあり（プロトタイプ 0）
+  2. 既存プロダクトUIを拡張（プロトタイプ 2）
+  3. 新しい体験を探索（プロトタイプ 3）
+  4. ユーザー向けUIなし
+ユーザー：2
 
-エージェント：3つのHTMLプロトタイプを生成中...
-→ $TGD_DIR/jwt-auth/prototype/variant-a.html
-→ $TGD_DIR/jwt-auth/prototype/variant-b.html
-→ $TGD_DIR/jwt-auth/prototype/variant-c.html
+エージェント：CONTEXT.md の UI Landscape から実際のトークンとコンポーネントを開いています...
+エージェント：既存コンテキストに沿った2つのHTMLプロトタイプを生成中...
+→ $TGD_DIR/jwt-auth/prototype/conservative/index.html
+→ $TGD_DIR/jwt-auth/prototype/strong-fit/index.html
 
 エージェント：デザインの方向性を選んでください：
-  A. ミニマルカードベース（クリーン、集中）
-  B. ダンスダッシュボード（パワーユーザー向け）
-  C. 分割ペイン（コンテキスト豊富）
+  A. Conservative（現行プロダクトに最も近い）
+  B. Strong-fit（既存システム内で明確に改善）
 ユーザー：A
 
-エージェント：DESIGN.md を作成中...
+エージェント：DESIGN.md を作成し、デザイン方向の承認を記録...
 → $TGD_DIR/jwt-auth/DESIGN.md
+エージェント：承認済みデザインに合わせて技術SPECを確定...
+→ $TGD_DIR/jwt-auth/SPEC.md
 → /tgd-plan の準備完了
 ```
 
@@ -233,13 +235,16 @@ flowchart LR
 | **3未満** | ⚡ 高速モード | メインエージェントが worktree 内で直接実装。速くトークン効率も良い。 |
 | **3以上** | 🔀 品質モード | サブエージェントに委譲し二段階レビュー（仕様準拠 → コード品質）。最高品質。 |
 
-### 🧠 三源計画
-`/tgd-plan` 中、エージェントはタスク作成前に**3つのドキュメント**を読みます：
+### 🧠 コンテキストに基づく計画
+`/tgd-plan` 中、エージェントはタスク作成前に**3つのコアドキュメント**を読みます：
 1. **`CONTEXT.md`** — 既存のプロジェクト構造、慣習、技術スタック
 2. **`PRD.md`** — ビジネスゴール、ユーザーの課題、スコープ境界
 3. **`SPEC.md`** — 技術要件、APIコントラクト、データベーススキーマ
 
-これにより `TASKS.md` は机上の仕様ではなく、現実の制約を反映します。
+UIモードでは、承認済み `DESIGN.md` と CONTEXT.md が示す実際のデザインシステムソースも読みます。これにより `TASKS.md` は机上の仕様ではなく、現実の制約を反映します。
+
+### 🎨 プロダクトコンテキストに基づくUIデザイン
+`/tgd-map` は実際のトークン、スタイル、タイポグラフィ、代表コンポーネントへのナビゲーションとして **UI Landscape** を記録します。既存の Define ステージ内で `/tgd-define` は **PRD → デザイン → SPEC** の順に進み、承認済みデザインは0、既存UIの拡張は2、新しい体験は3、非UIはスキップします。PM、DESIGN、DEV、QA は新しいステージを増やさず、それぞれのアーティファクトから同じ機能を引き継げます。
 
 ### 🎯 3択機能ネーミング
 `/tgd-define` 実行時、エージェントは**3つの異なるkebab-case名**を提案し、あなたが選ぶ（または独自案を出す）まで待ちます。推測は不要 — 初日からあなたが命名を握ります。
@@ -276,8 +281,8 @@ Jira への同期時、tGD はやみくもに課題を作成しません：
 | 🎯 内容 | ⌨️ コマンド | 💡 原則 | 🔧 呼び出し |
 |---|---|---|---|
 | プロジェクト理解 | `/tgd-map` | 変更前にコンテキスト + ライブダッシュボード | `tgd-context-engineering` + `codegraph init` + `understand-dashboard` |
-| 何を構築するか定義 | `/tgd-define` | 3択命名 + 製品 + 仕様 | `tgd-interview-me` → `tgd-idea-refine` → `tgd-spec-driven-development` |
-| 構築方法を計画 | `/tgd-plan` | CONTEXT + PRD + SPEC → アトミックタスク | `tgd-planning-and-task-breakdown` → `tgd-jira-auto-sync` |
+| 何を構築するか定義 | `/tgd-define` | PRD → 条件付き0/2/3デザイン → 最終SPEC | `tgd-interview-me` → `tgd-idea-refine` → `tgd-spec-driven-development` + `tgd-sketch`（必要時） |
+| 構築方法を計画 | `/tgd-plan` | CONTEXT + PRD + SPEC + 承認済みデザイン → アトミックタスク | `tgd-planning-and-task-breakdown` → `tgd-jira-auto-sync` |
 | サンドボックス構築 | `/tgd-develop` | **必須 Worktree** + スマートルーティング | `tgd-source-driven-development` → (`subagent` OR `incremental`) → `tgd-test-driven-development` |
 | 動作を証明 | `/tgd-verify` | テストが証拠 | `tgd-debugging-and-error-recovery` → `tgd-test-driven-development` → **Cross-Feature Regression Gate** |
 | マージ前レビュー | `/tgd-review` | コードの健康改善 | `tgd-code-review-and-quality` → `tgd-code-simplification` |
@@ -380,7 +385,7 @@ Command: pytest -v --tb=short
 
 TEST-REPORT.mdはテストランナーの出力から **自動生成** されるもので、手動で管理するものではありません。
 
-**フロントエンドの要件：** SPEC.mdにUIがある場合、Verifyでは必ず `tgd-agent-browser` でE2Eブラウザテストを実行します。
+**フロントエンドの要件：** DESIGN.md がある場合、Verifyでは必ず `tgd-agent-browser` を実行し、指定viewport、runtime state、アクセシビリティのデザイン適合証拠を TEST-REPORT.md に追加します。
 
 ### 🏷️ リグレッション: 安全ネット
 
@@ -428,15 +433,17 @@ Feature 3 (payments):  +6 regression tests  ← Catalog は現在 19 エント�
 
 ### 🚀 Release: リグレッションゲート
 
-ReleaseはtGD唯一のハードゲートです。実行前にエージェントが以下を確認します：
+Release は tGD の最終的なクロスロール・ハードゲートです。（UI方向は未確定のデザインでPlanしないよう、Define内で先に承認されます。）実行前にエージェントが以下を確認します：
 
 ```
 PRD.md        → PM signed?      ✅
+DESIGN.md     → Direction signed? ✅ (UI only)
 TASKS.md      → DEV signed?     ✅
 TEST-REPORT   → QA signed?      ✅
               → Regression 100%? ✅
               → Failed = 0?      ✅
 REVIEW.md     → QA +DEV signed? ✅
+              → DESIGN implementation signed? ✅ (UI only)
 
 All ✅ → proceed to Release
 Any ❌ → STOP: "X has not approved Y yet"
@@ -446,17 +453,19 @@ Any ❌ → STOP: "X has not approved Y yet"
 
 ## 👥 人間のロールとサインオフ
 
-tGD には3つの人間ロール。各artifact の下部に `## Sign-off` セクション：
+tGD には4つの人間ロールがあります。各ロールは共有アーティファクトのうち必要なものだけを使え、1人が複数ロールを兼任できます。各artifact の下部に `## Sign-off` セクションがあります：
 
 | ロール | 職責 | 審査項目 | サインオフ対象 |
 |--------|------|----------|--------------|
 | **PM** | 製品方向 | PRD（何を・なぜ） | PRD.md、Release |
+| **DESIGN** | 体験の方向性と実装整合性 | DESIGN、プロトタイプ、実装UIの証拠 | DESIGN.md、REVIEW.md（UIのみ） |
 | **DEV** | 実装品質 | TASKS、コード | TASKS.md、コード、REVIEW.md |
 | **QA** | テスト品質・カバレッジ | TEST-REPORT、テスト品質 | TEST-REPORT.md、REVIEW.md |
 
 **仕組み：**
 - Agent が artifact を生成 → 人間が自分のPCで審査 → `## Sign-off` を編集 → commit & push
 - Agent が次のフェーズ前に Sign-off チェックボックスをチェック（Gate 3）
+- UIではPlan前のDESIGN方向承認とReviewでのDESIGN実装承認が必要。非UIではどちらもスキップ
 - Release がハードゲート：必須 Sign-off が全て `[x]`
 - フォーマット：`- [x] **PM**: Approved — 日付 — コメント` または `- [x] **QA**: Rejected — 日付 — 理由`
 - 1人が複数ロールを兼任可能（小チームでは一般的）
@@ -592,8 +601,12 @@ workspace/
     │   ├── SPEC.md                     # Backend: JWT + bcrypt / Frontend: LoginForm
     │   ├── DESIGN.md                   # Login page mockup
     │   ├── prototype/
-    │   │   ├── variant-a.html          # Minimal login form
-    │   │   └── variant-b.html          # Login with social buttons
+    │   │   ├── conservative/
+    │   │   │   ├── index.html          # 現行プロダクトに最も近い
+    │   │   │   └── README.md           # 根拠とトレードオフ
+    │   │   └── strong-fit/
+    │   │       ├── index.html          # 推奨するプロダクト適合の進化
+    │   │       └── README.md           # 根拠とトレードオフ
     │   ├── TASKS.md                    # 5 tasks, all done
     │   ├── REVIEW.md                   # Passed: 87% coverage
     │   └── decisions/
@@ -604,8 +617,12 @@ workspace/
         ├── SPEC.md                     # Backend: Stripe API / Frontend: PaymentForm
         ├── DESIGN.md                   # Checkout page mockup
         ├── prototype/
-        │   ├── variant-a.html          # Single-page checkout
-        │   └── variant-b.html          # Multi-step checkout
+        │   ├── conservative/
+        │   │   ├── index.html          # 現行プロダクトに最も近い
+        │   │   └── README.md
+        │   └── strong-fit/
+        │       ├── index.html          # 推奨するプロダクト適合の進化
+        │       └── README.md
         └── TASKS.md                    # 8 tasks, not started
 ```
 
@@ -626,7 +643,7 @@ my-project-backend/.codegraph → my-project-tGD/.scans/my-project-backend/.code
 | フェーズ | コマンド | アーティファクト | 場所 |
 |----------|----------|-----------------|------|
 | Map | `/tgd-map` | CONTEXT.md | `$TGD_DIR/CONTEXT.md` |
-| Define | `/tgd-define` | PRD.md, SPEC.md, DESIGN.md, prototype/ | `$TGD_DIR/<feature>/` |
+| Define | `/tgd-define` | PRD.md → DESIGN.md + prototype/（UI）→ SPEC.md | `$TGD_DIR/<feature>/` |
 | Plan | `/tgd-plan` | TASKS.md (+ TRACKING-PLAN.md entries) | `$TGD_DIR/<feature>/TASKS.md` · `$TGD_DIR/TRACKING-PLAN.md` |
 | Develop | `/tgd-develop` | src/ + tests/ | コードリポジトリ (worktree) |
 | Verify | `/tgd-verify` | TEST-REPORT.md | `$TGD_DIR/<feature>/TEST-REPORT.md` |
@@ -678,8 +695,8 @@ tGD/
 |--------|------|
 | [tgd-interview-me](skills/tgd-interview-me/SKILL.md) | Q&Aでユーザー意図を抽出 |
 | [tgd-idea-refine](skills/tgd-idea-refine/SKILL.md) | 発散/収束思考 |
-| [tgd-spec-driven-development](skills/tgd-spec-driven-development/SKILL.md) | PRD + SPEC を先に作成 |
-| [tgd-sketch](skills/tgd-sketch/SKILL.md) | 使い捨てHTMLモックアップ：2〜3のデザイン案 |
+| [tgd-spec-driven-development](skills/tgd-spec-driven-development/SKILL.md) | PRD → UIデザインルーティング（0/2/3案）→ 最終SPEC |
+| [tgd-sketch](skills/tgd-sketch/SKILL.md) | プロダクトコンテキストに沿ったHTMLモックアップ：モード別0/2/3案 |
 </details>
 
 <details>

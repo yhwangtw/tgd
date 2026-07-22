@@ -20,6 +20,9 @@ jobs:
       - name: Validate all skills
         run: node scripts/validate-skills.js
 
+      - name: Validate lifecycle contracts
+        run: python3 -m unittest discover -s tests -p 'test_*.py'
+
   validate:
     name: Validate plugin structure
     needs: validate-skills

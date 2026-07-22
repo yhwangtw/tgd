@@ -18,6 +18,7 @@ Release to production — faster is safer
 - [ ] Review passed — no 🔴 Critical finding left unresolved: every 🔴 row in REVIEW.md's findings table reads `fixed` in its Resolution column (a 🔴 row that is `open`, empty, or `deferred` blocks release).
 - [ ] `$TGD_DIR/<feature>/REVIEW.md` exists.
 - [ ] The feature's tests exist (per the project's layout in `CONTEXT.md`) and pass.
+- [ ] Read PRD `## UI Design`. For modes 1–3, DESIGN.md exists and REVIEW.md `## Design Conformance (if UI)` reads `✅ Pass` with evidence for the commit being released. A missing required DESIGN.md fails closed.
 - **If missing:** STOP. Tell user: "Review or tests incomplete. Please run `/tgd-review` first."
 
 **🔏 Pre-flight: Sign-off Gate (HARD GATE)**
@@ -31,6 +32,9 @@ Release is the one phase that blocks on human sign-off (see `tgd-rules` → Huma
       `awk '/^## Sign-off/,0' "$TGD_DIR/<feature-name>/PRD.md" | grep -qF '[x] **PM**: Approved'`
       — or an explicit go-ahead from the user in this session (record it in the CHANGELOG entry).
       (The approver flips `- [ ] **ROLE**: (pending)` to `- [x] **ROLE**: Approved` — keep that exact spelling; the fixed-string greps are the gate.)
+- [ ] **If PRD UI mode is 1–3**, both design approvals are required:
+      `awk '/^## Sign-off/,0' "$TGD_DIR/<feature-name>/DESIGN.md" | grep -qF '[x] **DESIGN**: Direction Approved'`
+      `awk '/^## Sign-off/,0' "$TGD_DIR/<feature-name>/REVIEW.md" | grep -qF '[x] **DESIGN**: Implementation Approved'`
 - **If any grep exits non-zero** (line unchecked, missing, or `Rejected`): 🛑 STOP. List the pending roles and wait — humans review async. Do NOT proceed "provisionally".
 
 Run the `tgd-shipping-and-launch` skill. This is the Release phase. The full pipeline is:
@@ -106,6 +110,7 @@ This catalog is cumulative — every shipped feature's `[R]` tests are preserved
 
 **Verification Gate:**
 - [ ] Sign-off Gate passed — all required role lines are `[x] Approved`
+- [ ] If PRD UI mode is 1–3: Direction Approved and Implementation Approved design sign-offs passed, and REVIEW.md design conformance evidence matches the released commit
 - [ ] Regression Catalog Audit ran BEFORE the merge — `regression-gate.sh` exit 0 (or 3), all entries point to existing, passing test files
 - [ ] Git commit created with clean history
 - [ ] `feature/<feature-name>` merged to `main` (or PR opened), worktree removed, branch deleted

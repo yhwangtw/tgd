@@ -54,7 +54,8 @@ Before writing any code, operate in read-only mode to gather context from all av
 - **Read `$TGD_DIR/CONTEXT.md`**: Understand existing project structure, tech stack, and conventions.
 - **Read `$TGD_DIR/<feature-name>/PRD.md`**: Understand the business goals, user pain points, and scope boundaries.
 - **Read `$TGD_DIR/<feature-name>/SPEC.md`**: Analyze technical requirements, API contracts, and database schemas.
-- **Read `$TGD_DIR/<feature-name>/DESIGN.md` (if present)**: Review component trees and UI flows.
+- **Read PRD `## UI Design`**: Determine the selected UI mode. A missing section returns to `/tgd-define` for in-place classification. For modes 1–3, Status must be `direction-approved`, DESIGN.md must exist, pass its section check, and contain `[x] **DESIGN**: Direction Approved` before planning begins; otherwise return to `/tgd-define`.
+- **Read `$TGD_DIR/<feature-name>/DESIGN.md` and the actual UI sources linked by CONTEXT.md (UI modes 1–3)**: Review the approved flow, hierarchy, component mapping, token changes, responsive rules, interaction states, accessibility, and allowed deviations. CONTEXT.md is navigation, not the visual source of truth.
 
 **Synthesis:** Map dependencies between existing code and new requirements. Note risks and unknowns. If `.codegraph/` exists, run `codegraph impact "<core-symbol>"` on any symbol the feature will modify to assess blast radius and inform task ordering. If planning a large refactor, run the `understand-diff` skill to visualize the impact of proposed changes before breaking down tasks.
 
@@ -221,6 +222,7 @@ Per-task quality bar (in addition to the template fields):
   ("tests exist and pass") that trace to the same test lines as the behavior
   criteria they duplicate. If a task's tests feel like a separate work item,
   the task is too big — split the task, not the testing.
+- **UI work is traceable to approved design**: cite the exact DESIGN.md heading or mapped component in every UI task. BDD criteria must assert observable loading, empty, error, success, and disabled states where applicable; named responsive viewports; keyboard/focus behavior; and any approved deviation that affects runtime output.
 
 ### Step 5: Order and Checkpoint
 
@@ -353,4 +355,5 @@ Before starting implementation, confirm:
 - [ ] No task touches more than ~5 files
 - [ ] Checkpoints exist between major phases
 - [ ] The human has reviewed and approved the plan
-- [ ] If UI feature: `$TGD_DIR/<feature-name>/DESIGN.md` exists (created in Define phase)
+- [ ] If UI mode is 1–3: PRD UI Design Status is `direction-approved`, `$TGD_DIR/<feature-name>/DESIGN.md` exists, passes the DESIGN section check, and contains `[x] **DESIGN**: Direction Approved`
+- [ ] If UI mode is 1–3: every UI task cites its governing DESIGN.md section/component and carries BDD criteria for applicable states, responsive behavior, and keyboard/focus behavior

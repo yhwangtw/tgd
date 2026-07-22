@@ -171,7 +171,7 @@ Not every task needs every skill. A bug fix might only need: `tgd-debugging-and-
 | Define | tgd-interview-me | Surface what the user actually wants before any plan, spec, or code exists |
 | Define | tgd-idea-refine | Refine ideas through structured divergent and convergent thinking |
 | Define | tgd-spec-driven-development | Requirements and acceptance criteria before code |
-| Define | tgd-sketch | Throwaway HTML mockups — 2-3 design variants to compare |
+| Define | tgd-sketch | Context-grounded HTML mockups — 0/2/3 variants by UI design mode |
 | Plan | tgd-planning-and-task-breakdown | Decompose into small, verifiable tasks |
 | Plan | tgd-jira-auto-sync | Auto-create Jira issues from TASKS.md (opt-in, after /tgd-plan) |
 | Build | tgd-incremental-implementation | Thin vertical slices, test each before expanding |

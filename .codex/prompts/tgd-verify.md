@@ -18,7 +18,8 @@ Verify — prove it works with debugging and test pyramid
 - [ ] The feature branch has source changes: `git diff main...feature/<feature-name> --stat` is non-empty (multi-repo: in each repo with tagged tasks).
 - [ ] Test files exist for the feature — use the project's actual test layout from `CONTEXT.md` (`tests/`, `spec/`, `*_test.go`, `__tests__/`, …). Do NOT assume a `src/`+`tests/` layout.
 - [ ] Every task with `**Status:** complete` in TASKS.md has `Spec-Review:` and `Quality-Review:` fields reading `PASS — …` (not `pending`) — a pending review field means `/tgd-develop` skipped its two-stage review. 🛑 STOP: send it back to `/tgd-develop`; do not verify unreviewed work.
-- **If missing:** STOP. Tell user: "No source code or tests found. Please run `/tgd-develop` first."
+- [ ] Read PRD `## UI Design`. For modes 1–3, Status is `direction-approved`, DESIGN.md exists, and its Sign-off contains `[x] **DESIGN**: Direction Approved`. A missing required design artifact is a hard failure, not a non-UI feature.
+- **If missing:** STOP. Report the specific missing artifact: source/tests return to `/tgd-develop`; UI classification or design direction returns to `/tgd-define`.
 
 **🌳 Worktree:** If `../project-<feature-name>` exists (created by `/tgd-develop`), run all commands in this phase inside that worktree — the feature branch is not on `main` yet. Multi-repo features (TASKS.md has `[repo-name]` prefixes) have one worktree PER repo (`../project-<feature-name>-<repo-name>`) — run each repo's tests inside ITS worktree; verifying only one repo is a partial verify, not a pass.
 
@@ -106,6 +107,17 @@ The gate executes **every catalog entry individually** (jest/vitest/npm/pytest/g
 
 **Verification Gate Failure**: A broken regression test means your feature broke a previously shipped critical path. This is a hard fail — no exceptions.
 
+**🎨 Design Conformance Gate (MANDATORY for PRD UI modes 1–3):**
+
+This is implementation QA against the approved direction, not another design phase.
+
+1. Ensure the implementation being inspected is committed, then record `git rev-parse HEAD`. If Verify changes code, commit it and re-run every affected test/gate against the new SHA before reporting success.
+2. Read DESIGN.md and the actual design-system/token/component sources linked by CONTEXT.md. Verify the implemented user flow, information hierarchy, component mapping, token changes, interaction/state matrix, content, accessibility rules, responsive behavior, and allowed deviations.
+3. Exercise the UI at every named viewport with `tgd-agent-browser`. Capture the loading, empty, error, success, and disabled states that apply; verify keyboard traversal, visible focus, labels, and critical screen-reader semantics.
+4. Save reproducible evidence under `$TGD_DIR/<feature-name>/evidence/ui/` (screenshots, traces, or concise text evidence) or record stable CI artifact URLs. Evidence MUST identify the tested commit SHA and viewport/state; a statement such as "looks correct" is not evidence.
+5. Append a `## UI Verification` section to TEST-REPORT.md with: commit SHA, source revision, viewports/states checked, evidence links/paths, deviations found, and `Status: Pass` or `Status: Fail`.
+6. Any implementation difference not listed under DESIGN.md `Allowed Deviations` is a failure. Fix the implementation or return to `/tgd-define` for explicit direction approval; do not silently rewrite DESIGN.md during Verify.
+
 **Verification Gate:**
 - [ ] Tests pass for the implemented feature
 - [ ] `capture-test-output.sh` ran and appended raw output + meta-comment to TEST-REPORT.md
@@ -114,6 +126,7 @@ The gate executes **every catalog entry individually** (jest/vitest/npm/pytest/g
 - [ ] `ac-trace.py` exits 0 — every acceptance criterion traced to a test
 - [ ] If TRACKING-PLAN.md has entries for this feature: each event owned by this platform has a test asserting it fires with the expected properties
 - [ ] `regression-gate.sh` exits 0 (or 3 = no catalog yet); FLAKY entries recorded in "## Flaky Tests"
+- [ ] If PRD UI mode is 1–3: Design Conformance Gate passed and TEST-REPORT.md contains `## UI Verification` tied to the tested commit SHA, with viewport/state/accessibility evidence and no unapproved deviation
 - [ ] Each worktree is clean at the end of this phase: `git status --porcelain` is empty. Any change made during verify (new tests, AC tagging, fixes) MUST be committed on the feature branch — every gate result above must be reproducible from committed state, and untracked tool residue (coverage output, lockfiles from gate attempts) must be removed, or the release merge ships something other than what was verified.
 
 End with the closing report per `tgd-rules` → **Command Closing Report**: 📦 產出 (TEST-REPORT.md — real passed/failed + coverage) · 🔎 檢查 (gate as one line) · ➡️ 下一步 `/tgd-review` — 檢查程式碼品質. Don't paste the raw checklist above.
