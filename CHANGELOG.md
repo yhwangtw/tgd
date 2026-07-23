@@ -4,6 +4,14 @@ All notable changes to tGD will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/). Versions follow [CalVer](https://calver.org/) (YYYY.MM.DD).
 
+## v2026.07.23
+
+### ✨ Features
+- ground UI design handoffs in product context (`29449cc`)
+### 📝 Documentation
+- move trigger phrases to When to Use section in tgd-sketch SKILL.md (`42dd72b`)
+
+
 ## v2026.07.11.3
 
 ### ✨ Features
