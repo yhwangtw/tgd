@@ -1,6 +1,6 @@
 #!/bin/bash
 # tGD CLI — thin wrapper around setup.sh
-# Installed to /usr/local/bin/tgd or ~/.local/bin/tgd
+# Installed to ~/.local/bin/tgd
 
 set -e
 
@@ -50,7 +50,7 @@ case "${1:-}" in
         echo "Commands:"
         echo "  (none)         Install or refresh tGD"
         echo "  --upgrade, -u  Force refresh symlinks and hooks"
-        echo "  --uninstall    Remove all tGD deployments"
+        echo "  --uninstall    Remove only tGD-managed links and hooks"
         echo "  --version, -v  Show current version"
         echo "  --release      Prepare a release: VERSION + CHANGELOG, commit, push (CI publishes)"
         echo "  --help, -h     Show this help"

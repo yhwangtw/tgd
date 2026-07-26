@@ -59,36 +59,89 @@ jobs:
         run: claude plugin install tGD@addy-tGD --scope user
 
   test-setup:
-    name: Test setup.sh
-    runs-on: ubuntu-latest
+    name: Test setup.sh (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run setup.sh
-        run: bash setup.sh
-        env:
-          CI: "true"
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
 
-      - name: Verify symlinks exist
+      - name: Prepare isolated HOME and fake agent CLIs
         run: |
-          PASS=true
-          for link in \
-            "$HOME/.codex/skills/tgd-rules" \
-            "$HOME/.config/opencode/skills/tgd-rules" \
-            "$HOME/.gemini/skills/tgd-rules" \
-            "$HOME/.pi/agent/skills/tgd-rules" \
-            "$HOME/.hermes/skills/tgd-rules" \
-          ; do
-            if [ ! -L "$link" ] && [ ! -f "$link" ]; then
-              echo "❌ Missing: $link"
-              PASS=false
-            else
-              echo "✅ Found: $link"
-            fi
+          mkdir -p "$TEST_HOME" "$RUNNER_TEMP/tgd-fake-bin"
+          for tool in claude codex gemini opencode pi hermes codegraph; do
+            printf '#!/bin/sh\nexit 0\n' > "$RUNNER_TEMP/tgd-fake-bin/$tool"
+            chmod +x "$RUNNER_TEMP/tgd-fake-bin/$tool"
           done
-          $PASS || exit 1
+          echo "$RUNNER_TEMP/tgd-fake-bin" >> "$GITHUB_PATH"
+        env:
+          TEST_HOME: ${{ runner.temp }}/tgd-test-home
 
-      - name: Run setup.sh again (idempotency)
-        run: bash setup.sh
+      - name: Run installer lifecycle contracts
+        run: python3 -m unittest discover -s tests -p 'test_*.py'
+
+      - name: Run setup.sh twice
+        run: |
+          bash setup.sh --no-deps
+          bash setup.sh --no-deps
+          git diff --exit-code
+          test -z "$(git status --porcelain --untracked-files=all)"
         env:
           CI: "true"
+          HOME: ${{ runner.temp }}/tgd-test-home
+
+      - name: Verify exact managed links and hooks
+        run: |
+          while IFS='|' read -r link target; do
+            test -L "$link"
+            test "$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$link")" = "$target"
+          done <<EOF
+          $HOME/.codex/skills/tGD|$GITHUB_WORKSPACE/skills
+          $HOME/.config/opencode/skills/tGD|$GITHUB_WORKSPACE/skills
+          $HOME/.gemini/skills/tGD|$GITHUB_WORKSPACE/skills
+          $HOME/.pi/agent/skills/tGD|$GITHUB_WORKSPACE/skills
+          $HOME/.hermes/skills/tgd-rules|$GITHUB_WORKSPACE/skills/tgd-rules
+          $HOME/.local/bin/tgd|$GITHUB_WORKSPACE/bin/tgd
+          EOF
+          for config in \
+            "$HOME/.claude/settings.json" \
+            "$HOME/.codex/hooks.json" \
+            "$HOME/.gemini/settings.json"; do
+            python3 -m json.tool "$config" >/dev/null
+          done
+          grep -Fq "$GITHUB_WORKSPACE/hooks/session-start.sh" "$HOME/.claude/settings.json"
+          grep -Fq "$GITHUB_WORKSPACE/hooks/codex/session-start.sh" "$HOME/.codex/hooks.json"
+          grep -Fq "$GITHUB_WORKSPACE/hooks/gemini/session-start.sh" "$HOME/.gemini/settings.json"
+        env:
+          HOME: ${{ runner.temp }}/tgd-test-home
+
+      - name: Verify safe uninstall round trip
+        run: |
+          bash setup.sh --uninstall
+          test -f VERSION
+          for path in \
+            "$HOME/.local/bin/tgd" \
+            "$HOME/.codex/skills/tGD" \
+            "$HOME/.config/opencode/skills/tGD" \
+            "$HOME/.gemini/skills/tGD" \
+            "$HOME/.pi/agent/skills/tGD"; do
+            test ! -e "$path"
+            test ! -L "$path"
+          done
+          test ! -e "$HOME/.tgd/install-manifest.json"
+          test ! -e "$HOME/.tgd-installed-version"
+          ! grep -Fq "$GITHUB_WORKSPACE/hooks/session-start.sh" "$HOME/.claude/settings.json"
+          ! grep -Fq "$GITHUB_WORKSPACE/hooks/codex/session-start.sh" "$HOME/.codex/hooks.json"
+          ! grep -Fq "$GITHUB_WORKSPACE/hooks/gemini/session-start.sh" "$HOME/.gemini/settings.json"
+        env:
+          CI: "true"
+          HOME: ${{ runner.temp }}/tgd-test-home

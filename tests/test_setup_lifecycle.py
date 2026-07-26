@@ -130,7 +130,7 @@ exec /bin/ln "$@"
                     visit(path)
                 elif entry.is_file(follow_symlinks=False):
                     digest = hashlib.sha256(path.read_bytes()).hexdigest()
-                    mode = stat.S_IMODE(path.stat(follow_symlinks=False).st_mode)
+                    mode = stat.S_IMODE(os.lstat(path).st_mode)
                     snapshot[relative] = ("file", mode, digest)
 
         visit(self.repo)
@@ -151,6 +151,24 @@ exec /bin/ln "$@"
             "installing twice must not create self-links or otherwise mutate the checkout",
         )
 
+    def test_source_cleanup_does_not_follow_symlinked_skill_directories(self) -> None:
+        external_skill = self.root / "user-managed-skill"
+        external_skill.mkdir()
+        foreign_link = external_skill / "legacy-helper"
+        foreign_link.symlink_to(self.repo / "skills" / "legacy-helper")
+        (self.repo / "skills" / "external-skill").symlink_to(
+            external_skill,
+            target_is_directory=True,
+        )
+
+        result = self._run_setup()
+
+        self._assert_success(result)
+        self.assertTrue(
+            foreign_link.is_symlink(),
+            "source cleanup must never traverse a symlinked skill directory",
+        )
+
     def test_install_preserves_foreign_directory_on_name_collision(self) -> None:
         self._write_fake("hermes", "exit 0")
         collision = self.home / ".hermes" / "skills" / "tgd-rules"
@@ -166,6 +184,46 @@ exec /bin/ln "$@"
         self.assertTrue(collision.is_dir() and not collision.is_symlink())
         self.assertEqual("owned by the user\n", sentinel.read_text(encoding="utf-8"))
         self.assertEqual("v-old\n", installed_marker.read_text(encoding="utf-8"))
+
+    def test_existing_install_from_old_checkout_migrates_then_uninstalls(self) -> None:
+        self._write_fake("hermes", "exit 0")
+        old_repo = self.root / "old-tGD-checkout"
+        old_skill = old_repo / "skills" / "tgd-rules"
+        old_cli = old_repo / "bin" / "tgd"
+        old_skill.mkdir(parents=True)
+        old_cli.parent.mkdir()
+        old_cli.write_text("#!/bin/bash\n", encoding="utf-8")
+
+        installed_skill = self.home / ".hermes" / "skills" / "tgd-rules"
+        installed_skill.parent.mkdir(parents=True)
+        installed_skill.symlink_to(old_skill, target_is_directory=True)
+        installed_cli = self.home / ".local" / "bin" / "tgd"
+        installed_cli.parent.mkdir(parents=True)
+        installed_cli.symlink_to(old_cli)
+
+        installed = self._run_setup()
+        self._assert_success(installed)
+
+        self.assertEqual(
+            (self.repo / "skills" / "tgd-rules").resolve(),
+            installed_skill.resolve(),
+        )
+        self.assertEqual(
+            (self.repo / "bin" / "tgd").resolve(),
+            installed_cli.resolve(),
+        )
+        manifest = json.loads(
+            (self.home / ".tgd" / "install-manifest.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertIn(str(installed_skill), manifest["managed_paths"])
+        self.assertIn(str(installed_cli), manifest["managed_paths"])
+
+        uninstalled = self._run_setup("--uninstall")
+        self._assert_success(uninstalled)
+        self.assertFalse(os.path.lexists(installed_skill))
+        self.assertFalse(os.path.lexists(installed_cli))
 
     def test_default_install_does_not_run_global_package_installs(self) -> None:
         (self.fake_bin / "codegraph").unlink()
@@ -235,6 +293,61 @@ chmod +x "$FAKE_BIN/codegraph"
             .read_text(encoding="utf-8")
             .strip(),
         )
+
+    def test_successful_dependency_command_without_artifacts_is_degraded(self) -> None:
+        ua_skill = (
+            self.repo
+            / "vendor"
+            / "understand-anything"
+            / "understand-anything-plugin"
+            / "skills"
+            / "understand"
+        )
+        ua_skill.mkdir(parents=True)
+        (ua_skill / "SKILL.md").write_text("# Understand\n", encoding="utf-8")
+        self._write_fake("corepack", "exit 0")
+
+        result = self._run_setup()
+
+        self._assert_success(result)
+        self.assertIn("Setup Complete (degraded)", result.stdout)
+        self.assertNotIn("✅ Setup Complete!", result.stdout)
+
+    def test_no_deps_skips_all_dependency_commands(self) -> None:
+        ua_skill = (
+            self.repo
+            / "vendor"
+            / "understand-anything"
+            / "understand-anything-plugin"
+            / "skills"
+            / "understand"
+        )
+        ua_skill.mkdir(parents=True)
+        (ua_skill / "SKILL.md").write_text("# Understand\n", encoding="utf-8")
+        dependency_log = self.root / "dependencies.log"
+        for command in ("corepack", "npm", "pnpm"):
+            self._write_fake(
+                command,
+                'printf "%s\\n" "$0 $*" >> "$DEPENDENCY_LOG"',
+            )
+        env = self._env()
+        env["DEPENDENCY_LOG"] = str(dependency_log)
+
+        result = self._run_setup("--no-deps", env=env)
+
+        self._assert_success(result)
+        self.assertIn("skipped by --no-deps", result.stdout)
+        self.assertFalse(
+            dependency_log.exists(),
+            "--no-deps must not invoke package/dependency commands",
+        )
+        self.assertTrue((self.home / ".local" / "bin" / "tgd").is_symlink())
+
+    def test_no_deps_rejects_dependency_install_flags(self) -> None:
+        result = self._run_setup("--no-deps", "--with-tools")
+
+        self.assertEqual(2, result.returncode, result.stdout)
+        self.assertIn("Conflicting dependency options", result.stdout)
 
     def test_default_install_does_not_change_agent_browser_config(self) -> None:
         browser_skill = self.repo / "skills" / "tgd-agent-browser"

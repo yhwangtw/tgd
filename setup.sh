@@ -1,11 +1,11 @@
 #!/bin/bash
 # tGD One-Click Installer
-# Usage: bash setup.sh [--upgrade|--uninstall|--version] [--with-tools] [--with-browser]
+# Usage: bash setup.sh [--upgrade|--uninstall|--version] [--with-tools] [--with-browser] [--no-deps]
 #
-# --upgrade:  先掃描並清除舊版殘留的 stale symlink / hooks，再重新部署。
-#             適合 tGD-clone git pull 後執行，確保乾淨無殘留。
-# --uninstall: 徹底移除所有 tGD 部署（symlinks、hooks、版本標記）。
-#             適合不想再用 tGD 或要乾淨重裝的使用者。
+# --upgrade:  遷移可確認為舊版 tGD 的 symlink，並刷新受管理的 links/hooks。
+#             適合 tGD clone 執行 git pull 後使用，不會清除不明路徑。
+# --uninstall: 只移除 ownership manifest 記錄的 symlink、tGD hook 與版本標記。
+#              Repo、第三方依賴與使用者自己的設定都會保留。
 
 set -e
 
@@ -19,6 +19,7 @@ Options:
   -v, --version        Print the repository version
       --with-tools     Install pinned third-party CLI dependencies when missing
       --with-browser   Configure Agent Browser (implies --with-tools)
+      --no-deps        Skip dependency downloads (links and hooks still install)
   -h, --help           Show this help
 EOF
 }
@@ -27,6 +28,7 @@ TGD_REPO_ROOT="$(cd "$(dirname "$0")" && pwd -P)"
 MODE="install"
 INSTALL_TOOLS=0
 CONFIGURE_BROWSER=0
+SKIP_DEPS=0
 SETUP_DEGRADED=0
 CODEGRAPH_VERSION="0.9.8"
 AGENT_BROWSER_VERSION="11.5.1"
@@ -53,6 +55,9 @@ while [[ "$#" -gt 0 ]]; do
             INSTALL_TOOLS=1
             CONFIGURE_BROWSER=1
             ;;
+        --no-deps)
+            SKIP_DEPS=1
+            ;;
         -h|--help)
             usage
             exit 0
@@ -65,6 +70,12 @@ while [[ "$#" -gt 0 ]]; do
     esac
     shift
 done
+
+if [[ "$SKIP_DEPS" -eq 1 && "$INSTALL_TOOLS" -eq 1 ]]; then
+    echo "❌ Conflicting dependency options: --no-deps cannot be combined with --with-tools or --with-browser." >&2
+    usage >&2
+    exit 2
+fi
 
 if [[ "$MODE" == "version" ]]; then
     if [[ -f "$TGD_REPO_ROOT/VERSION" ]]; then
@@ -304,7 +315,7 @@ if [[ "$MODE" == "uninstall" ]]; then
 fi
 
 if [[ "$MODE" == "upgrade" ]]; then
-    echo "🔄 tGD Upgrade — Cleaning stale deployments..."
+    echo "🔄 tGD Upgrade — Refreshing managed deployments..."
     echo "====================================="
     echo ""
 else
@@ -605,6 +616,11 @@ install_ua_deps() {
         return 0
     fi
 
+    if [[ "$SKIP_DEPS" -eq 1 ]]; then
+        echo "   ⚠️  UA dependency installation skipped by --no-deps."
+        return 1
+    fi
+
     if command -v corepack &> /dev/null; then
         pnpm_command=(corepack pnpm)
     elif command -v pnpm &> /dev/null; then
@@ -633,6 +649,11 @@ install_ua_deps() {
     install_log=$(mktemp "${TMPDIR:-/tmp}/tgd-ua-install.XXXXXX")
     if (cd "$ua_dir" && "${pnpm_command[@]}" install --frozen-lockfile) \
         >"$install_log" 2>&1; then
+        if [ ! -d "$ua_dir/node_modules" ]; then
+            echo "   ⚠️  pnpm install exited successfully but node_modules was not created."
+            rm -f "$install_log"
+            return 1
+        fi
         echo "   ✅ Dependencies installed."
     else
         echo "   ⚠️  pnpm install failed. Last 5 lines:"
@@ -646,6 +667,10 @@ install_ua_deps() {
     if [ -d "$ua_dir/node_modules" ]; then
         echo "   🔨 Building UA (pnpm build)..."
         if (cd "$ua_dir" && "${pnpm_command[@]}" build); then
+            if [ ! -d "$ua_dir/understand-anything-plugin/packages/core/dist" ]; then
+                echo "   ⚠️  pnpm build exited successfully but UA core output is missing."
+                return 1
+            fi
             echo "   ✅ UA built successfully."
         else
             echo "   ⚠️  Build failed. Manual fix: cd vendor/understand-anything && pnpm build"
