@@ -157,11 +157,125 @@ exec /bin/ln "$@"
         collision.mkdir(parents=True)
         sentinel = collision / "foreign.txt"
         sentinel.write_text("owned by the user\n", encoding="utf-8")
+        installed_marker = self.home / ".tgd-installed-version"
+        installed_marker.write_text("v-old\n", encoding="utf-8")
 
-        self._run_setup()
+        result = self._run_setup()
 
+        self.assertNotEqual(0, result.returncode, result.stdout)
         self.assertTrue(collision.is_dir() and not collision.is_symlink())
         self.assertEqual("owned by the user\n", sentinel.read_text(encoding="utf-8"))
+        self.assertEqual("v-old\n", installed_marker.read_text(encoding="utf-8"))
+
+    def test_default_install_does_not_run_global_package_installs(self) -> None:
+        (self.fake_bin / "codegraph").unlink()
+        npm_log = self.root / "npm.log"
+        self._write_fake(
+            "npm",
+            """
+printf "%s\\n" "$*" >> "$NPM_LOG"
+printf '#!/bin/sh\\nexit 0\\n' > "$FAKE_BIN/codegraph"
+chmod +x "$FAKE_BIN/codegraph"
+""",
+        )
+        env = self._env()
+        env["NPM_LOG"] = str(npm_log)
+        env["FAKE_BIN"] = str(self.fake_bin)
+
+        result = self._run_setup(env=env)
+
+        self._assert_success(result)
+        self.assertFalse(
+            npm_log.exists(),
+            "default setup must not run npm install -g",
+        )
+
+    def test_with_tools_installs_a_pinned_codegraph_version(self) -> None:
+        (self.fake_bin / "codegraph").unlink()
+        npm_log = self.root / "npm.log"
+        self._write_fake(
+            "npm",
+            """
+printf "%s\\n" "$*" >> "$NPM_LOG"
+printf '#!/bin/sh\\nexit 0\\n' > "$FAKE_BIN/codegraph"
+chmod +x "$FAKE_BIN/codegraph"
+""",
+        )
+        env = self._env()
+        env["NPM_LOG"] = str(npm_log)
+        env["FAKE_BIN"] = str(self.fake_bin)
+
+        result = self._run_setup("--with-tools", env=env)
+
+        self._assert_success(result)
+        self.assertEqual(
+            "install -g @colbymchenry/codegraph@0.9.8\n",
+            npm_log.read_text(encoding="utf-8"),
+        )
+
+    def test_missing_ua_dependencies_is_reported_without_partial_failure(self) -> None:
+        ua_skill = (
+            self.repo
+            / "vendor"
+            / "understand-anything"
+            / "understand-anything-plugin"
+            / "skills"
+            / "understand"
+        )
+        ua_skill.mkdir(parents=True)
+        (ua_skill / "SKILL.md").write_text("# Understand\n", encoding="utf-8")
+
+        result = self._run_setup()
+
+        self._assert_success(result)
+        self.assertIn("degraded", result.stdout.lower())
+        self.assertEqual(
+            (self.repo / "VERSION").read_text(encoding="utf-8").strip(),
+            (self.home / ".tgd-installed-version")
+            .read_text(encoding="utf-8")
+            .strip(),
+        )
+
+    def test_default_install_does_not_change_agent_browser_config(self) -> None:
+        browser_skill = self.repo / "skills" / "tgd-agent-browser"
+        browser_skill.mkdir()
+        (browser_skill / "SKILL.md").write_text(
+            "# Agent Browser\n",
+            encoding="utf-8",
+        )
+        self._write_fake("agent-browser", "exit 0")
+        self._write_fake("npm", "exit 0")
+        config = self.home / ".agent-browser" / "config.json"
+        config.parent.mkdir()
+        original = {"theme": "dark"}
+        config.write_text(json.dumps(original), encoding="utf-8")
+
+        result = self._run_setup()
+
+        self._assert_success(result)
+        self.assertEqual(
+            original,
+            json.loads(config.read_text(encoding="utf-8")),
+        )
+
+    def test_with_browser_preserves_existing_config_and_enables_auto_connect(self) -> None:
+        browser_skill = self.repo / "skills" / "tgd-agent-browser"
+        browser_skill.mkdir()
+        (browser_skill / "SKILL.md").write_text(
+            "# Agent Browser\n",
+            encoding="utf-8",
+        )
+        self._write_fake("agent-browser", "exit 0")
+        config = self.home / ".agent-browser" / "config.json"
+        config.parent.mkdir()
+        config.write_text(json.dumps({"theme": "dark"}), encoding="utf-8")
+
+        result = self._run_setup("--with-browser")
+
+        self._assert_success(result)
+        updated = json.loads(config.read_text(encoding="utf-8"))
+        self.assertEqual("dark", updated["theme"])
+        self.assertIs(True, updated["autoConnect"])
 
     def test_uninstall_preserves_version(self) -> None:
         original_version = (self.repo / "VERSION").read_text(encoding="utf-8")

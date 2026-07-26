@@ -27,6 +27,10 @@ TGD_REPO_ROOT="$(cd "$(dirname "$0")" && pwd -P)"
 MODE="install"
 INSTALL_TOOLS=0
 CONFIGURE_BROWSER=0
+SETUP_DEGRADED=0
+CODEGRAPH_VERSION="0.9.8"
+AGENT_BROWSER_VERSION="11.5.1"
+PNPM_VERSION="10.6.2"
 
 while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -572,61 +576,81 @@ echo "📊 Checking CodeGraph..."
 if command -v codegraph &> /dev/null; then
     echo "   ✅ CodeGraph already installed."
 else
-    if command -v npm &> /dev/null; then
-        echo "   📥 Installing CodeGraph via npm..."
-        npm install -g @colbymchenry/codegraph 2>/dev/null && echo "   ✅ CodeGraph installed." || echo "   ⚠️  Install manually: npm install -g @colbymchenry/codegraph"
+    if [[ "$INSTALL_TOOLS" -eq 1 ]] && command -v npm &> /dev/null; then
+        echo "   📥 Installing pinned CodeGraph ${CODEGRAPH_VERSION} via npm..."
+        if npm install -g "@colbymchenry/codegraph@${CODEGRAPH_VERSION}" \
+            && command -v codegraph &> /dev/null; then
+            echo "   ✅ CodeGraph installed."
+        else
+            echo "   ⚠️  CodeGraph install did not produce a runnable command."
+            SETUP_DEGRADED=1
+        fi
     else
-        echo "   ⚠️  npm not found. Install CodeGraph manually:"
-        echo "      npm install -g @colbymchenry/codegraph"
+        echo "   ⚠️  CodeGraph is missing; /tgd-map cannot run CodeGraph."
+        echo "      Re-run with --with-tools, or install: npm install -g @colbymchenry/codegraph@${CODEGRAPH_VERSION}"
+        SETUP_DEGRADED=1
     fi
 fi
 
 # ─── Install UA dependencies (subshell-safe: cd won't leak) ──────────────────
 install_ua_deps() {
     local ua_dir="$1"
-    if [ -d "$ua_dir/node_modules" ]; then
+    local install_log=""
+    local pnpm_version=""
+    local pnpm_command=()
+
+    if [ -d "$ua_dir/node_modules" ] \
+        && [ -d "$ua_dir/understand-anything-plugin/packages/core/dist" ]; then
         echo "   ✅ UA dependencies already installed."
         return 0
     fi
-    if ! command -v pnpm &> /dev/null && ! command -v npm &> /dev/null; then
-        echo "   ⚠️  pnpm/npm not found. Skills work but scanning scripts won't run."
-        echo "      Install pnpm, then: cd vendor/understand-anything && pnpm install && pnpm build"
-        return 1
-    fi
-    # Install pnpm if missing
-    if ! command -v pnpm &> /dev/null; then
-        echo "   📥 pnpm not found. Installing via npm..."
-        # Check npm registry — refuse to use default registry.npmjs.org
-        NPM_REGISTRY=$(npm config get registry 2>/dev/null || echo "")
-        if [[ -z "$CI" ]] && { [[ "$NPM_REGISTRY" == *"registry.npmjs.org"* ]] || [[ -z "$NPM_REGISTRY" ]]; }; then
-            echo "   ⚠️  npm registry is set to registry.npmjs.org (or not configured)."
-            echo "      Set your registry first: npm config set registry <your internal registry URL>"
-            echo "      Then re-run setup.sh, or install pnpm manually."
-            return 1
+
+    if command -v corepack &> /dev/null; then
+        pnpm_command=(corepack pnpm)
+    elif command -v pnpm &> /dev/null; then
+        pnpm_version=$(pnpm --version 2>/dev/null || echo "")
+        if [[ "$pnpm_version" == "$PNPM_VERSION" ]]; then
+            pnpm_command=(pnpm)
         fi
-        npm install -g pnpm 2>/dev/null && echo "   ✅ pnpm installed." || { echo "   ⚠️  npm install -g pnpm failed. Install manually."; return 1; }
     fi
-    echo "   📦 Installing UA dependencies (pnpm install)..."
-    # Check pnpm registry — refuse to use default registry.npmjs.org
-    PNPM_REGISTRY=$(pnpm config get registry 2>/dev/null || echo "")
-    if [[ -z "$CI" ]] && { [[ "$PNPM_REGISTRY" == *"registry.npmjs.org"* ]] || [[ -z "$PNPM_REGISTRY" ]]; }; then
-        echo "   ⚠️  pnpm registry is set to registry.npmjs.org (or not configured)."
-        echo "      Set your registry first: pnpm config set registry <your internal registry URL>"
+
+    if [[ "${#pnpm_command[@]}" -eq 0 ]] \
+        && [[ "$INSTALL_TOOLS" -eq 1 ]] \
+        && command -v npm &> /dev/null; then
+        echo "   📥 Installing pinned pnpm ${PNPM_VERSION} via npm..."
+        if npm install -g "pnpm@${PNPM_VERSION}" && command -v pnpm &> /dev/null; then
+            pnpm_command=(pnpm)
+        fi
+    fi
+
+    if [[ "${#pnpm_command[@]}" -eq 0 ]]; then
+        echo "   ⚠️  Pinned pnpm ${PNPM_VERSION} is unavailable."
+        echo "      Re-run with --with-tools, or enable Corepack, then retry."
         return 1
     fi
-    # Subshell: cd won't affect the parent shell's cwd
-    (cd "$ua_dir" && pnpm install --frozen-lockfile) && echo "   ✅ Dependencies installed." || {
+
+    echo "   📦 Installing UA dependencies (pnpm install)..."
+    install_log=$(mktemp "${TMPDIR:-/tmp}/tgd-ua-install.XXXXXX")
+    if (cd "$ua_dir" && "${pnpm_command[@]}" install --frozen-lockfile) \
+        >"$install_log" 2>&1; then
+        echo "   ✅ Dependencies installed."
+    else
         echo "   ⚠️  pnpm install failed. Last 5 lines:"
-        (cd "$ua_dir" && pnpm install --frozen-lockfile 2>&1 | tail -5)
+        tail -5 "$install_log"
+        rm -f "$install_log"
         echo "      Manual fix: cd vendor/understand-anything && pnpm install"
         return 1
-    }
+    fi
+    rm -f "$install_log"
+
     if [ -d "$ua_dir/node_modules" ]; then
         echo "   🔨 Building UA (pnpm build)..."
-        (cd "$ua_dir" && pnpm build) && echo "   ✅ UA built successfully." || {
+        if (cd "$ua_dir" && "${pnpm_command[@]}" build); then
+            echo "   ✅ UA built successfully."
+        else
             echo "   ⚠️  Build failed. Manual fix: cd vendor/understand-anything && pnpm build"
             return 1
-        }
+        fi
     fi
 }
 
@@ -636,7 +660,9 @@ UA_DIR="$TGD_REPO_ROOT/vendor/understand-anything"
 UA_SKILLS_DIR="$UA_DIR/understand-anything-plugin/skills"
 if [ -d "$UA_SKILLS_DIR" ]; then
     echo "   ✅ Understand-Anything skills ready."
-    install_ua_deps "$UA_DIR"
+    if ! install_ua_deps "$UA_DIR"; then
+        SETUP_DEGRADED=1
+    fi
 
     UA_REPO_LINK="$HOME/.understand-anything/repo"
     UA_PLUGIN_TARGET="$UA_DIR/understand-anything-plugin"
@@ -650,6 +676,7 @@ if [ -d "$UA_SKILLS_DIR" ]; then
 else
     echo "   ⚠️  Understand-Anything not found at vendor/understand-anything/"
     echo "      Re-clone tGD or manually download from: https://github.com/Lum1104/Understand-Anything"
+    SETUP_DEGRADED=1
 fi
 
 # Link Understand-Anything skills to each platform
@@ -701,58 +728,81 @@ echo "📦 Checking optional dependencies..."
 # Agent Browser (E2E browser automation)
 if [ -d "skills/tgd-agent-browser" ]; then
     echo "   🌐 Agent Browser skill detected."
-    if command -v npm &> /dev/null || command -v npx &> /dev/null; then
-        NPM_CMD=$(command -v npm || command -v npx)
-        
-        # Check if agent-browser is already installed
+    if [[ "$CONFIGURE_BROWSER" -eq 1 ]]; then
         if ! command -v agent-browser &> /dev/null; then
-            echo "   📥 Installing Agent Browser CLI..."
-            $NPM_CMD install -g agent-browser 2>/dev/null || echo "   ⚠️  npm install failed. Run manually: npm i -g agent-browser"
+            if command -v npm &> /dev/null; then
+                echo "   📥 Installing pinned Agent Browser ${AGENT_BROWSER_VERSION}..."
+                npm install -g "agent-browser@${AGENT_BROWSER_VERSION}" || true
+            fi
         fi
-        
-        # Configure system Chrome and auto-connect
+
+        if ! command -v agent-browser &> /dev/null; then
+            echo "   ⚠️  Agent Browser CLI is unavailable."
+            echo "      Install: npm install -g agent-browser@${AGENT_BROWSER_VERSION}"
+            SETUP_DEGRADED=1
+        else
+            CHROME_BIN=""
+            if [[ "$(uname -s)" == "Darwin" ]] \
+                && [ -x "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" ]; then
+                CHROME_BIN="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+            elif [ -x "/usr/bin/google-chrome" ]; then
+                CHROME_BIN="/usr/bin/google-chrome"
+            fi
+
         CONFIG_DIR="$HOME/.agent-browser"
         CONFIG_FILE="$CONFIG_DIR/config.json"
-        
-        if [[ "$OSTYPE" == "darwin"* ]] && [ -d "/Applications/Google Chrome.app" ]; then
-            CHROME_BIN="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-        elif [ -x "/usr/bin/google-chrome" ]; then
-            CHROME_BIN="/usr/bin/google-chrome"
-        fi
-        
-        mkdir -p "$CONFIG_DIR"
-        
-        # Create or update config.json
-        if [ -f "$CONFIG_FILE" ]; then
-            # Check if autoConnect is already set
-            if ! grep -q "autoConnect" "$CONFIG_FILE" 2>/dev/null; then
-                # Add autoConnect and executablePath
-                echo "   🔧 Updating $CONFIG_FILE with auto-connect..."
-                python3 -c "
+            python3 - "$CONFIG_FILE" "$CHROME_BIN" <<'PYEOF'
 import json
-with open('$CONFIG_FILE', 'r') as f:
-    config = json.load(f)
-config['autoConnect'] = True
-if '$CHROME_BIN':
-    config['executablePath'] = '$CHROME_BIN'
-with open('$CONFIG_FILE', 'w') as f:
-    json.dump(config, f, indent=2)
-"
-            else
-                echo "   ✅ auto-connect already configured in $CONFIG_FILE"
-            fi
-        else
-            echo "   📝 Creating $CONFIG_FILE with auto-connect..."
-            if [ -n "$CHROME_BIN" ]; then
-                echo "{\"autoConnect\": true, \"executablePath\": \"$CHROME_BIN\"}" > "$CONFIG_FILE"
-            else
-                echo "{\"autoConnect\": true}" > "$CONFIG_FILE"
-            fi
+import os
+from pathlib import Path
+import stat
+import sys
+import tempfile
+
+path = Path(sys.argv[1])
+chrome = sys.argv[2]
+if path.is_symlink():
+    raise SystemExit("refusing symlinked Agent Browser config: {}".format(path))
+if path.exists():
+    with path.open(encoding="utf-8") as stream:
+        config = json.load(stream)
+    mode = stat.S_IMODE(path.stat().st_mode)
+else:
+    config = {}
+    mode = 0o600
+if not isinstance(config, dict):
+    raise SystemExit("Agent Browser config must be a JSON object")
+config["autoConnect"] = True
+if chrome:
+    config["executablePath"] = chrome
+path.parent.mkdir(parents=True, exist_ok=True)
+descriptor, temporary_name = tempfile.mkstemp(
+    dir=str(path.parent),
+    prefix=".{}.".format(path.name),
+)
+try:
+    os.fchmod(descriptor, mode)
+    with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+        json.dump(config, stream, indent=2)
+        stream.write("\n")
+        stream.flush()
+        os.fsync(stream.fileno())
+    os.replace(temporary_name, path)
+except BaseException:
+    try:
+        os.unlink(temporary_name)
+    except FileNotFoundError:
+        pass
+    raise
+PYEOF
+            echo "   ✅ Agent Browser auto-connect configured by explicit request."
         fi
-        
-        echo "   ✅ Agent Browser ready! Uses your system Google Chrome with auto-connect."
     else
-        echo "   ⚠️  npm/npx not found. Install Node.js first."
+        if command -v agent-browser &> /dev/null; then
+            echo "   ✅ Agent Browser CLI already installed; config left unchanged."
+        else
+            echo "   ℹ️  Agent Browser not installed; use --with-browser to opt in."
+        fi
     fi
 fi
 
@@ -906,7 +956,12 @@ except BaseException:
 PYEOF
 
 echo ""
-echo "✅ Setup Complete!"
+if [[ "$SETUP_DEGRADED" -eq 1 ]]; then
+    echo "⚠️  Setup Complete (degraded)"
+    echo "   Core links and hooks are installed; optional tooling warnings remain above."
+else
+    echo "✅ Setup Complete!"
+fi
 echo ""
 echo "tGD is configured for the agents detected on this machine."
 echo "Start an installed agent:"
