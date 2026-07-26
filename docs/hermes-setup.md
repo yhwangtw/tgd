@@ -12,7 +12,8 @@ tGD integrates with Hermes via a **Python plugin** that provides:
 - **Session-start hook** (auto-injects the tgd-router meta-skill)
 - **29 skills** (symlinked into `~/.hermes/skills/`)
 
-This gives Hermes the same lifecycle enforcement as Claude Code — skills are auto-discovered, commands are native slash commands, and the meta-skill is injected at session start.
+This gives Hermes the same lifecycle entry points as the command-hook
+platforms, using Hermes's own direct context-injection mechanism.
 
 ---
 
@@ -77,7 +78,10 @@ Command prompts are sourced from `.claude/commands/*.md` — single source of tr
 
 ### 2. Session-Start Hook
 
-The `on_session_start` hook automatically injects the `tgd-router` meta-skill into every new session. This is equivalent to Claude Code's `SessionStart` hook.
+The `on_session_start` hook automatically injects the `tgd-router` meta-skill
+into every new Hermes session. Claude, Codex, and Gemini instead inject the
+smaller bounded session preamble, which tells the agent to load the router on
+demand.
 
 The hook uses Hermes's context injection mechanism: the meta-skill content is appended to the first user message (not the system prompt), preserving prompt caching.
 

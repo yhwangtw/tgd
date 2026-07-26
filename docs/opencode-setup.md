@@ -1,27 +1,33 @@
 # OpenCode Setup
 
-This guide explains how to use tGD with OpenCode in a way that closely mirrors the Claude Code experience (automatic skill selection, lifecycle-driven workflows, and strict process enforcement).
+This guide explains how to use tGD skills and lifecycle commands with OpenCode.
 
 ## Overview
 
-OpenCode supports custom `/commands`, but does not have a native plugin system or automatic skill routing like Claude Code.
+OpenCode supports native TypeScript plugins, custom `/commands`, and skill
+discovery through its built-in `skill` tool. Setup installs the skills,
+commands, and a logging plugin; it does not install a global `AGENTS.md`.
 
-Instead, we achieve parity through:
+tGD routing comes from:
 
-- A strong system prompt (`AGENTS.md`)
-- The built-in `skill` tool
-- Consistent skill discovery from the `/skills` directory
+- Skills discovered by OpenCode and exposed through the built-in `skill` tool
+- Model compliance with each skill's trigger instructions
+- Explicit `/tgd-*` commands
 
-This creates an **agent-driven workflow** where skills are selected and executed automatically.
+Repository-local instructions such as `AGENTS.md` may still apply when they are
+part of the project opened in OpenCode, but setup does not install them
+globally or rely on them for routing.
 
-The setup also installs 7 slash commands for explicit lifecycle control. You
-can use either style:
+Setup also installs 7 slash commands and one native plugin that emits a tGD
+structured availability log via `client.app.log`. The log is operational only:
+it is not a UI notification and does not inject model context. You can use
+either routing style:
 
-- Skills are selected automatically based on intent
-- Workflows are enforced via `AGENTS.md`
+- Ask naturally and let the model select a discovered skill based on intent
 - `/tgd-*` commands let you select a lifecycle entry point directly
 
-Natural-language routing remains available when no slash command is used.
+Natural-language routing remains available when no slash command is used, but
+its automatic skill selection depends on model compliance.
 
 ---
 
@@ -54,7 +60,9 @@ All skills live in:
 skills/<skill-name>/SKILL.md
 ```
 
-OpenCode agents are instructed (via `AGENTS.md`) to:
+Setup links the repository skills into OpenCode's skill-discovery directory.
+Each discovered skill describes when it applies and how the agent should use
+it. A compliant model should:
 
 - Detect when a skill applies
 - Invoke the `skill` tool
@@ -62,7 +70,8 @@ OpenCode agents are instructed (via `AGENTS.md`) to:
 
 ### 2. Automatic Skill Invocation
 
-The agent evaluates every request and maps it to the appropriate skill.
+When the model follows the discovered skill instructions, it evaluates each
+request and maps it to the appropriate skill.
 
 Examples:
 
@@ -71,7 +80,9 @@ Examples:
 - "fix a bug" → `tgd-debugging-and-error-recovery`
 - "review this code" → `tgd-code-review-and-quality`
 
-The user does **not** need to explicitly request skills.
+The user does **not** need to explicitly request skills, although automatic
+selection depends on model compliance. Use a `/tgd-*` command when you want to
+choose the lifecycle entry point explicitly.
 
 ### 3. Lifecycle Mapping
 
@@ -142,7 +153,10 @@ For OpenCode to work correctly, the agent must follow these rules:
 - Never skip required workflows (spec, plan, test, etc.)
 - Do not jump directly to implementation
 
-These rules are enforced via `AGENTS.md`.
+These expectations come from the discovered skill instructions. Setup does not
+add a global instruction file, so natural-language enforcement depends on model
+compliance. Explicit `/tgd-*` commands remain available when you want to select
+the workflow directly.
 
 ---
 
@@ -160,7 +174,7 @@ OpenCode supports lifecycle hooks via TypeScript plugins. tGD ships one plugin i
 
 | Plugin | Hook | Purpose |
 |--------|------|---------|
-| `session-start.ts` | `session.created` | Injects `tgd-router` meta-skill at session start |
+| `session-start.ts` | `session.created` | Emits a structured availability log through `client.app.log` |
 
 ### Installation
 
@@ -179,7 +193,11 @@ ln -sf "$(pwd)/.opencode/plugins"/* ~/.config/opencode/plugins/
 
 ### How It Works
 
-**session-start** — Injects the `tgd-router` meta-skill into the agent's context at session start so the router skill is always available.
+**session-start** — Calls `client.app.log` with a structured availability
+message when OpenCode creates a session. This is diagnostic logging, not a UI
+notification, and it does not inject model context. Natural-language routing
+comes from discovered skills plus model compliance; `/tgd-*` commands provide
+explicit lifecycle entry points.
 
 ---
 
@@ -193,7 +211,9 @@ Just use natural language:
 - "Fix this bug"
 - "Review this"
 
-The agent will automatically select and execute the correct skills.
+With a compliant model, the agent can automatically select and execute the
+applicable skills. Use a `/tgd-*` command whenever you prefer an explicit
+lifecycle entry point.
 
 ---
 
@@ -202,8 +222,10 @@ The agent will automatically select and execute the correct skills.
 OpenCode integration works by combining:
 
 - Structured skills (this repo)
-- Strong agent rules (`AGENTS.md`)
-- Automatic skill invocation via reasoning
+- Model-driven skill selection from OpenCode's discovered skills
+- Explicit lifecycle commands
+- A native plugin for structured session-availability logging
 
-This results in a production-grade workflow with both automatic skill routing
-and explicit lifecycle commands.
+This provides both natural-language skill routing (subject to model compliance)
+and explicit lifecycle commands, without installing global agent instructions
+or injecting context from the plugin.

@@ -40,27 +40,19 @@ GEMINI_DIR = REPO_ROOT / ".gemini" / "commands"
 PI_PROMPTS_DIR = REPO_ROOT / ".pi" / "prompts"
 
 # Always-on layer: one canonical preamble → the per-platform always-load files.
-# (The hook/plugin platforms inject tgd-router instead; those injectors are
-# checked by check_injectors() below.)
+# Claude, Codex, and Gemini inject the same bounded preamble through command
+# hooks. OpenCode's plugin is logging-only and does not inject model context.
 PREAMBLE_SRC = REPO_ROOT / "hooks" / "session-preamble.md"
 PI_INSTRUCTIONS = REPO_ROOT / ".pi" / "instructions.md"
 HERMES_AGENTS = REPO_ROOT / ".hermes" / "AGENTS.md"
 
-# session-start injectors: each reads a <skill>/SKILL.md at session start. We
-# extract the skill it actually points at and verify that dir exists — a stale
-# name means the platform silently injects nothing (the OpenCode "using-tgd"
-# bug). Matching the SKILL.md reference (not just the name anywhere) means a
-# skill named in a nearby comment can't mask a broken path.
-INJECTORS = [
+# Session integrations have intentionally different contracts.
+PREAMBLE_HOOKS = [
     "hooks/session-start.sh",
     "hooks/codex/session-start.sh",
     "hooks/gemini/session-start.sh",
-    ".opencode/plugins/session-start.ts",
 ]
-# Captures the skill token right before SKILL.md, in either
-#   "<skill>", "SKILL.md"   (JS path.join style)   or
-#   <skill>/SKILL.md        (shell path style)
-_SKILL_REF = re.compile(r'"([a-z0-9][a-z0-9-]*)"\s*,\s*"SKILL\.md"|([a-z0-9][a-z0-9-]*)/SKILL\.md')
+OPENCODE_SESSION_PLUGIN = ".opencode/plugins/session-start.ts"
 
 # The 7 lifecycle commands, in pipeline order (drives pi registration order).
 COMMANDS = [
@@ -182,19 +174,22 @@ def gen_hermes_agents(preamble: str) -> str:
     return preamble
 
 
-def check_injectors() -> None:
-    for rel_path in INJECTORS:
-        injector = REPO_ROOT / rel_path
-        if not injector.is_file():
-            die(f"session-start injector missing: {rel_path}")
-        text = injector.read_text(encoding="utf-8")
-        skills = [m.group(1) or m.group(2) for m in _SKILL_REF.finditer(text)]
-        if not skills:
-            die(f"{rel_path}: no <skill>/SKILL.md reference found to validate")
-        for skill in skills:
-            if not (REPO_ROOT / "skills" / skill / "SKILL.md").is_file():
-                die(f"{rel_path} injects skills/{skill}/SKILL.md, which does not exist "
-                    f"(a stale meta-skill name = the platform injects nothing)")
+def check_session_integrations() -> None:
+    for rel_path in PREAMBLE_HOOKS:
+        hook = REPO_ROOT / rel_path
+        if not hook.is_file():
+            die(f"session-start hook missing: {rel_path}")
+        if "session-preamble.md" not in hook.read_text(encoding="utf-8"):
+            die(f"{rel_path}: does not load hooks/session-preamble.md")
+
+    plugin = REPO_ROOT / OPENCODE_SESSION_PLUGIN
+    if not plugin.is_file():
+        die(f"session-start plugin missing: {OPENCODE_SESSION_PLUGIN}")
+    plugin_text = plugin.read_text(encoding="utf-8")
+    if "client.app.log" not in plugin_text:
+        die(f"{OPENCODE_SESSION_PLUGIN}: expected availability logging")
+    if "additionalContext" in plugin_text:
+        die(f"{OPENCODE_SESSION_PLUGIN}: logging plugin must not claim context injection")
 
 
 def write_if_changed(path: Path, content: str, changed: List[str]) -> None:
@@ -206,7 +201,7 @@ def write_if_changed(path: Path, content: str, changed: List[str]) -> None:
 
 
 def main() -> int:
-    check_injectors()
+    check_session_integrations()
 
     entries: List[Tuple[str, str, str]] = []
     for name in COMMANDS:

@@ -60,9 +60,19 @@ bash setup.sh
 > 自動偵測已安裝的 CLI（Claude、Codex、Gemini、OpenCode、Pi、Hermes），
 > 安裝核心連結與 hooks，並將每個由 tGD 管理的 symlink 記錄在 ownership manifest。
 > 既有安裝與舊版安裝可直接重跑同一個指令：已辨識的 tGD 連結
-> 會原地遷移，其他檔案與設定則會保留。
+> 會原地遷移，其他檔案與設定則會保留。執行 setup 需要 Python 3.9 以上。
 >
-> 第三方全域工具改為明確 opt-in。安裝器會將 `tgd` 連結到
+> 一般 setup 不會執行 `npm install -g`；第三方全域工具必須明確
+> opt-in。若 bundled Understand-Anything 尚未建置，一般 setup 可能透過
+> Corepack 使用 repo 固定版本的 pnpm（或沿用已安裝且版本相符的 pnpm），
+> 只在 `vendor/understand-anything/` 內安裝及建置本地相依套件。UA
+> 建置需要 Node.js 22.12 以上。setup 會對 UA source 與 lockfile 建立
+> fingerprint；內容變動就會重建，只有 fingerprint 相符的既有產物可略過
+> Node 版本要求。每個 UA skill 的 canonical link 都位於
+> `~/.agents/skills/<name>`，plugin root 則位於
+> `~/.understand-anything-plugin`。若 Node 版本較舊或不存在，setup 仍會
+> 安裝核心連結與 hooks，並如實回報 UA 為 degraded。使用 `--no-deps`
+> 可跳過所有相依套件下載與建置。安裝器會將 `tgd` 連結到
 > `~/.local/bin/tgd`；若該目錄尚未加入 `PATH`，會顯示提示。
 
 ### 安裝選項
@@ -70,13 +80,16 @@ bash setup.sh
 | 指令 | 說明 |
 |------|------|
 | `bash setup.sh` | 安裝、刷新，或安全遷移既有安裝 |
-| `bash setup.sh --with-tools` | 缺少時安裝固定版本的 CodeGraph／pnpm 相依工具 |
+| `bash setup.sh --with-tools` | 明確允許透過 npm 全域安裝固定版本的 CodeGraph 與備援 pnpm |
 | `bash setup.sh --with-browser` | 安裝並設定固定版本的 Agent Browser（同時啟用 `--with-tools`） |
-| `bash setup.sh --no-deps` | 安裝核心連結與 hooks，但不下載相依套件（offline／CI 模式） |
+| `bash setup.sh --no-deps` | 只安裝核心連結與 hooks，跳過所有相依套件下載及 bundled UA 建置（offline／CI 模式） |
 | `tgd` | 首次 setup 後執行相同的安全安裝／刷新流程 |
 | `tgd --version` (`-v`) | 顯示當前版本（CalVer：YYYY.MM.DD） |
 | `tgd --upgrade` (`-u`) | 強制執行受管理的刷新，並遷移已辨識的舊版連結 |
 | `tgd --uninstall` | 只移除 manifest 管理的連結與 tGD hooks；保留使用者檔案及相依套件 |
+
+Codex 會要求一次性審查新增或變更的 user hook。若 setup 後顯示待審查
+hook，請在 Codex 開啟 `/hooks`，確認並信任 tGD 定義。
 
 ### 更新到最新版本
 
@@ -556,9 +569,13 @@ Skills 使用**漸進式揭露**——agent 只在需要時載入細節，保持
 ## ❓ 常見問題
 
 **Q：除了 agent 之外還需要裝什麼嗎？**
-A：Clone repo 後執行 `bash setup.sh`。核心 skills、commands、hooks 與
-`tgd` CLI 都不需要安裝全域套件即可完成設定。CodeGraph、pnpm 和 Agent
-Browser 仍需透過上方的 setup flags 明確 opt-in。
+A：Clone repo 後執行 `bash setup.sh`。一般 setup 不會執行
+`npm install -g`；若 bundled Understand-Anything 尚未建置，可能透過 Corepack 使用
+repo 固定版本的 pnpm（或沿用已安裝且版本相符的 pnpm），只在
+`vendor/understand-anything/` 內安裝及建置本地相依套件。使用
+`--no-deps` 可跳過所有相依套件下載與建置。透過 npm 全域安裝
+CodeGraph、備援 pnpm 與 Agent Browser，仍需使用上方 flags 明確
+opt-in。
 
 **Q：我的 agent 不支援 slash command 怎麼辦？**
 A：用自然語言說「規劃這個功能」——tGD 自動將意圖映射到對應的 skill。
@@ -805,15 +822,16 @@ GitHub release。
 
 ```bash
 # 預覽產生的 release 條目，不修改任何內容
-bash scripts/release.sh v2026.06.09 --dry-run
+bash scripts/release.sh --dry-run
 
 # 不顯示互動提示，直接準備、commit 並 push
-bash scripts/release.sh v2026.06.09 --yes
+bash scripts/release.sh --yes
 ```
 
 `tgd --release [version]` 會轉交給同一支腳本。若在 feature branch 上準備，
 請將 PR merge 到 `main`；只有 release commit 進入 `main` 後，CI 才會建立
-tag 並發布。
+tag 並發布。真正執行 release 前必須位於 branch 且保持 clean worktree；
+任一條件不符時，腳本會在修改檔案前拒絕執行。
 
 ---
 
@@ -839,7 +857,10 @@ ln -sf "$(pwd)/.claude/commands"/* ~/.claude/commands/
 
 ### Gemini CLI
 ```bash
-ln -sf "$(pwd)/skills" ~/.gemini/skills/tGD
+mkdir -p "$HOME/.gemini/skills"
+for skill_dir in "$(pwd)"/skills/*/; do
+  ln -sf "$skill_dir" "$HOME/.gemini/skills/$(basename "$skill_dir")"
+done
 ln -sf "$(pwd)/.gemini/commands"/* ~/.gemini/commands/
 ```
 

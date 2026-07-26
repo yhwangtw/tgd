@@ -1,28 +1,31 @@
-#!/bin/bash
-# Codex SessionStart hook — injects tgd-router meta-skill
-# Codex SessionStart expects hookSpecificOutput.additionalContext JSON,
-# NOT Claude's {priority, message} format.
+#!/usr/bin/env bash
+# Codex SessionStart hook — injects the bounded tGD session preamble.
 # See: https://developers.openai.com/codex/hooks
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-# Script lives at hooks/codex/session-start.sh, so skills/ is two levels up.
-SKILLS_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)/skills"
-META_SKILL="$SKILLS_DIR/tgd-router/SKILL.md"
+PREAMBLE="$(cd "$SCRIPT_DIR/.." && pwd)/session-preamble.md"
 
-if ! command -v jq >/dev/null 2>&1; then
+if ! command -v python3 >/dev/null 2>&1; then
   exit 0
 fi
 
-if [ -f "$META_SKILL" ]; then
-  CONTENT=$(cat "$META_SKILL")
-  # Codex SessionStart contract: wrap in hookSpecificOutput.additionalContext
-  # Reference: https://github.com/openai/codex/issues/16933
-  jq -cn \
-    --arg ctx "tGD loaded. Use the skill discovery flowchart to find the right skill for your task.
+exec python3 - "$PREAMBLE" <<'PY'
+import json
+from pathlib import Path
+import sys
 
-$CONTENT" \
-    '{hookSpecificOutput: {additionalContext: $ctx}}'
-else
-  exit 0
-fi
+preamble = Path(sys.argv[1])
+if preamble.is_file():
+    context = "tGD session guidance:\n\n" + preamble.read_text(encoding="utf-8")
+    print(json.dumps({
+        "hookSpecificOutput": {
+            "hookEventName": "SessionStart",
+            "additionalContext": context,
+        }
+    }))
+else:
+    print(json.dumps({
+        "systemMessage": "tGD session preamble is missing; installed skills remain available."
+    }))
+PY

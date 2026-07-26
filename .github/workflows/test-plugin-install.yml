@@ -12,6 +12,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -75,6 +80,11 @@ jobs:
         with:
           node-version: '22.12.0'
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
       - name: Prepare isolated HOME and fake agent CLIs
         run: |
           mkdir -p "$TEST_HOME" "$RUNNER_TEMP/tgd-fake-bin"
@@ -83,6 +93,42 @@ jobs:
             chmod +x "$RUNNER_TEMP/tgd-fake-bin/$tool"
           done
           echo "$RUNNER_TEMP/tgd-fake-bin" >> "$GITHUB_PATH"
+          python3 - "$TEST_HOME" <<'PY'
+          import json
+          from pathlib import Path
+          import sys
+
+          home = Path(sys.argv[1])
+          destinations = {
+              "claude": home / ".claude" / "settings.json",
+              "codex": home / ".codex" / "hooks.json",
+              "gemini": home / ".gemini" / "settings.json",
+          }
+          for platform, destination in destinations.items():
+              destination.parent.mkdir(parents=True, exist_ok=True)
+              config = {
+                  "ciForeignSentinel": "preserve-{}".format(platform),
+                  "hooks": {
+                      "SessionStart": [
+                          {
+                              "matcher": "foreign-{}".format(platform),
+                              "hooks": [
+                                  {
+                                      "type": "command",
+                                      "command": (
+                                          "bash /opt/ci-foreign/{}.sh".format(platform)
+                                      ),
+                                  }
+                              ],
+                          }
+                      ]
+                  },
+              }
+              destination.write_text(
+                  json.dumps(config, indent=2) + "\n",
+                  encoding="utf-8",
+              )
+          PY
         env:
           TEST_HOME: ${{ runner.temp }}/tgd-test-home
 
@@ -103,24 +149,94 @@ jobs:
         run: |
           while IFS='|' read -r link target; do
             test -L "$link"
+            test -e "$link"
+            test -e "$target"
             test "$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$link")" = "$target"
           done <<EOF
           $HOME/.codex/skills/tGD|$GITHUB_WORKSPACE/skills
           $HOME/.config/opencode/skills/tGD|$GITHUB_WORKSPACE/skills
-          $HOME/.gemini/skills/tGD|$GITHUB_WORKSPACE/skills
           $HOME/.pi/agent/skills/tGD|$GITHUB_WORKSPACE/skills
           $HOME/.hermes/skills/tgd-rules|$GITHUB_WORKSPACE/skills/tgd-rules
+          $HOME/.understand-anything-plugin|$GITHUB_WORKSPACE/vendor/understand-anything/understand-anything-plugin
           $HOME/.local/bin/tgd|$GITHUB_WORKSPACE/bin/tgd
           EOF
-          for config in \
-            "$HOME/.claude/settings.json" \
-            "$HOME/.codex/hooks.json" \
-            "$HOME/.gemini/settings.json"; do
-            python3 -m json.tool "$config" >/dev/null
+          for target in "$GITHUB_WORKSPACE"/skills/*; do
+            link="$HOME/.gemini/skills/$(basename "$target")"
+            test -L "$link"
+            test -e "$link"
+            test "$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$link")" = "$target"
           done
-          grep -Fq "$GITHUB_WORKSPACE/hooks/session-start.sh" "$HOME/.claude/settings.json"
-          grep -Fq "$GITHUB_WORKSPACE/hooks/codex/session-start.sh" "$HOME/.codex/hooks.json"
-          grep -Fq "$GITHUB_WORKSPACE/hooks/gemini/session-start.sh" "$HOME/.gemini/settings.json"
+          for target in "$GITHUB_WORKSPACE"/vendor/understand-anything/understand-anything-plugin/skills/*; do
+            link="$HOME/.agents/skills/$(basename "$target")"
+            test -L "$link"
+            test -e "$link"
+            test "$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$link")" = "$target"
+            gemini_fallback="$HOME/.gemini/skills/$(basename "$target")"
+            test ! -e "$gemini_fallback"
+            test ! -L "$gemini_fallback"
+          done
+          test "$("$HOME/.local/bin/tgd" --version)" = "tGD $(cat VERSION)"
+          python3 - "$HOME" "$GITHUB_WORKSPACE" <<'PY'
+          import json
+          from pathlib import Path
+          import shlex
+          import sys
+
+          home = Path(sys.argv[1])
+          repo = Path(sys.argv[2]).resolve()
+          specs = {
+              "claude": (
+                  home / ".claude" / "settings.json",
+                  repo / "hooks" / "session-start.sh",
+              ),
+              "codex": (
+                  home / ".codex" / "hooks.json",
+                  repo / "hooks" / "codex" / "session-start.sh",
+              ),
+              "gemini": (
+                  home / ".gemini" / "settings.json",
+                  repo / "hooks" / "gemini" / "session-start.sh",
+              ),
+          }
+
+          def canonical_entry(platform, script):
+              hook = {
+                  "type": "command",
+                  "command": "bash " + shlex.quote(str(script)),
+              }
+              entry = {"hooks": [hook]}
+              if platform == "codex":
+                  entry["matcher"] = "startup|resume|clear|compact"
+                  hook["statusMessage"] = "Loading tGD session guidance"
+              elif platform == "gemini":
+                  hook["name"] = "tgd-session-start"
+              return entry
+
+          for platform, (destination, script) in specs.items():
+              config = json.loads(destination.read_text(encoding="utf-8"))
+              if config.get("ciForeignSentinel") != "preserve-{}".format(platform):
+                  raise SystemExit("{} config sentinel was not preserved".format(platform))
+              entries = config.get("hooks", {}).get("SessionStart")
+              if not isinstance(entries, list):
+                  raise SystemExit("{} SessionStart hooks are missing".format(platform))
+              expected = canonical_entry(platform, script)
+              if entries.count(expected) != 1:
+                  raise SystemExit(
+                      "{} canonical SessionStart hook count is not one".format(platform)
+                  )
+              foreign_command = "bash /opt/ci-foreign/{}.sh".format(platform)
+              foreign_count = sum(
+                  hook.get("command") == foreign_command
+                  for entry in entries
+                  if isinstance(entry, dict)
+                  for hook in entry.get("hooks", [])
+                  if isinstance(hook, dict)
+              )
+              if foreign_count != 1:
+                  raise SystemExit(
+                      "{} foreign SessionStart hook was not preserved".format(platform)
+                  )
+          PY
         env:
           HOME: ${{ runner.temp }}/tgd-test-home
 
@@ -132,16 +248,86 @@ jobs:
             "$HOME/.local/bin/tgd" \
             "$HOME/.codex/skills/tGD" \
             "$HOME/.config/opencode/skills/tGD" \
-            "$HOME/.gemini/skills/tGD" \
-            "$HOME/.pi/agent/skills/tGD"; do
+            "$HOME/.pi/agent/skills/tGD" \
+            "$HOME/.hermes/skills/tgd-rules" \
+            "$HOME/.understand-anything-plugin"; do
             test ! -e "$path"
             test ! -L "$path"
           done
+          for target in "$GITHUB_WORKSPACE"/skills/*; do
+            path="$HOME/.gemini/skills/$(basename "$target")"
+            test ! -e "$path"
+            test ! -L "$path"
+          done
+          for target in "$GITHUB_WORKSPACE"/vendor/understand-anything/understand-anything-plugin/skills/*; do
+            for path in \
+              "$HOME/.agents/skills/$(basename "$target")" \
+              "$HOME/.gemini/skills/$(basename "$target")"; do
+              test ! -e "$path"
+              test ! -L "$path"
+            done
+          done
           test ! -e "$HOME/.tgd/install-manifest.json"
+          test ! -e "$HOME/.tgd/hook-ownership.json"
           test ! -e "$HOME/.tgd-installed-version"
-          ! grep -Fq "$GITHUB_WORKSPACE/hooks/session-start.sh" "$HOME/.claude/settings.json"
-          ! grep -Fq "$GITHUB_WORKSPACE/hooks/codex/session-start.sh" "$HOME/.codex/hooks.json"
-          ! grep -Fq "$GITHUB_WORKSPACE/hooks/gemini/session-start.sh" "$HOME/.gemini/settings.json"
+          python3 - "$HOME" "$GITHUB_WORKSPACE" <<'PY'
+          import json
+          from pathlib import Path
+          import shlex
+          import sys
+
+          home = Path(sys.argv[1])
+          repo = Path(sys.argv[2]).resolve()
+          specs = {
+              "claude": (
+                  home / ".claude" / "settings.json",
+                  repo / "hooks" / "session-start.sh",
+              ),
+              "codex": (
+                  home / ".codex" / "hooks.json",
+                  repo / "hooks" / "codex" / "session-start.sh",
+              ),
+              "gemini": (
+                  home / ".gemini" / "settings.json",
+                  repo / "hooks" / "gemini" / "session-start.sh",
+              ),
+          }
+          for platform, (destination, script) in specs.items():
+              if not destination.is_file():
+                  raise SystemExit("{} config was removed".format(platform))
+              config = json.loads(destination.read_text(encoding="utf-8"))
+              if config.get("ciForeignSentinel") != "preserve-{}".format(platform):
+                  raise SystemExit("{} config sentinel was not preserved".format(platform))
+              entries = config.get("hooks", {}).get("SessionStart")
+              if not isinstance(entries, list):
+                  raise SystemExit("{} foreign SessionStart hooks are missing".format(platform))
+              foreign_command = "bash /opt/ci-foreign/{}.sh".format(platform)
+              commands = [
+                  hook.get("command")
+                  for entry in entries
+                  if isinstance(entry, dict)
+                  for hook in entry.get("hooks", [])
+                  if isinstance(hook, dict)
+              ]
+              if commands.count(foreign_command) != 1:
+                  raise SystemExit(
+                      "{} foreign SessionStart hook was not preserved".format(platform)
+                  )
+              expected_words = ["bash", str(script)]
+              for command in commands:
+                  if not isinstance(command, str):
+                      continue
+                  try:
+                      words = shlex.split(command)
+                  except ValueError:
+                      continue
+                  if words == expected_words:
+                      raise SystemExit(
+                          "{} canonical hook survived uninstall".format(platform)
+                      )
+          PY
+          git diff --exit-code
+          test -z "$(git status --porcelain --untracked-files=all)"
         env:
           CI: "true"
           HOME: ${{ runner.temp }}/tgd-test-home

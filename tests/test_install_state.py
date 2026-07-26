@@ -1,3 +1,4 @@
+import hashlib
 import importlib.util
 import json
 import os
@@ -5,6 +6,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from unittest import mock
 
@@ -173,6 +175,77 @@ class InstallStateCliTests(unittest.TestCase):
                 else:
                     self.assertEqual(os.readlink(destination), str(foreign_target))
 
+    def test_link_replaces_only_an_exact_generated_legacy_file(self) -> None:
+        target = self.repo / "instructions.md"
+        target.write_text("current instructions\n", encoding="utf-8")
+        destination = self.home / ".pi" / "agent" / "instructions.md"
+        destination.parent.mkdir(parents=True)
+        legacy_content = b"exact generated legacy content\n"
+        destination.write_bytes(legacy_content)
+        legacy_hash = hashlib.sha256(legacy_content).hexdigest()
+
+        result = self.link(
+            destination,
+            target,
+            "--legacy-file-sha256",
+            legacy_hash,
+        )
+
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertTrue(destination.is_symlink())
+        self.assertEqual(target.resolve(), destination.resolve())
+        self.assertIn(str(destination), self.read_manifest()["managed_paths"])
+
+    def test_link_preserves_a_modified_legacy_looking_file(self) -> None:
+        target = self.repo / "instructions.md"
+        target.write_text("current instructions\n", encoding="utf-8")
+        destination = self.home / ".pi" / "agent" / "instructions.md"
+        destination.parent.mkdir(parents=True)
+        exact_content = b"exact generated legacy content\n"
+        modified_content = exact_content + b"user addition\n"
+        destination.write_bytes(modified_content)
+
+        result = self.link(
+            destination,
+            target,
+            "--legacy-file-sha256",
+            hashlib.sha256(exact_content).hexdigest(),
+        )
+
+        self.assertNotEqual(0, result.returncode)
+        self.assertEqual(modified_content, destination.read_bytes())
+        self.assertFalse(destination.is_symlink())
+
+    def test_legacy_file_rollback_restores_the_exact_original(self) -> None:
+        spec = importlib.util.spec_from_file_location("install_state_legacy", SCRIPT)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        target = self.repo / "instructions.md"
+        target.write_text("current instructions\n", encoding="utf-8")
+        destination = self.home / ".pi" / "agent" / "instructions.md"
+        destination.parent.mkdir(parents=True)
+        legacy_content = b"exact generated legacy content\n"
+        destination.write_bytes(legacy_content)
+
+        with mock.patch.object(
+            module,
+            "write_json_atomic",
+            side_effect=OSError("simulated manifest failure"),
+        ):
+            with self.assertRaises(OSError):
+                module.link_path(
+                    self.manifest,
+                    destination,
+                    target,
+                    [],
+                    [hashlib.sha256(legacy_content).hexdigest()],
+                )
+
+        self.assertFalse(destination.is_symlink())
+        self.assertEqual(legacy_content, destination.read_bytes())
+
     def test_link_refuses_a_tampered_managed_symlink(self) -> None:
         recorded_target = self.repo / "recorded"
         foreign_target = self.repo / "foreign"
@@ -194,6 +267,133 @@ class InstallStateCliTests(unittest.TestCase):
             str(recorded_target),
         )
 
+    def test_link_rollback_preserves_a_concurrent_foreign_replacement(self) -> None:
+        spec = importlib.util.spec_from_file_location("install_state_link", SCRIPT)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        target = self.repo / "owned"
+        foreign_target = self.repo / "foreign"
+        destination = self.home / ".codex" / "skills" / "tGD"
+        target.mkdir()
+        foreign_target.mkdir()
+
+        def replace_link_then_fail(*args, **kwargs):
+            destination.unlink()
+            destination.symlink_to(foreign_target)
+            raise OSError("simulated manifest failure")
+
+        with mock.patch.object(
+            module,
+            "write_json_atomic",
+            side_effect=replace_link_then_fail,
+        ):
+            with self.assertRaises(module.InstallStateError):
+                module.link_path(self.manifest, destination, target, [])
+
+        self.assertTrue(destination.is_symlink())
+        self.assertEqual(foreign_target.resolve(), destination.resolve())
+
+    def test_link_restores_previous_symlink_when_new_symlink_creation_fails(
+        self,
+    ) -> None:
+        spec = importlib.util.spec_from_file_location(
+            "install_state_link_failure",
+            SCRIPT,
+        )
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        old_target = self.repo / "old"
+        new_target = self.repo / "new"
+        destination = self.home / ".codex" / "skills" / "tGD"
+        old_target.mkdir()
+        new_target.mkdir()
+        destination.parent.mkdir(parents=True)
+        destination.symlink_to(old_target)
+        original_symlink = module.os.symlink
+
+        def fail_new_symlink(target, link_name, *args, **kwargs):
+            if Path(target) == new_target and Path(link_name) == destination:
+                raise OSError("simulated symlink creation failure")
+            return original_symlink(target, link_name, *args, **kwargs)
+
+        with mock.patch.object(
+            module.os,
+            "symlink",
+            side_effect=fail_new_symlink,
+        ):
+            with self.assertRaises(OSError):
+                module.link_path(
+                    self.manifest,
+                    destination,
+                    new_target,
+                    [old_target],
+                )
+
+        self.assertTrue(destination.is_symlink())
+        self.assertEqual(old_target.resolve(), destination.resolve())
+        self.assertFalse(self.manifest.exists())
+        self.assertEqual(
+            [],
+            list(destination.parent.glob(".tGD.tgd-quarantine.*")),
+        )
+
+    def test_link_reports_committed_state_when_old_quarantine_discard_fails(
+        self,
+    ) -> None:
+        spec = importlib.util.spec_from_file_location(
+            "install_state_link_cleanup_failure",
+            SCRIPT,
+        )
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        old_target = self.repo / "old"
+        new_target = self.repo / "new"
+        destination = self.home / ".codex" / "skills" / "tGD"
+        old_target.mkdir()
+        new_target.mkdir()
+        destination.parent.mkdir(parents=True)
+        destination.symlink_to(old_target)
+        original_unlink = Path.unlink
+        failed_once = False
+
+        def fail_quarantine_discard(path, *args, **kwargs):
+            nonlocal failed_once
+            if ".tgd-quarantine." in path.name and not failed_once:
+                failed_once = True
+                raise PermissionError("simulated quarantine discard failure")
+            return original_unlink(path, *args, **kwargs)
+
+        with mock.patch.object(Path, "unlink", fail_quarantine_discard):
+            with self.assertRaises(module.InstallStateError) as raised:
+                module.link_path(
+                    self.manifest,
+                    destination,
+                    new_target,
+                    [old_target],
+                )
+
+        self.assertTrue(failed_once)
+        self.assertIn("update committed", str(raised.exception))
+        self.assertIn("preserved at", str(raised.exception))
+        self.assertTrue(destination.is_symlink())
+        self.assertEqual(new_target.resolve(), destination.resolve())
+        self.assertEqual(
+            str(new_target),
+            self.read_manifest()["managed_paths"][str(destination)]["target"],
+        )
+        quarantines = list(
+            destination.parent.glob(".tGD.tgd-quarantine.*")
+        )
+        self.assertEqual(1, len(quarantines))
+        self.assertTrue(quarantines[0].is_symlink())
+        self.assertEqual(str(old_target), os.readlink(quarantines[0]))
+
     def test_remove_deletes_only_an_owned_untampered_symlink(self) -> None:
         target = self.repo / "skills"
         destination = self.home / ".codex" / "skills" / "tGD"
@@ -211,6 +411,98 @@ class InstallStateCliTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertFalse(os.path.lexists(destination))
         self.assertEqual(self.read_manifest()["managed_paths"], {})
+
+    def test_remove_preserves_foreign_replacement_swapped_at_quarantine(
+        self,
+    ) -> None:
+        spec = importlib.util.spec_from_file_location(
+            "install_state_remove_race",
+            SCRIPT,
+        )
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        target = self.repo / "owned"
+        destination = self.home / ".codex" / "skills" / "tGD"
+        foreign_content = b"foreign replacement\n"
+        target.mkdir()
+        module.link_path(self.manifest, destination, target, [])
+        original_replace = module.os.replace
+        swapped = False
+
+        def swap_before_quarantine(source, replacement):
+            nonlocal swapped
+            if (
+                not swapped
+                and Path(source) == destination
+                and ".tgd-quarantine." in Path(replacement).name
+            ):
+                swapped = True
+                destination.unlink()
+                destination.write_bytes(foreign_content)
+            return original_replace(source, replacement)
+
+        with mock.patch.object(
+            module.os,
+            "replace",
+            side_effect=swap_before_quarantine,
+        ):
+            with self.assertRaises(module.InstallStateError):
+                module.remove_path(self.manifest, destination)
+
+        self.assertTrue(swapped)
+        self.assertEqual(foreign_content, destination.read_bytes())
+        self.assertIn(
+            str(destination),
+            self.read_manifest()["managed_paths"],
+        )
+        self.assertEqual(
+            [],
+            list(destination.parent.glob(".tGD.tgd-quarantine.*")),
+        )
+
+    def test_remove_restores_path_and_manifest_when_quarantine_discard_fails(
+        self,
+    ) -> None:
+        spec = importlib.util.spec_from_file_location(
+            "install_state_remove_cleanup_failure",
+            SCRIPT,
+        )
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        target = self.repo / "owned"
+        destination = self.home / ".codex" / "skills" / "tGD"
+        target.mkdir()
+        module.link_path(self.manifest, destination, target, [])
+        original_unlink = Path.unlink
+        failed_once = False
+
+        def fail_quarantine_discard(path, *args, **kwargs):
+            nonlocal failed_once
+            if ".tgd-quarantine." in path.name and not failed_once:
+                failed_once = True
+                raise PermissionError("simulated quarantine discard failure")
+            return original_unlink(path, *args, **kwargs)
+
+        with mock.patch.object(Path, "unlink", fail_quarantine_discard):
+            with self.assertRaises(module.InstallStateError) as raised:
+                module.remove_path(self.manifest, destination)
+
+        self.assertTrue(failed_once)
+        self.assertIn("path and ownership were restored", str(raised.exception))
+        self.assertTrue(destination.is_symlink())
+        self.assertEqual(target.resolve(), destination.resolve())
+        self.assertEqual(
+            str(target),
+            self.read_manifest()["managed_paths"][str(destination)]["target"],
+        )
+        self.assertEqual(
+            [],
+            list(destination.parent.glob(".tGD.tgd-quarantine.*")),
+        )
 
     def test_remove_refuses_unowned_and_tampered_symlinks(self) -> None:
         owned_target = self.repo / "owned"
@@ -272,6 +564,528 @@ class InstallStateCliTests(unittest.TestCase):
         self.assertFalse(os.path.lexists(removable))
         self.assertEqual(os.readlink(replaced), str(replaced_target))
         self.assertFalse(self.manifest.exists())
+
+    def test_remove_all_keeps_manifest_for_owned_links_that_cannot_be_removed(
+        self,
+    ) -> None:
+        spec = importlib.util.spec_from_file_location("install_state_remove", SCRIPT)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        target = self.repo / "owned"
+        target.mkdir()
+        managed = self.home / ".codex" / "skills" / "owned"
+        self.assertEqual(self.link(managed, target).returncode, 0)
+        original_unlink = Path.unlink
+        failed_once = False
+
+        def fail_managed_unlink(path, *args, **kwargs):
+            nonlocal failed_once
+            if ".tgd-quarantine." in path.name and not failed_once:
+                failed_once = True
+                raise PermissionError("simulated permission failure")
+            return original_unlink(path, *args, **kwargs)
+
+        with mock.patch.object(Path, "unlink", fail_managed_unlink):
+            with self.assertRaises(module.InstallStateError):
+                module.remove_all(self.manifest)
+
+        self.assertTrue(failed_once)
+        self.assertTrue(managed.is_symlink())
+        self.assertEqual(
+            {str(managed)},
+            set(self.read_manifest()["managed_paths"]),
+            "failed owned links must remain recorded for a safe retry",
+        )
+
+    def test_remove_all_preserves_swapped_foreign_path_and_failed_ownership(
+        self,
+    ) -> None:
+        spec = importlib.util.spec_from_file_location(
+            "install_state_remove_all_race",
+            SCRIPT,
+        )
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        target = self.repo / "owned"
+        safe = self.home / "a-safe"
+        swapped_path = self.home / "z-swapped"
+        foreign_content = b"foreign replacement\n"
+        target.mkdir()
+        module.link_path(self.manifest, safe, target, [])
+        module.link_path(self.manifest, swapped_path, target, [])
+        original_replace = module.os.replace
+        swapped = False
+
+        def swap_before_quarantine(source, replacement):
+            nonlocal swapped
+            if (
+                not swapped
+                and Path(source) == swapped_path
+                and ".tgd-quarantine." in Path(replacement).name
+            ):
+                swapped = True
+                swapped_path.unlink()
+                swapped_path.write_bytes(foreign_content)
+            return original_replace(source, replacement)
+
+        with mock.patch.object(
+            module.os,
+            "replace",
+            side_effect=swap_before_quarantine,
+        ):
+            with self.assertRaises(module.InstallStateError):
+                module.remove_all(self.manifest)
+
+        self.assertTrue(swapped)
+        self.assertFalse(os.path.lexists(safe))
+        self.assertEqual(foreign_content, swapped_path.read_bytes())
+        self.assertEqual(
+            {str(swapped_path)},
+            set(self.read_manifest()["managed_paths"]),
+            "only the failed ownership entry must remain for retry",
+        )
+        self.assertEqual(
+            [],
+            list(self.home.glob(".z-swapped.tgd-quarantine.*")),
+        )
+
+    def test_version_marker_is_adopted_recorded_updated_and_removed(self) -> None:
+        marker = self.home / ".tgd-installed-version"
+        marker.write_text("v2026.07.11.3\n", encoding="utf-8")
+
+        installed = self.run_cli(
+            "write-marker",
+            "--manifest",
+            str(self.manifest),
+            "--path",
+            str(marker),
+            "--version",
+            "v2026.07.26.1",
+            "--legacy-version",
+            "v2026.07.11.3",
+        )
+
+        self.assertEqual(0, installed.returncode, installed.stderr)
+        self.assertEqual("v2026.07.26.1\n", marker.read_text(encoding="utf-8"))
+        self.assertEqual(
+            {
+                "kind": "version-marker",
+                "version": "v2026.07.26.1",
+            },
+            self.read_manifest()["managed_files"][str(marker)],
+        )
+
+        updated = self.run_cli(
+            "write-marker",
+            "--manifest",
+            str(self.manifest),
+            "--path",
+            str(marker),
+            "--version",
+            "v2026.07.26.2",
+        )
+        removed = self.run_cli(
+            "remove-all",
+            "--manifest",
+            str(self.manifest),
+        )
+
+        self.assertEqual(0, updated.returncode, updated.stderr)
+        self.assertEqual(0, removed.returncode, removed.stderr)
+        self.assertFalse(marker.exists())
+        self.assertFalse(self.manifest.exists())
+
+    def test_version_marker_refuses_foreign_and_tampered_content(self) -> None:
+        marker = self.home / ".tgd-installed-version"
+        marker.write_text("foreign owner\n", encoding="utf-8")
+
+        foreign = self.run_cli(
+            "write-marker",
+            "--manifest",
+            str(self.manifest),
+            "--path",
+            str(marker),
+            "--version",
+            "v2026.07.26",
+        )
+
+        self.assertNotEqual(0, foreign.returncode)
+        self.assertIn("foreign version marker", foreign.stderr)
+        self.assertEqual("foreign owner\n", marker.read_text(encoding="utf-8"))
+
+        marker.write_text("v2026.07.23\n", encoding="utf-8")
+        adopted = self.run_cli(
+            "write-marker",
+            "--manifest",
+            str(self.manifest),
+            "--path",
+            str(marker),
+            "--version",
+            "v2026.07.26",
+            "--legacy-version",
+            "v2026.07.23",
+        )
+        self.assertEqual(0, adopted.returncode, adopted.stderr)
+        marker.write_text("user changed this\n", encoding="utf-8")
+
+        tampered = self.run_cli(
+            "check-marker",
+            "--manifest",
+            str(self.manifest),
+            "--path",
+            str(marker),
+        )
+
+        self.assertNotEqual(0, tampered.returncode)
+        self.assertIn("changed since it was recorded", tampered.stderr)
+        self.assertEqual("user changed this\n", marker.read_text(encoding="utf-8"))
+
+    def test_version_marker_recovers_an_interrupted_managed_upgrade(self) -> None:
+        marker = self.home / ".tgd-installed-version"
+        marker.write_text("v2026.07.26.2\n", encoding="utf-8")
+        self.manifest.parent.mkdir(parents=True)
+        self.manifest.write_text(
+            json.dumps(
+                {
+                    "version": 1,
+                    "managed_paths": {},
+                    "managed_files": {
+                        str(marker): {
+                            "kind": "version-marker",
+                            "version": "v2026.07.26.1",
+                        }
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        checked = self.run_cli(
+            "check-marker",
+            "--manifest",
+            str(self.manifest),
+            "--path",
+            str(marker),
+            "--recovery-version",
+            "v2026.07.26.2",
+        )
+        recovered = self.run_cli(
+            "write-marker",
+            "--manifest",
+            str(self.manifest),
+            "--path",
+            str(marker),
+            "--version",
+            "v2026.07.26.2",
+        )
+
+        self.assertEqual(0, checked.returncode, checked.stderr)
+        self.assertEqual(0, recovered.returncode, recovered.stderr)
+        self.assertEqual(
+            "v2026.07.26.2",
+            self.read_manifest()["managed_files"][str(marker)]["version"],
+        )
+
+    def test_new_marker_rollback_preserves_a_concurrent_foreign_file(self) -> None:
+        spec = importlib.util.spec_from_file_location(
+            "install_state_new_marker",
+            SCRIPT,
+        )
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        marker = self.home / ".tgd-installed-version"
+
+        def replace_marker_then_fail(*args, **kwargs):
+            marker.write_text("foreign replacement\n", encoding="utf-8")
+            raise OSError("simulated manifest failure")
+
+        with mock.patch.object(
+            module,
+            "write_json_atomic",
+            side_effect=replace_marker_then_fail,
+        ):
+            with self.assertRaises(module.InstallStateError):
+                module.write_marker(
+                    self.manifest,
+                    marker,
+                    "v2026.07.26.1",
+                    [],
+                )
+
+        self.assertEqual(
+            "foreign replacement\n",
+            marker.read_text(encoding="utf-8"),
+        )
+
+    def test_existing_marker_rollback_preserves_same_content_new_inode(
+        self,
+    ) -> None:
+        spec = importlib.util.spec_from_file_location(
+            "install_state_existing_marker",
+            SCRIPT,
+        )
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        marker = self.home / ".tgd-installed-version"
+        marker.write_text("v2026.07.23\n", encoding="utf-8")
+        replacement_inode = None
+
+        def replace_marker_then_fail(*args, **kwargs):
+            nonlocal replacement_inode
+            marker.unlink()
+            marker.write_text("v2026.07.26\n", encoding="utf-8")
+            replacement_inode = marker.stat().st_ino
+            raise OSError("simulated manifest failure")
+
+        with mock.patch.object(
+            module,
+            "write_json_atomic",
+            side_effect=replace_marker_then_fail,
+        ):
+            with self.assertRaises(module.InstallStateError):
+                module.write_marker(
+                    self.manifest,
+                    marker,
+                    "v2026.07.26",
+                    ["v2026.07.23"],
+                )
+
+        self.assertEqual("v2026.07.26\n", marker.read_text(encoding="utf-8"))
+        self.assertEqual(replacement_inode, marker.stat().st_ino)
+        self.assertFalse(self.manifest.exists())
+
+    def test_marker_atomic_writer_rejects_an_observed_foreign_update(self) -> None:
+        spec = importlib.util.spec_from_file_location("install_state_marker", SCRIPT)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        marker = self.home / ".tgd-installed-version"
+        marker.write_bytes(b"before\n")
+        expected = marker.read_bytes()
+        marker.write_bytes(b"foreign-newer\n")
+
+        with self.assertRaises(module.InstallStateError):
+            module.write_bytes_atomic(
+                marker,
+                b"tgd-update\n",
+                0o600,
+                expected,
+            )
+
+        self.assertEqual(b"foreign-newer\n", marker.read_bytes())
+
+    def test_marker_initial_write_rejects_same_content_new_inode(self) -> None:
+        spec = importlib.util.spec_from_file_location(
+            "install_state_marker_initial_race",
+            SCRIPT,
+        )
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        marker = self.home / ".tgd-installed-version"
+        original_content = b"v2026.07.23\n"
+        marker.write_bytes(original_content)
+        original_writer = module.write_bytes_atomic
+        replacement_inode = None
+
+        def replace_before_initial_write(*args, **kwargs):
+            nonlocal replacement_inode
+            marker.unlink()
+            marker.write_bytes(original_content)
+            replacement_inode = marker.stat().st_ino
+            return original_writer(*args, **kwargs)
+
+        with mock.patch.object(
+            module,
+            "write_bytes_atomic",
+            side_effect=replace_before_initial_write,
+        ):
+            with self.assertRaises(module.InstallStateError):
+                module.write_marker(
+                    self.manifest,
+                    marker,
+                    "v2026.07.26",
+                    ["v2026.07.23"],
+                )
+
+        self.assertEqual(original_content, marker.read_bytes())
+        self.assertEqual(replacement_inode, marker.stat().st_ino)
+        self.assertFalse(self.manifest.exists())
+
+    def test_manifest_lock_serializes_complete_link_transactions(self) -> None:
+        first_target = self.repo / "first"
+        second_target = self.repo / "second"
+        first_target.mkdir()
+        second_target.mkdir()
+        first_link = self.home / "first-link"
+        second_link = self.home / "second-link"
+        ready = self.root / "holder-ready"
+        release = self.root / "release-holder"
+        holder_code = """
+import importlib.util
+from pathlib import Path
+import sys
+import time
+
+spec = importlib.util.spec_from_file_location("install_state_holder", sys.argv[1])
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+original = module._link_path_unlocked
+
+def delayed(*args, **kwargs):
+    Path(sys.argv[6]).write_text("ready", encoding="utf-8")
+    while not Path(sys.argv[7]).exists():
+        time.sleep(0.01)
+    return original(*args, **kwargs)
+
+module._link_path_unlocked = delayed
+module.link_path(
+    Path(sys.argv[2]),
+    Path(sys.argv[3]),
+    Path(sys.argv[4]),
+    [],
+)
+"""
+        holder = subprocess.Popen(
+            [
+                sys.executable,
+                "-c",
+                holder_code,
+                str(SCRIPT),
+                str(self.manifest),
+                str(first_link),
+                str(first_target),
+                "unused",
+                str(ready),
+                str(release),
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        deadline = time.monotonic() + 5
+        while not ready.exists() and time.monotonic() < deadline:
+            time.sleep(0.01)
+        self.assertTrue(ready.exists(), "first transaction never acquired its lock")
+
+        contender = subprocess.Popen(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "link",
+                "--manifest",
+                str(self.manifest),
+                "--path",
+                str(second_link),
+                "--target",
+                str(second_target),
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        time.sleep(0.1)
+        self.assertIsNone(
+            contender.poll(),
+            "second transaction should block while the first owns the lock",
+        )
+        release.write_text("go", encoding="utf-8")
+        holder_stdout, holder_stderr = holder.communicate(timeout=5)
+        contender_stdout, contender_stderr = contender.communicate(timeout=5)
+
+        self.assertEqual(0, holder.returncode, holder_stdout + holder_stderr)
+        self.assertEqual(
+            0,
+            contender.returncode,
+            contender_stdout + contender_stderr,
+        )
+        self.assertTrue(first_link.is_symlink())
+        self.assertTrue(second_link.is_symlink())
+        self.assertEqual(
+            {str(first_link), str(second_link)},
+            set(self.read_manifest()["managed_paths"]),
+        )
+
+    def test_remove_legacy_suffix_deletes_a_whole_generated_file(self) -> None:
+        suffix = b"\n# generated tGD legacy block\n"
+        destination = self.home / ".config" / "legacy.md"
+        destination.parent.mkdir(parents=True)
+        destination.write_bytes(suffix)
+
+        result = self.run_cli(
+            "remove-legacy-suffix",
+            "--manifest",
+            str(self.manifest),
+            "--path",
+            str(destination),
+            "--size",
+            str(len(suffix)),
+            "--sha256",
+            hashlib.sha256(suffix).hexdigest(),
+        )
+
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn("removed legacy suffix", result.stdout)
+        self.assertFalse(destination.exists())
+
+    def test_remove_legacy_suffix_preserves_the_user_prefix(self) -> None:
+        prefix = b"# user configuration\n"
+        suffix = b"\n# generated tGD legacy block\n"
+        destination = self.home / ".config" / "legacy.md"
+        destination.parent.mkdir(parents=True)
+        destination.write_bytes(prefix + suffix)
+
+        result = self.run_cli(
+            "remove-legacy-suffix",
+            "--manifest",
+            str(self.manifest),
+            "--path",
+            str(destination),
+            "--size",
+            str(len(suffix)),
+            "--sha256",
+            hashlib.sha256(suffix).hexdigest(),
+        )
+
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn("removed legacy suffix", result.stdout)
+        self.assertEqual(prefix, destination.read_bytes())
+
+    def test_remove_legacy_suffix_preserves_a_modified_generated_block(
+        self,
+    ) -> None:
+        suffix = b"\n# generated tGD legacy block\n"
+        modified = suffix + b"# user edit\n"
+        destination = self.home / ".config" / "legacy.md"
+        destination.parent.mkdir(parents=True)
+        destination.write_bytes(modified)
+
+        result = self.run_cli(
+            "remove-legacy-suffix",
+            "--manifest",
+            str(self.manifest),
+            "--path",
+            str(destination),
+            "--size",
+            str(len(suffix)),
+            "--sha256",
+            hashlib.sha256(suffix).hexdigest(),
+        )
+
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn("preserved legacy suffix", result.stdout)
+        self.assertEqual(modified, destination.read_bytes())
 
     def test_tilde_paths_work_with_spaces_and_single_quotes_in_home_and_repo(self) -> None:
         target = self.repo / "skill's source"

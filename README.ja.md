@@ -57,22 +57,26 @@ Map → Define → Plan → Develop → Verify → Review → Release
 git clone https://github.com/openclawyhwang-hub/tGD.git && cd tGD
 bash setup.sh
 ```
-> インストール済みの CLI（Claude、Codex、Gemini、OpenCode、Pi、Hermes）を自動検出し、コアのリンクとフックを設定して、tGD が所有するすべての symlink を ownership manifest に記録します。既存インストールや旧バージョンからの移行でも同じコマンドを再実行できます。認識済みの tGD リンクはその場で移行し、ユーザーのファイルや設定は保持します。
+> インストール済みの CLI（Claude、Codex、Gemini、OpenCode、Pi、Hermes）を自動検出し、コアのリンクとフックを設定して、tGD が所有するすべての symlink を ownership manifest に記録します。既存インストールや旧バージョンからの移行でも同じコマンドを再実行できます。認識済みの tGD リンクはその場で移行し、ユーザーのファイルや設定は保持します。setup の実行には Python 3.9 以降が必要です。
 >
-> サードパーティ製のグローバルツールは opt-in です。インストーラーは `tgd` を `~/.local/bin/tgd` にリンクし、このディレクトリがまだ `PATH` に含まれていない場合は案内を表示します。
+> 通常の setup は `npm install -g` を実行せず、サードパーティ製のグローバルツールは明示的な opt-in です。bundled Understand-Anything が未ビルドの場合、リポジトリで固定された pnpm を Corepack 経由（または既にインストール済みの同一バージョンの pnpm）で使用し、`vendor/understand-anything/` 内にローカル依存関係をインストールしてビルドすることがあります。UA のビルドには Node.js 22.12 以降が必要です。source と lockfile の fingerprint が変わると再ビルドし、一致する既存 artifact だけが Node 要件を回避できます。すべての UA skill は `~/.agents/skills/<name>` に、plugin root は `~/.understand-anything-plugin` にリンクされます。Node が古い、または存在しない場合でも、setup はコアのリンクと hooks をインストールし、UA の状態を degraded として報告します。すべての依存関係のダウンロードとビルドを省略するには `--no-deps` を使用してください。インストーラーは `tgd` を `~/.local/bin/tgd` にリンクし、このディレクトリがまだ `PATH` に含まれていない場合は案内を表示します。
 
 ### インストールオプション
 
 | コマンド | 説明 |
 |--------|------|
 | `bash setup.sh` | 新規インストール、再実行による安全な更新、既存環境の移行 |
-| `bash setup.sh --with-tools` | 不足している場合に固定バージョンの CodeGraph／pnpm 依存関係をインストール |
+| `bash setup.sh --with-tools` | 不足している CodeGraph とフォールバック pnpm の固定バージョンを npm でグローバルインストールすることを明示的に許可 |
 | `bash setup.sh --with-browser` | 固定バージョンの Agent Browser をインストール／設定（`--with-tools` を含む） |
-| `bash setup.sh --no-deps` | 依存関係をダウンロードせず、コアのリンク／フックのみを設定（オフライン／CI 用） |
+| `bash setup.sh --no-deps` | すべての依存関係のダウンロードと bundled UA のビルドをスキップし、コアのリンク／フックのみを設定（オフライン／CI 用） |
 | `tgd` | 初回セットアップ後に同じ安全なインストール／更新を実行 |
 | `tgd --version` (`-v`) | 現在のバージョンを表示（CalVer：YYYY.MM.DD） |
 | `tgd --upgrade` (`-u`) | 管理対象を強制更新し、認識済みの旧リンクを移行 |
 | `tgd --uninstall` | manifest が所有するリンクと tGD hooks のみを削除し、ユーザーファイルと依存関係は保持 |
+
+Codex では、新規または変更された user hook を一度レビューする必要が
+あります。setup 後に保留中の hook が表示された場合は、Codex で
+`/hooks` を開き、tGD の定義を確認して信頼してください。
 
 ### 最新バージョンへの更新
 
@@ -526,7 +530,7 @@ tGD には4つの人間ロールがあります。各ロールは共有アーテ
 ## ❓ よくある質問
 
 **Q：エージェント以外にインストールが必要？**
-A：リポジトリをクローンして `bash setup.sh` を実行してください。コアの skills、commands、hooks、`tgd` CLI はグローバルパッケージを追加せずに設定されます。CodeGraph、pnpm、Agent Browser は上記 setup flags による明示的な opt-in です。
+A：リポジトリをクローンして `bash setup.sh` を実行してください。通常の setup は `npm install -g` を実行しません。bundled Understand-Anything が未ビルドの場合、リポジトリで固定された pnpm を Corepack 経由（または既にインストール済みの同一バージョンの pnpm）で使用し、`vendor/understand-anything/` 内にローカル依存関係をインストールしてビルドすることがあります。すべての依存関係のダウンロードとビルドを省略するには `--no-deps` を使用してください。CodeGraph、フォールバック pnpm、Agent Browser のグローバルインストールは、上記 setup flags による明示的な opt-in のままです。
 
 **Q：スラッシュコマンド非対応のエージェントは？**
 A：「この機能を計画して」と自然言語で言うと自動マッピング。
@@ -793,13 +797,13 @@ release script は changelog entry を生成し、`VERSION` と `CHANGELOG.md` �
 
 ```bash
 # 変更せずに生成予定の release entry を確認
-bash scripts/release.sh v2026.06.09 --dry-run
+bash scripts/release.sh --dry-run
 
 # 対話プロンプトなしで準備、commit、push
-bash scripts/release.sh v2026.06.09 --yes
+bash scripts/release.sh --yes
 ```
 
-`tgd --release [version]` も同じ script に委譲します。feature branch で準備した場合は PR を `main` に merge してください。CI は release commit が `main` に到達した後にのみ tag と release を公開します。
+`tgd --release [version]` も同じ script に委譲します。feature branch で準備した場合は PR を `main` に merge してください。CI は release commit が `main` に到達した後にのみ tag と release を公開します。実際の release には branch 上であることと clean worktree が必要で、条件を満たさない場合はファイル変更前に拒否されます。
 
 ---
 
@@ -822,7 +826,10 @@ ln -sf "$(pwd)/.claude/commands"/* ~/.claude/commands/
 
 ### Gemini CLI
 ```bash
-ln -sf "$(pwd)/skills" ~/.gemini/skills/tGD
+mkdir -p "$HOME/.gemini/skills"
+for skill_dir in "$(pwd)"/skills/*/; do
+  ln -sf "$skill_dir" "$HOME/.gemini/skills/$(basename "$skill_dir")"
+done
 ln -sf "$(pwd)/.gemini/commands"/* ~/.gemini/commands/
 ```
 

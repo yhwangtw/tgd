@@ -20,6 +20,39 @@ import unittest
 
 
 SOURCE_ROOT = Path(__file__).resolve().parents[1]
+LEGACY_PI_INSTRUCTIONS = """\
+
+<!-- tGD rules — https://github.com/openclawyhwang-hub/tGD -->
+# tGD — Agent Instructions
+
+## Verification Iron Law
+
+**NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE.**
+
+Before claiming any work is complete, fixed, or passing:
+
+1. **RUN** the verification command (tests, build, linter)
+2. **READ** the full output (check exit code, count failures)
+3. **SHOW** the output as evidence
+4. **ONLY THEN** claim the result
+
+## Anti-Rationalization
+
+These thoughts are WRONG:
+- "Should work now" → RUN the verification
+- "I'm confident" → Confidence ≠ evidence
+- "Just this once" → No exceptions
+- "Looks correct to me" → Visual inspection ≠ verification
+- "Tests passed last time" → Run them again, fresh
+
+Never use "should", "probably", "seems to" when describing code state.
+
+## tGD Lifecycle Commands
+
+Use slash commands for each phase: /tgd-map → /tgd-define → /tgd-plan → /tgd-develop → /tgd-verify → /tgd-review → /tgd-simplify → /tgd-ship
+
+Each command has pre-flight checks. Do not skip phases.
+"""
 
 
 class SetupLifecycleTest(unittest.TestCase):
@@ -69,7 +102,11 @@ exec /bin/ln "$@"
         shutil.copy2(SOURCE_ROOT / "bin" / "tgd", self.repo / "bin" / "tgd")
 
         (self.repo / "scripts").mkdir()
-        for script_name in ("install-state.py", "merge-agent-hooks.py"):
+        for script_name in (
+            "install-state.py",
+            "merge-agent-hooks.py",
+            "ua-build-state.py",
+        ):
             shutil.copy2(
                 SOURCE_ROOT / "scripts" / script_name,
                 self.repo / "scripts" / script_name,
@@ -88,10 +125,19 @@ exec /bin/ln "$@"
         path.chmod(path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
         return path
 
+    def _mark_tgd_checkout(self, checkout: Path) -> None:
+        checkout.mkdir(parents=True, exist_ok=True)
+        (checkout / "setup.sh").write_text("#!/usr/bin/env bash\n", encoding="utf-8")
+        (checkout / "VERSION").write_text("v2026.01.01\n", encoding="utf-8")
+        rules = checkout / "skills" / "tgd-rules"
+        rules.mkdir(parents=True, exist_ok=True)
+        (rules / "SKILL.md").write_text("# tGD rules\n", encoding="utf-8")
+
     def _env(self) -> dict[str, str]:
         env = os.environ.copy()
         env.pop("CI", None)
         env["HOME"] = str(self.home)
+        env["TGD_DISABLE_GLOBAL_MIGRATION_FOR_TESTS"] = "1"
         env["PATH"] = os.pathsep.join(
             (str(self.fake_bin), "/usr/bin", "/bin")
         )
@@ -114,6 +160,25 @@ exec /bin/ln "$@"
         )
 
     def _assert_success(self, result: subprocess.CompletedProcess[str]) -> None:
+        self.assertEqual(0, result.returncode, result.stdout)
+
+    def _write_ua_build_stamp(self, ua_root: Path) -> None:
+        stamp = self.home / ".tgd" / "ua-build-state.json"
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(self.repo / "scripts" / "ua-build-state.py"),
+                "write",
+                "--ua-root",
+                str(ua_root),
+                "--stamp",
+                str(stamp),
+            ],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=False,
+        )
         self.assertEqual(0, result.returncode, result.stdout)
 
     def _snapshot_checkout(self) -> dict[str, tuple[object, ...]]:
@@ -154,9 +219,12 @@ exec /bin/ln "$@"
     def test_source_cleanup_does_not_follow_symlinked_skill_directories(self) -> None:
         external_skill = self.root / "user-managed-skill"
         external_skill.mkdir()
-        foreign_link = external_skill / "legacy-helper"
-        foreign_link.symlink_to(self.repo / "skills" / "legacy-helper")
-        (self.repo / "skills" / "external-skill").symlink_to(
+        # This exactly matches the name/target pattern of an old generated
+        # link. It must still be preserved because its parent skill directory
+        # is itself a user-owned symlink outside the checkout.
+        foreign_link = external_skill / "external"
+        foreign_link.symlink_to(self.repo / "skills" / "external")
+        (self.repo / "skills" / "tgd-external").symlink_to(
             external_skill,
             target_is_directory=True,
         )
@@ -169,6 +237,67 @@ exec /bin/ln "$@"
             "source cleanup must never traverse a symlinked skill directory",
         )
 
+    def test_gemini_skills_are_direct_children_and_legacy_bundle_is_retired(
+        self,
+    ) -> None:
+        router = self.repo / "skills" / "tgd-router"
+        router.mkdir()
+        (router / "SKILL.md").write_text("# router\n", encoding="utf-8")
+        gemini_skills = self.home / ".gemini" / "skills"
+        gemini_skills.mkdir(parents=True)
+        legacy_bundle = gemini_skills / "tGD"
+        legacy_bundle.symlink_to(
+            self.repo / "skills",
+            target_is_directory=True,
+        )
+
+        result = self._run_setup("--no-deps")
+
+        self._assert_success(result)
+        self.assertFalse(os.path.lexists(legacy_bundle))
+        for skill_name in ("tgd-rules", "tgd-router"):
+            installed = gemini_skills / skill_name
+            self.assertTrue(installed.is_symlink())
+            self.assertEqual(
+                (self.repo / "skills" / skill_name).resolve(),
+                installed.resolve(),
+            )
+
+    def test_source_cleanup_removes_exact_legacy_hermes_plugin_self_link(
+        self,
+    ) -> None:
+        plugin_dir = self.repo / ".hermes" / "plugins" / "tgd"
+        plugin_dir.mkdir(parents=True)
+        self_link = plugin_dir / "tgd"
+        self_link.symlink_to(plugin_dir.resolve(), target_is_directory=True)
+
+        result = self._run_setup()
+
+        self._assert_success(result)
+        self.assertFalse(
+            os.path.lexists(self_link),
+            "the historical Hermes plugin self-link must be removed",
+        )
+
+    def test_source_cleanup_removes_only_known_generated_skill_links(self) -> None:
+        skill_dir = self.repo / "skills" / "tgd-rules"
+        self_link = skill_dir / "tgd-rules"
+        self_link.symlink_to(skill_dir.resolve(), target_is_directory=True)
+        broken_legacy = skill_dir / "rules"
+        broken_legacy.symlink_to(self.repo.resolve() / "skills" / "rules")
+        user_target = self.root / "user-helper"
+        user_target.write_text("user owned\n", encoding="utf-8")
+        foreign_link = skill_dir / "company-helper"
+        foreign_link.symlink_to(user_target)
+
+        result = self._run_setup()
+
+        self._assert_success(result)
+        self.assertFalse(os.path.lexists(self_link))
+        self.assertFalse(os.path.lexists(broken_legacy))
+        self.assertTrue(foreign_link.is_symlink())
+        self.assertEqual(user_target.resolve(), foreign_link.resolve())
+
     def test_install_preserves_foreign_directory_on_name_collision(self) -> None:
         self._write_fake("hermes", "exit 0")
         collision = self.home / ".hermes" / "skills" / "tgd-rules"
@@ -176,14 +305,49 @@ exec /bin/ln "$@"
         sentinel = collision / "foreign.txt"
         sentinel.write_text("owned by the user\n", encoding="utf-8")
         installed_marker = self.home / ".tgd-installed-version"
-        installed_marker.write_text("v-old\n", encoding="utf-8")
+        installed_marker.write_text("v2026.01.01\n", encoding="utf-8")
 
         result = self._run_setup()
 
         self.assertNotEqual(0, result.returncode, result.stdout)
         self.assertTrue(collision.is_dir() and not collision.is_symlink())
         self.assertEqual("owned by the user\n", sentinel.read_text(encoding="utf-8"))
-        self.assertEqual("v-old\n", installed_marker.read_text(encoding="utf-8"))
+        self.assertEqual(
+            "v2026.01.01\n",
+            installed_marker.read_text(encoding="utf-8"),
+        )
+
+    def test_install_preserves_foreign_same_suffix_symlink(self) -> None:
+        self._write_fake("codex", "exit 0")
+        foreign_root = self.root / "company"
+        foreign_skills = foreign_root / "skills"
+        foreign_skills.mkdir(parents=True)
+        destination = self.home / ".codex" / "skills" / "tGD"
+        destination.parent.mkdir(parents=True)
+        destination.symlink_to(foreign_skills, target_is_directory=True)
+
+        result = self._run_setup("--no-deps")
+
+        self.assertNotEqual(0, result.returncode, result.stdout)
+        self.assertTrue(destination.is_symlink())
+        self.assertEqual(foreign_skills.resolve(), destination.resolve())
+
+    def test_upgrade_preserves_foreign_legacy_skill_symlink(self) -> None:
+        foreign_skill = self.root / "company" / "skills" / "rules"
+        foreign_skill.mkdir(parents=True)
+        destination = self.home / ".codex" / "skills" / "rules"
+        destination.parent.mkdir(parents=True)
+        destination.symlink_to(foreign_skill, target_is_directory=True)
+        (self.home / ".tgd-installed-version").write_text(
+            (self.repo / "VERSION").read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+
+        result = self._run_setup("--no-deps")
+
+        self._assert_success(result)
+        self.assertTrue(destination.is_symlink())
+        self.assertEqual(foreign_skill.resolve(), destination.resolve())
 
     def test_existing_install_from_old_checkout_migrates_then_uninstalls(self) -> None:
         self._write_fake("hermes", "exit 0")
@@ -193,6 +357,7 @@ exec /bin/ln "$@"
         old_skill.mkdir(parents=True)
         old_cli.parent.mkdir()
         old_cli.write_text("#!/bin/bash\n", encoding="utf-8")
+        self._mark_tgd_checkout(old_repo)
 
         installed_skill = self.home / ".hermes" / "skills" / "tgd-rules"
         installed_skill.parent.mkdir(parents=True)
@@ -224,6 +389,183 @@ exec /bin/ln "$@"
         self._assert_success(uninstalled)
         self.assertFalse(os.path.lexists(installed_skill))
         self.assertFalse(os.path.lexists(installed_cli))
+        self.assertFalse((self.home / ".tgd-installed-version").exists())
+
+    def test_exact_historical_pi_instructions_migrate_idempotently(self) -> None:
+        source_instructions = self.repo / ".pi" / "instructions.md"
+        source_instructions.parent.mkdir()
+        shutil.copy2(SOURCE_ROOT / ".pi" / "instructions.md", source_instructions)
+        installed_instructions = self.home / ".pi" / "agent" / "instructions.md"
+        installed_instructions.parent.mkdir(parents=True)
+        installed_instructions.write_text(
+            LEGACY_PI_INSTRUCTIONS,
+            encoding="utf-8",
+        )
+        self.assertEqual(
+            "4f9be9f0faa5371b95fb5062a00c11b4b9ee22ee8e243fdd7cedc840eb0af689",
+            hashlib.sha256(installed_instructions.read_bytes()).hexdigest(),
+        )
+
+        first = self._run_setup("--no-deps")
+        self._assert_success(first)
+        second = self._run_setup("--no-deps")
+        self._assert_success(second)
+
+        self.assertTrue(installed_instructions.is_symlink())
+        self.assertEqual(
+            source_instructions.resolve(),
+            installed_instructions.resolve(),
+        )
+        manifest = json.loads(
+            (self.home / ".tgd" / "install-manifest.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertIn(str(installed_instructions), manifest["managed_paths"])
+
+        uninstalled = self._run_setup("--uninstall")
+        self._assert_success(uninstalled)
+        self.assertFalse(os.path.lexists(installed_instructions))
+
+    def test_historical_cleanup_supports_a_home_path_containing_pipe(self) -> None:
+        source_instructions = self.repo / ".pi" / "instructions.md"
+        source_instructions.parent.mkdir()
+        shutil.copy2(SOURCE_ROOT / ".pi" / "instructions.md", source_instructions)
+        pipe_home = self.root / "home|company"
+        installed_instructions = pipe_home / ".pi" / "agent" / "instructions.md"
+        installed_instructions.parent.mkdir(parents=True)
+        installed_instructions.write_text(
+            LEGACY_PI_INSTRUCTIONS,
+            encoding="utf-8",
+        )
+        env = self._env()
+        env["HOME"] = str(pipe_home)
+
+        result = self._run_setup("--no-deps", env=env)
+
+        self._assert_success(result)
+        self.assertTrue(installed_instructions.is_symlink())
+        self.assertEqual(
+            source_instructions.resolve(),
+            installed_instructions.resolve(),
+        )
+
+    def test_modified_historical_pi_instructions_are_preserved(self) -> None:
+        source_instructions = self.repo / ".pi" / "instructions.md"
+        source_instructions.parent.mkdir()
+        shutil.copy2(SOURCE_ROOT / ".pi" / "instructions.md", source_instructions)
+        installed_instructions = self.home / ".pi" / "agent" / "instructions.md"
+        installed_instructions.parent.mkdir(parents=True)
+        modified = LEGACY_PI_INSTRUCTIONS + "\nUser addition.\n"
+        installed_instructions.write_text(modified, encoding="utf-8")
+
+        result = self._run_setup("--no-deps")
+
+        self._assert_success(result)
+        self.assertIn("Preserved modified historical-looking file", result.stdout)
+        self.assertIn("Keeping existing user path", result.stdout)
+        self.assertFalse(installed_instructions.is_symlink())
+        self.assertEqual(modified, installed_instructions.read_text(encoding="utf-8"))
+
+    def test_verified_legacy_ua_repo_link_migrates_then_uninstalls(self) -> None:
+        old_repo = self.root / "old-tGD-checkout"
+        self._mark_tgd_checkout(old_repo)
+        old_plugin = (
+            old_repo
+            / "vendor"
+            / "understand-anything"
+            / "understand-anything-plugin"
+        )
+        old_plugin.mkdir(parents=True)
+        legacy_link = self.home / ".understand-anything" / "repo"
+        legacy_link.parent.mkdir()
+        legacy_link.symlink_to(old_plugin, target_is_directory=True)
+
+        current_skill = (
+            self.repo
+            / "vendor"
+            / "understand-anything"
+            / "understand-anything-plugin"
+            / "skills"
+            / "understand"
+        )
+        current_skill.mkdir(parents=True)
+        (current_skill / "SKILL.md").write_text(
+            "# Understand\n",
+            encoding="utf-8",
+        )
+
+        installed = self._run_setup("--no-deps")
+        self._assert_success(installed)
+        self.assertFalse(os.path.lexists(legacy_link))
+        plugin_root = self.home / ".understand-anything-plugin"
+        self.assertTrue(plugin_root.is_symlink())
+
+        uninstalled = self._run_setup("--uninstall")
+        self._assert_success(uninstalled)
+        self.assertFalse(os.path.lexists(plugin_root))
+        self.assertFalse(
+            os.path.lexists(self.home / ".agents" / "skills" / "understand")
+        )
+
+    def test_foreign_legacy_ua_repo_link_is_preserved(self) -> None:
+        foreign_plugin = (
+            self.root
+            / "company"
+            / "vendor"
+            / "understand-anything"
+            / "understand-anything-plugin"
+        )
+        foreign_plugin.mkdir(parents=True)
+        legacy_link = self.home / ".understand-anything" / "repo"
+        legacy_link.parent.mkdir()
+        legacy_link.symlink_to(foreign_plugin, target_is_directory=True)
+        current_skill = (
+            self.repo
+            / "vendor"
+            / "understand-anything"
+            / "understand-anything-plugin"
+            / "skills"
+            / "understand"
+        )
+        current_skill.mkdir(parents=True)
+        (current_skill / "SKILL.md").write_text(
+            "# Understand\n",
+            encoding="utf-8",
+        )
+
+        installed = self._run_setup("--no-deps")
+        self._assert_success(installed)
+        self.assertTrue(legacy_link.is_symlink())
+        self.assertEqual(foreign_plugin.resolve(), legacy_link.resolve())
+
+        uninstalled = self._run_setup("--uninstall")
+        self._assert_success(uninstalled)
+        self.assertTrue(legacy_link.is_symlink())
+        self.assertEqual(foreign_plugin.resolve(), legacy_link.resolve())
+
+    def test_setup_removes_only_verified_retired_integrations(self) -> None:
+        old_repo = self.root / "retired-tGD-checkout"
+        self._mark_tgd_checkout(old_repo)
+        old_rule = old_repo / "skills" / "tgd-rules" / "SKILL.md"
+        old_extension = old_repo / ".pi" / "extensions" / "tgd-commands.ts"
+        old_extension.parent.mkdir(parents=True)
+        old_extension.write_text("// retired\n", encoding="utf-8")
+
+        installed_rule = self.home / ".claude" / "rules" / "tgd.md"
+        installed_rule.parent.mkdir(parents=True)
+        installed_rule.symlink_to(old_rule)
+        installed_extension = (
+            self.home / ".pi" / "agent" / "extensions" / "tgd-commands.ts"
+        )
+        installed_extension.parent.mkdir(parents=True)
+        installed_extension.symlink_to(old_extension)
+
+        result = self._run_setup("--no-deps")
+
+        self._assert_success(result)
+        self.assertFalse(os.path.lexists(installed_rule))
+        self.assertFalse(os.path.lexists(installed_extension))
 
     def test_default_install_does_not_run_global_package_installs(self) -> None:
         (self.fake_bin / "codegraph").unlink()
@@ -294,6 +636,133 @@ chmod +x "$FAKE_BIN/codegraph"
             .strip(),
         )
 
+    def test_existing_ua_artifacts_do_not_require_a_new_node_runtime(self) -> None:
+        ua_root = self.repo / "vendor" / "understand-anything"
+        ua_skill = (
+            ua_root
+            / "understand-anything-plugin"
+            / "skills"
+            / "understand"
+        )
+        ua_skill.mkdir(parents=True)
+        (ua_skill / "SKILL.md").write_text("# Understand\n", encoding="utf-8")
+        modules_manifest = ua_root / "node_modules" / ".modules.yaml"
+        modules_manifest.parent.mkdir()
+        modules_manifest.write_text("packageManager: pnpm\n", encoding="utf-8")
+        core_output = (
+            ua_root
+            / "understand-anything-plugin"
+            / "packages"
+            / "core"
+            / "dist"
+            / "index.js"
+        )
+        core_output.parent.mkdir(parents=True)
+        core_output.write_text("// built\n", encoding="utf-8")
+        self._write_ua_build_stamp(ua_root)
+        self._write_fake(
+            "node",
+            """
+if [ "${1:-}" = "-p" ]; then
+    printf '20.19.0\\n'
+else
+    printf 'v20.19.0\\n'
+fi
+""",
+        )
+
+        result = self._run_setup()
+
+        self._assert_success(result)
+        self.assertIn("UA dependencies already installed", result.stdout)
+        self.assertNotIn("requires Node.js", result.stdout)
+
+    def test_changed_ua_source_requires_rebuild_before_old_node_can_skip(self) -> None:
+        ua_root = self.repo / "vendor" / "understand-anything"
+        ua_skill = (
+            ua_root
+            / "understand-anything-plugin"
+            / "skills"
+            / "understand"
+        )
+        ua_skill.mkdir(parents=True)
+        (ua_skill / "SKILL.md").write_text("# Understand\n", encoding="utf-8")
+        source = (
+            ua_root
+            / "understand-anything-plugin"
+            / "packages"
+            / "core"
+            / "src"
+            / "index.ts"
+        )
+        source.parent.mkdir(parents=True)
+        source.write_text("export const version = 1;\n", encoding="utf-8")
+        (ua_root / "pnpm-lock.yaml").write_text(
+            "lockfileVersion: '9.0'\n",
+            encoding="utf-8",
+        )
+        modules_manifest = ua_root / "node_modules" / ".modules.yaml"
+        modules_manifest.parent.mkdir()
+        modules_manifest.write_text("packageManager: pnpm\n", encoding="utf-8")
+        core_output = (
+            ua_root
+            / "understand-anything-plugin"
+            / "packages"
+            / "core"
+            / "dist"
+            / "index.js"
+        )
+        core_output.parent.mkdir(parents=True)
+        core_output.write_text("// built\n", encoding="utf-8")
+        self._write_ua_build_stamp(ua_root)
+        source.write_text("export const version = 2;\n", encoding="utf-8")
+        self._write_fake(
+            "node",
+            """
+if [ "${1:-}" = "-p" ]; then
+    printf '20.19.0\\n'
+else
+    printf 'v20.19.0\\n'
+fi
+""",
+        )
+
+        result = self._run_setup()
+
+        self._assert_success(result)
+        self.assertIn("UA build inputs changed", result.stdout)
+        self.assertIn("Node.js >= 22.12.0", result.stdout)
+        self.assertIn("Setup Complete (degraded)", result.stdout)
+
+    def test_old_node_degrades_only_ua_dependency_install(self) -> None:
+        ua_skill = (
+            self.repo
+            / "vendor"
+            / "understand-anything"
+            / "understand-anything-plugin"
+            / "skills"
+            / "understand"
+        )
+        ua_skill.mkdir(parents=True)
+        (ua_skill / "SKILL.md").write_text("# Understand\n", encoding="utf-8")
+        self._write_fake(
+            "node",
+            """
+if [ "${1:-}" = "-p" ]; then
+    printf '20.19.0\\n'
+else
+    printf 'v20.19.0\\n'
+fi
+""",
+        )
+
+        result = self._run_setup()
+
+        self._assert_success(result)
+        self.assertIn("Node.js >= 22.12.0", result.stdout)
+        self.assertIn("Setup Complete (degraded)", result.stdout)
+        self.assertTrue((self.home / ".local" / "bin" / "tgd").is_symlink())
+
     def test_successful_dependency_command_without_artifacts_is_degraded(self) -> None:
         ua_skill = (
             self.repo
@@ -312,6 +781,79 @@ chmod +x "$FAKE_BIN/codegraph"
         self._assert_success(result)
         self.assertIn("Setup Complete (degraded)", result.stdout)
         self.assertNotIn("✅ Setup Complete!", result.stdout)
+
+    def test_successful_ua_build_records_stamp_and_is_not_repeated(self) -> None:
+        ua_root = self.repo / "vendor" / "understand-anything"
+        ua_skill = (
+            ua_root
+            / "understand-anything-plugin"
+            / "skills"
+            / "understand"
+        )
+        ua_skill.mkdir(parents=True)
+        (ua_skill / "SKILL.md").write_text("# Understand\n", encoding="utf-8")
+        source = (
+            ua_root
+            / "understand-anything-plugin"
+            / "packages"
+            / "core"
+            / "src"
+            / "index.ts"
+        )
+        source.parent.mkdir(parents=True)
+        source.write_text("export const ready = true;\n", encoding="utf-8")
+        (ua_root / "pnpm-lock.yaml").write_text(
+            "lockfileVersion: '9.0'\n",
+            encoding="utf-8",
+        )
+        command_log = self.root / "ua-commands.log"
+        self._write_fake(
+            "corepack",
+            """
+printf '%s\\n' "$*" >> "$UA_COMMAND_LOG"
+if [ "${1:-}" = "pnpm" ] && [ "${2:-}" = "install" ]; then
+    mkdir -p node_modules
+    printf 'packageManager: pnpm\\n' > node_modules/.modules.yaml
+elif [ "${1:-}" = "pnpm" ] && [ "${2:-}" = "build" ]; then
+    mkdir -p understand-anything-plugin/packages/core/dist
+    printf '// built\\n' > \
+        understand-anything-plugin/packages/core/dist/index.js
+fi
+""",
+        )
+        env = self._env()
+        env["UA_COMMAND_LOG"] = str(command_log)
+
+        first = self._run_setup(env=env)
+        self._assert_success(first)
+        second = self._run_setup(env=env)
+        self._assert_success(second)
+
+        self.assertEqual(
+            [
+                "pnpm install --frozen-lockfile",
+                "pnpm build",
+            ],
+            command_log.read_text(encoding="utf-8").splitlines(),
+        )
+        stamp = self.home / ".tgd" / "ua-build-state.json"
+        self.assertTrue(stamp.is_file())
+        current = subprocess.run(
+            [
+                sys.executable,
+                str(self.repo / "scripts" / "ua-build-state.py"),
+                "is-current",
+                "--ua-root",
+                str(ua_root),
+                "--stamp",
+                str(stamp),
+            ],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=False,
+        )
+        self.assertEqual(0, current.returncode, current.stdout)
 
     def test_no_deps_skips_all_dependency_commands(self) -> None:
         ua_skill = (
@@ -343,11 +885,134 @@ chmod +x "$FAKE_BIN/codegraph"
         )
         self.assertTrue((self.home / ".local" / "bin" / "tgd").is_symlink())
 
+    def test_all_ua_skills_use_universal_canonical_links(self) -> None:
+        ua_skills = (
+            self.repo
+            / "vendor"
+            / "understand-anything"
+            / "understand-anything-plugin"
+            / "skills"
+        )
+        for skill_name in (
+            "understand",
+            "understand-chat",
+            "understand-dashboard",
+        ):
+            skill = ua_skills / skill_name
+            skill.mkdir(parents=True)
+            (skill / "SKILL.md").write_text(
+                f"---\nname: {skill_name}\n---\n",
+                encoding="utf-8",
+            )
+        (self.home / ".gemini").mkdir()
+
+        result = self._run_setup("--no-deps")
+
+        self._assert_success(result)
+        plugin_root = self.home / ".understand-anything-plugin"
+        self.assertTrue(plugin_root.is_symlink())
+        self.assertEqual(
+            (ua_skills.parent).resolve(),
+            plugin_root.resolve(),
+        )
+        for skill_name in (
+            "understand",
+            "understand-chat",
+            "understand-dashboard",
+        ):
+            with self.subTest(skill_name=skill_name):
+                universal = self.home / ".agents" / "skills" / skill_name
+                self.assertTrue(universal.is_symlink())
+                self.assertEqual((ua_skills / skill_name).resolve(), universal.resolve())
+                self.assertFalse(
+                    os.path.lexists(self.home / ".gemini" / "skills" / skill_name)
+                )
+                self.assertFalse(
+                    os.path.lexists(
+                        self.home
+                        / ".gemini"
+                        / "skills"
+                        / f"understand-{skill_name}"
+                    )
+                )
+
+    def test_gemini_gets_direct_fallback_only_for_universal_collision(self) -> None:
+        ua_skills = (
+            self.repo
+            / "vendor"
+            / "understand-anything"
+            / "understand-anything-plugin"
+            / "skills"
+        )
+        for skill_name in ("understand", "understand-chat"):
+            skill = ua_skills / skill_name
+            skill.mkdir(parents=True)
+            (skill / "SKILL.md").write_text(
+                f"---\nname: {skill_name}\n---\n",
+                encoding="utf-8",
+            )
+
+        collision = self.home / ".agents" / "skills" / "understand-chat"
+        collision.mkdir(parents=True)
+        sentinel = collision / "user-owned.txt"
+        sentinel.write_text("keep\n", encoding="utf-8")
+        (self.home / ".gemini").mkdir()
+
+        result = self._run_setup("--no-deps")
+
+        self._assert_success(result)
+        self.assertEqual("keep\n", sentinel.read_text(encoding="utf-8"))
+        self.assertTrue(
+            (self.home / ".agents" / "skills" / "understand").is_symlink()
+        )
+        fallback = self.home / ".gemini" / "skills" / "understand-chat"
+        self.assertTrue(fallback.is_symlink())
+        self.assertEqual((ua_skills / "understand-chat").resolve(), fallback.resolve())
+        self.assertFalse(
+            os.path.lexists(self.home / ".gemini" / "skills" / "understand")
+        )
+
+    def test_no_deps_does_not_require_node(self) -> None:
+        (self.fake_bin / "node").unlink()
+
+        result = self._run_setup("--no-deps")
+
+        self._assert_success(result)
+        self.assertTrue((self.home / ".local" / "bin" / "tgd").is_symlink())
+
     def test_no_deps_rejects_dependency_install_flags(self) -> None:
         result = self._run_setup("--no-deps", "--with-tools")
 
         self.assertEqual(2, result.returncode, result.stdout)
         self.assertIn("Conflicting dependency options", result.stdout)
+
+    def test_non_install_modes_reject_install_options(self) -> None:
+        for args in (
+            ("--uninstall", "--with-tools"),
+            ("--version", "--no-deps"),
+        ):
+            with self.subTest(args=args):
+                result = self._run_setup(*args)
+                self.assertEqual(2, result.returncode, result.stdout)
+                self.assertIn("only valid for install or upgrade", result.stdout)
+
+    def test_installed_cli_forwards_upgrade_options(self) -> None:
+        (self.fake_bin / "node").unlink()
+        cli = self.repo / "bin" / "tgd"
+
+        result = subprocess.run(
+            [str(cli), "--upgrade", "--no-deps"],
+            cwd=self.repo,
+            env=self._env(),
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            timeout=30,
+            check=False,
+        )
+
+        self._assert_success(result)
+        self.assertTrue((self.home / ".local" / "bin" / "tgd").is_symlink())
 
     def test_default_install_does_not_change_agent_browser_config(self) -> None:
         browser_skill = self.repo / "skills" / "tgd-agent-browser"
@@ -393,7 +1058,9 @@ chmod +x "$FAKE_BIN/codegraph"
     def test_uninstall_preserves_version(self) -> None:
         original_version = (self.repo / "VERSION").read_text(encoding="utf-8")
         installed_marker = self.home / ".tgd-installed-version"
-        installed_marker.write_text("old\n", encoding="utf-8")
+        installed = self._run_setup("--no-deps")
+        self._assert_success(installed)
+        self.assertTrue(installed_marker.is_file())
 
         result = self._run_setup("--uninstall")
         self._assert_success(result)
@@ -405,6 +1072,58 @@ chmod +x "$FAKE_BIN/codegraph"
             version_file.read_text(encoding="utf-8"),
         )
         self.assertFalse(installed_marker.exists())
+
+    def test_install_adopts_and_updates_a_legacy_micro_version_marker(self) -> None:
+        installed_marker = self.home / ".tgd-installed-version"
+        installed_marker.write_text("v2026.07.11.3\n", encoding="utf-8")
+        (self.repo / "VERSION").write_text(
+            "v2026.07.26.1\n",
+            encoding="utf-8",
+        )
+
+        result = self._run_setup("--no-deps")
+
+        self._assert_success(result)
+        self.assertEqual(
+            "v2026.07.26.1\n",
+            installed_marker.read_text(encoding="utf-8"),
+        )
+        manifest = json.loads(
+            (self.home / ".tgd" / "install-manifest.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(
+            "v2026.07.26.1",
+            manifest["managed_files"][str(installed_marker)]["version"],
+        )
+
+    def test_install_rejects_foreign_version_marker_without_overwriting_it(
+        self,
+    ) -> None:
+        installed_marker = self.home / ".tgd-installed-version"
+        installed_marker.write_text("owned by another tool\n", encoding="utf-8")
+
+        result = self._run_setup("--no-deps")
+
+        self.assertNotEqual(0, result.returncode, result.stdout)
+        self.assertEqual(
+            "owned by another tool\n",
+            installed_marker.read_text(encoding="utf-8"),
+        )
+        self.assertFalse(os.path.lexists(self.home / ".local" / "bin" / "tgd"))
+
+    def test_uninstall_without_manifest_preserves_unknown_version_marker(self) -> None:
+        installed_marker = self.home / ".tgd-installed-version"
+        installed_marker.write_text("owned by another tool\n", encoding="utf-8")
+
+        result = self._run_setup("--uninstall")
+
+        self._assert_success(result)
+        self.assertEqual(
+            "owned by another tool\n",
+            installed_marker.read_text(encoding="utf-8"),
+        )
 
     def test_uninstall_preserves_foreign_files(self) -> None:
         foreign_note = self.home / ".claude" / "commands" / "my-tgd-notes.md"
@@ -435,9 +1154,6 @@ chmod +x "$FAKE_BIN/codegraph"
         pi_instructions.parent.mkdir(parents=True)
         pi_instructions.symlink_to(foreign_instructions)
 
-        installed_marker = self.home / ".tgd-installed-version"
-        installed_marker.write_text("old\n", encoding="utf-8")
-
         result = self._run_setup("--uninstall")
         self._assert_success(result)
 
@@ -456,7 +1172,6 @@ chmod +x "$FAKE_BIN/codegraph"
             json.loads(codex_hooks.read_text(encoding="utf-8")),
         )
         self.assertEqual(foreign_instructions.resolve(), pi_instructions.resolve())
-        self.assertFalse(installed_marker.exists())
 
     def test_unknown_flag_exits_with_usage_error(self) -> None:
         result = self._run_setup("--definitely-not-a-real-option")
@@ -464,9 +1179,6 @@ chmod +x "$FAKE_BIN/codegraph"
         self.assertEqual(2, result.returncode, result.stdout)
 
     def test_uninstall_does_not_require_node(self) -> None:
-        installed_marker = self.home / ".tgd-installed-version"
-        installed_marker.write_text("old\n", encoding="utf-8")
-
         restricted_bin = self.root / "no-node-bin"
         restricted_bin.mkdir()
         for command in (
@@ -495,7 +1207,70 @@ chmod +x "$FAKE_BIN/codegraph"
         result = self._run_setup("--uninstall", env=env)
 
         self.assertEqual(0, result.returncode, result.stdout)
-        self.assertFalse(installed_marker.exists())
+
+    def test_uninstall_reports_legacy_suffix_helper_failure(self) -> None:
+        instructions = self.home / ".pi" / "agent" / "instructions.md"
+        instructions.parent.mkdir(parents=True)
+        instructions.write_text(LEGACY_PI_INSTRUCTIONS, encoding="utf-8")
+        helper = self.repo / "scripts" / "install-state.py"
+        real_helper = self.repo / "scripts" / "install-state-real.py"
+        helper.rename(real_helper)
+        helper.write_text(
+            """\
+import os
+import sys
+
+if len(sys.argv) > 1 and sys.argv[1] == "remove-legacy-suffix":
+    raise SystemExit(23)
+os.execv(sys.executable, [sys.executable, {!r}, *sys.argv[1:]])
+""".format(str(real_helper)),
+            encoding="utf-8",
+        )
+
+        result = self._run_setup("--uninstall")
+
+        self.assertNotEqual(0, result.returncode, result.stdout)
+        self.assertIn("uninstall finished with errors", result.stdout)
+        self.assertEqual(
+            LEGACY_PI_INSTRUCTIONS,
+            instructions.read_text(encoding="utf-8"),
+        )
+
+    def test_python_older_than_3_9_is_rejected_before_installation(self) -> None:
+        self._write_fake(
+            "python3",
+            """
+if [ "${1:-}" = "--version" ]; then
+    printf 'Python 3.8.18\\n'
+    exit 0
+fi
+exit 1
+""",
+        )
+
+        result = self._run_setup("--no-deps")
+
+        self.assertNotEqual(0, result.returncode, result.stdout)
+        self.assertIn("python3 >= 3.9", result.stdout)
+        self.assertFalse(os.path.lexists(self.home / ".local" / "bin" / "tgd"))
+
+    def test_command_verification_requires_each_canonical_source_target(self) -> None:
+        self._write_fake("codex", "exit 0")
+        prompts = self.repo / ".codex" / "prompts"
+        prompts.mkdir(parents=True)
+        for index in range(6):
+            (prompts / f"tgd-{index}.md").write_text(
+                f"# command {index}\n",
+                encoding="utf-8",
+            )
+        foreign = self.home / ".codex" / "prompts" / "tgd-custom.md"
+        foreign.parent.mkdir(parents=True)
+        foreign.write_text("# foreign\n", encoding="utf-8")
+
+        result = self._run_setup("--no-deps")
+
+        self.assertNotEqual(0, result.returncode, result.stdout)
+        self.assertIn("6/7 canonical commands", result.stdout)
 
 
 if __name__ == "__main__":

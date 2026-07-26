@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # tGD CLI — thin wrapper around setup.sh
 # Installed to ~/.local/bin/tgd
 
@@ -24,18 +24,13 @@ fi
 # Dispatch
 case "${1:-}" in
     --version|-v)
-        # Read from VERSION (single source of truth)
-        if [[ -f "$TGD_REPO_ROOT/VERSION" ]]; then
-            echo "tGD $(cat "$TGD_REPO_ROOT/VERSION")"
-        else
-            echo "tGD (unknown — VERSION not found)"
-        fi
+        exec bash "$TGD_REPO_ROOT/setup.sh" --version "${@:2}"
         ;;
     --upgrade|-u)
-        exec bash "$TGD_REPO_ROOT/setup.sh" --upgrade
+        exec bash "$TGD_REPO_ROOT/setup.sh" --upgrade "${@:2}"
         ;;
     --uninstall|--remove)
-        exec bash "$TGD_REPO_ROOT/setup.sh" --uninstall
+        exec bash "$TGD_REPO_ROOT/setup.sh" --uninstall "${@:2}"
         ;;
     --release)
         # Prepare-only: writes VERSION + CHANGELOG and pushes; CI publishes.
@@ -43,6 +38,11 @@ case "${1:-}" in
         exec bash "$TGD_REPO_ROOT/scripts/release.sh" "${@:2}"
         ;;
     --help|-h)
+        if [[ "$#" -ne 1 ]]; then
+            echo "Unknown option after $1: ${2}"
+            echo "Run 'tgd --help' for usage."
+            exit 1
+        fi
         echo "tGD — Make your agent great again."
         echo ""
         echo "Usage: tgd [command]"

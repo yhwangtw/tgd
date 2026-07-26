@@ -58,9 +58,19 @@ bash setup.sh
 > Hermes), installs the core links/hooks, and records every tGD-owned symlink
 > in an ownership manifest. Existing and legacy installs can run the same
 > command again: recognized tGD links are migrated in place, while foreign
-> files and settings are preserved.
+> files and settings are preserved. Running setup requires Python 3.9 or newer.
 >
-> Third-party global tools are opt-in. The installer links `tgd` at
+> Plain setup never runs `npm install -g`; third-party global tools are
+> opt-in. When the bundled Understand-Anything workspace is not built yet,
+> plain setup may use its repository-pinned pnpm through Corepack (or an
+> already-installed matching pnpm) to install and build dependencies locally
+> under `vendor/understand-anything/`. Building UA requires Node.js 22.12 or
+> newer. UA build inputs are fingerprinted, so a source or lockfile change triggers a rebuild;
+> only matching artifacts may bypass that Node requirement. Every UA skill is
+> linked at `~/.agents/skills/<name>`, and the plugin root is linked at
+> `~/.understand-anything-plugin`. With an older or missing Node runtime, setup
+> still installs the core links/hooks and reports degraded UA readiness.
+> Use `--no-deps` to skip all dependency downloads and builds. The installer links `tgd` at
 > `~/.local/bin/tgd` and tells you if that directory is not yet on `PATH`.
 
 ### Setup Options
@@ -68,13 +78,16 @@ bash setup.sh
 | Command | What it does |
 |---------|-------------|
 | `bash setup.sh` | Install, refresh, or safely migrate an existing installation |
-| `bash setup.sh --with-tools` | Install pinned CodeGraph/pnpm dependencies when missing |
+| `bash setup.sh --with-tools` | Opt in to pinned global npm installs for missing CodeGraph and the pnpm fallback |
 | `bash setup.sh --with-browser` | Install/configure pinned Agent Browser (implies `--with-tools`) |
-| `bash setup.sh --no-deps` | Install core links/hooks without dependency downloads (offline/CI mode) |
+| `bash setup.sh --no-deps` | Install core links/hooks while skipping all dependency downloads and bundled UA builds (offline/CI mode) |
 | `tgd` | Run the same safe install/refresh after the first setup |
 | `tgd --version` (`-v`) | Show current version (CalVer: YYYY.MM.DD) |
 | `tgd --upgrade` (`-u`) | Force a managed refresh and migrate recognized legacy links |
 | `tgd --uninstall` | Remove manifest-owned links and tGD hooks; preserve user files and dependencies |
+
+Codex requires one-time review of new or changed user hooks. If it reports a
+pending hook after setup, open `/hooks` in Codex and trust the tGD definition.
 
 ### Updating to Latest
 
@@ -544,7 +557,13 @@ Skills use **progressive disclosure** — the agent only loads details when need
 ## ❓ FAQ
 
 **Q: Do I need to install anything besides the agent?**
-A: Clone the repo and run `bash setup.sh`. Core skills, commands, hooks, and the `tgd` CLI are configured without global package installs. CodeGraph, pnpm, and Agent Browser remain explicit opt-ins through the setup flags above.
+A: Clone the repo and run `bash setup.sh`. Plain setup does not run
+`npm install -g`. It may use the repository-pinned pnpm through Corepack (or an
+already-installed matching pnpm) to install and build bundled
+Understand-Anything dependencies locally under `vendor/`. Use `--no-deps` to
+skip all dependency downloads and builds. Global CodeGraph, fallback pnpm, and
+Agent Browser installation remain explicit opt-ins through the setup flags
+above.
 
 **Q: What if my agent doesn't support slash commands?**
 A: Say "Plan this feature" in natural language — tGD maps intent to skills automatically.
@@ -789,15 +808,17 @@ that commit lands on `main`, CI tags and publishes the GitHub release.
 
 ```bash
 # Inspect the generated release entry without changing anything
-bash scripts/release.sh v2026.06.09 --dry-run
+bash scripts/release.sh --dry-run
 
 # Prepare, commit, and push without an interactive prompt
-bash scripts/release.sh v2026.06.09 --yes
+bash scripts/release.sh --yes
 ```
 
 `tgd --release [version]` delegates to the same script. If you prepare on a
 feature branch, merge its PR into `main`; CI tags and publishes only after the
-release commit reaches `main`.
+release commit reaches `main`. A real release requires an attached branch and
+a clean worktree; the script refuses before modifying files when either
+precondition is not met.
 
 ---
 
@@ -824,7 +845,10 @@ ln -sf "$(pwd)/.claude/commands"/* ~/.claude/commands/
 
 ### Gemini CLI
 ```bash
-ln -sf "$(pwd)/skills" ~/.gemini/skills/tGD
+mkdir -p "$HOME/.gemini/skills"
+for skill_dir in "$(pwd)"/skills/*/; do
+  ln -sf "$skill_dir" "$HOME/.gemini/skills/$(basename "$skill_dir")"
+done
 ln -sf "$(pwd)/.gemini/commands"/* ~/.gemini/commands/
 ```
 

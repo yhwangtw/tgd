@@ -23,6 +23,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: release-${{ github.repository }}
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -32,42 +36,120 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Read version
-        id: version
+      - name: Resolve release target
+        id: release
         run: |
-          VERSION=$(cat VERSION)
-          # Ensure version starts with 'v'
+          set -euo pipefail
+
+          # workflow_dispatch may run after unrelated commits have landed.
+          # Anchor the release to the commit that most recently changed
+          # VERSION, not to the workflow's current checkout HEAD.
+          git fetch --quiet origin \
+            "+refs/heads/main:refs/remotes/origin/main"
+          TARGET_SHA=$(git log -1 --format=%H -- VERSION)
+          if [ -z "$TARGET_SHA" ]; then
+            echo "::error::Could not resolve the commit that changed VERSION"
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor \
+            "$TARGET_SHA" "refs/remotes/origin/main"; then
+            echo "::error::Release target $TARGET_SHA is not on origin/main"
+            exit 1
+          fi
+
+          RAW_VERSION=$(git show "${TARGET_SHA}:VERSION" | tr -d '\r\n')
+          VERSION="$RAW_VERSION"
           if [[ ! "$VERSION" =~ ^v ]]; then
             VERSION="v$VERSION"
           fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Version: $VERSION"
+          if [[ ! "$VERSION" =~ ^v[0-9]{4}\.[0-9]{2}\.[0-9]{2}(\.[1-9][0-9]*)?$ ]]; then
+            echo "::error::Invalid VERSION at $TARGET_SHA: $RAW_VERSION"
+            exit 1
+          fi
+          python3 - "$VERSION" <<'PYEOF'
+          import datetime
+          import sys
 
-      - name: Check if tag exists
-        id: check_tag
+          year, month, day = map(int, sys.argv[1][1:].split(".")[:3])
+          datetime.date(year, month, day)
+          PYEOF
+
+          git show "${TARGET_SHA}:CHANGELOG.md" \
+            > "${RUNNER_TEMP}/tgd-release-changelog.md"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "target_sha=$TARGET_SHA" >> "$GITHUB_OUTPUT"
+          echo "Version: $VERSION"
+          echo "Target: $TARGET_SHA"
+
+      - name: Ensure immutable tag
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+          TARGET_SHA: ${{ steps.release.outputs.target_sha }}
         run: |
-          if git rev-parse -q --verify "refs/tags/${{ steps.version.outputs.version }}" >/dev/null; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-            echo "Tag ${{ steps.version.outputs.version }} already exists, skipping release"
+          set -euo pipefail
+
+          git fetch --tags --quiet origin
+          if git show-ref --verify --quiet "refs/tags/$VERSION"; then
+            ACTUAL_SHA=$(git rev-parse "refs/tags/$VERSION^{commit}")
+            if [ "$ACTUAL_SHA" != "$TARGET_SHA" ]; then
+              echo "::error::Tag $VERSION points to $ACTUAL_SHA, expected $TARGET_SHA"
+              exit 1
+            fi
+            echo "Tag $VERSION already points to the expected release commit."
+            exit 0
+          fi
+
+          git tag "$VERSION" "$TARGET_SHA"
+          if git push origin "refs/tags/$VERSION:refs/tags/$VERSION"; then
+            echo "Created immutable tag $VERSION at $TARGET_SHA."
+            exit 0
+          fi
+
+          # A concurrent run may have won the tag-creation race. Accept that
+          # only when the remote tag peels to this exact release commit.
+          CHECK_REF="refs/tgd-release-check/$VERSION"
+          git fetch --no-tags --force origin \
+            "refs/tags/$VERSION:$CHECK_REF"
+          ACTUAL_SHA=$(git rev-parse "$CHECK_REF^{commit}")
+          if [ "$ACTUAL_SHA" != "$TARGET_SHA" ]; then
+            echo "::error::Concurrent tag $VERSION points to $ACTUAL_SHA, expected $TARGET_SHA"
+            exit 1
+          fi
+          echo "Concurrent run created the expected tag $VERSION."
+
+      - name: Check GitHub Release
+        id: release_status
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+          if gh release view "$VERSION" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "GitHub Release $VERSION already exists."
           else
-            echo "exists=false" >> $GITHUB_OUTPUT
-            echo "Tag ${{ steps.version.outputs.version }} does not exist, will create release"
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "Tag exists but GitHub Release $VERSION is missing."
           fi
 
       - name: Extract release notes from CHANGELOG
-        if: steps.check_tag.outputs.exists == 'false'
+        if: steps.release_status.outputs.exists == 'false'
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+          TARGET_SHA: ${{ steps.release.outputs.target_sha }}
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          set -euo pipefail
+          PREV_TAG=$(git describe --tags --abbrev=0 "${TARGET_SHA}^" 2>/dev/null || true)
 
           # Take the first "## <version>" entry from CHANGELOG.md. Fail the
           # release when it doesn't match VERSION — that means release.sh was
           # not run (or someone bumped VERSION by hand), and publishing
           # unreviewed auto-notes would hide the mistake.
-          python3 - "$VERSION" > /tmp/release-notes.md <<'PYEOF'
+          python3 - "$VERSION" "${RUNNER_TEMP}/tgd-release-changelog.md" \
+            > "${RUNNER_TEMP}/tgd-release-notes.md" <<'PYEOF'
           import re, sys, pathlib
           version = sys.argv[1]
-          text = pathlib.Path("CHANGELOG.md").read_text(encoding="utf-8")
+          text = pathlib.Path(sys.argv[2]).read_text(encoding="utf-8")
           m = re.search(r"(?ms)^## (\S+)\n(.*?)(?=^## |\Z)", text)
           if not m:
               sys.stderr.write("::error::CHANGELOG.md has no release entries\n")
@@ -83,24 +165,31 @@ jobs:
           PYEOF
 
           if [ -n "$PREV_TAG" ]; then
-            echo "" >> /tmp/release-notes.md
-            echo "---" >> /tmp/release-notes.md
-            echo "**Full Changelog**: https://github.com/openclawyhwang-hub/tGD/compare/${PREV_TAG}...${VERSION}" >> /tmp/release-notes.md
+            echo "" >> "${RUNNER_TEMP}/tgd-release-notes.md"
+            echo "---" >> "${RUNNER_TEMP}/tgd-release-notes.md"
+            echo "**Full Changelog**: https://github.com/openclawyhwang-hub/tGD/compare/${PREV_TAG}...${VERSION}" >> "${RUNNER_TEMP}/tgd-release-notes.md"
           fi
 
           echo "Release notes:"
-          cat /tmp/release-notes.md
+          cat "${RUNNER_TEMP}/tgd-release-notes.md"
 
       - name: Create Release
-        if: steps.check_tag.outputs.exists == 'false'
+        if: steps.release_status.outputs.exists == 'false'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.release.outputs.version }}
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
+          set -euo pipefail
 
-          gh release create "$VERSION" \
+          if gh release create "$VERSION" \
+            --verify-tag \
             --title "tGD $VERSION" \
-            --notes-file /tmp/release-notes.md \
-            --latest
-
-          echo "✅ Release $VERSION created successfully!"
+            --notes-file "${RUNNER_TEMP}/tgd-release-notes.md" \
+            --latest; then
+            echo "✅ Release $VERSION created successfully!"
+          elif gh release view "$VERSION" >/dev/null 2>&1; then
+            echo "Concurrent run created GitHub Release $VERSION."
+          else
+            echo "::error::Failed to create GitHub Release $VERSION"
+            exit 1
+          fi

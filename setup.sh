@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # tGD One-Click Installer
 # Usage: bash setup.sh [--upgrade|--uninstall|--version] [--with-tools] [--with-browser] [--no-deps]
 #
@@ -33,6 +33,7 @@ SETUP_DEGRADED=0
 CODEGRAPH_VERSION="0.9.8"
 AGENT_BROWSER_VERSION="11.5.1"
 PNPM_VERSION="10.6.2"
+LEGACY_RULES_HEADER="<!-- tGD rules — https://github.com/openclawyhwang-hub/tGD -->"
 
 while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -77,6 +78,13 @@ if [[ "$SKIP_DEPS" -eq 1 && "$INSTALL_TOOLS" -eq 1 ]]; then
     exit 2
 fi
 
+if [[ "$MODE" == "uninstall" || "$MODE" == "version" ]] \
+    && [[ "$INSTALL_TOOLS" -eq 1 || "$CONFIGURE_BROWSER" -eq 1 || "$SKIP_DEPS" -eq 1 ]]; then
+    echo "❌ Dependency options are only valid for install or upgrade." >&2
+    usage >&2
+    exit 2
+fi
+
 if [[ "$MODE" == "version" ]]; then
     if [[ -f "$TGD_REPO_ROOT/VERSION" ]]; then
         echo "tGD $(cat "$TGD_REPO_ROOT/VERSION")"
@@ -113,8 +121,12 @@ esac
 
 TGD_STATE_DIR="${TGD_STATE_DIR:-$HOME/.tgd}"
 INSTALL_MANIFEST="$TGD_STATE_DIR/install-manifest.json"
+HOOK_STATE_FILE="$TGD_STATE_DIR/hook-ownership.json"
+VERSION_FILE="$HOME/.tgd-installed-version"
 INSTALL_STATE_HELPER="$TGD_REPO_ROOT/scripts/install-state.py"
 HOOK_MERGE_HELPER="$TGD_REPO_ROOT/scripts/merge-agent-hooks.py"
+UA_BUILD_STATE_HELPER="$TGD_REPO_ROOT/scripts/ua-build-state.py"
+UA_BUILD_STAMP="$TGD_STATE_DIR/ua-build-state.json"
 
 cd "$TGD_REPO_ROOT"
 
@@ -150,13 +162,36 @@ print(os.path.abspath(target))
 PYEOF
 }
 
+is_recognized_tgd_checkout() {
+    local checkout_root="$1"
+    [[ -f "$checkout_root/setup.sh" ]] \
+        && [[ -f "$checkout_root/VERSION" ]] \
+        && {
+            [[ -f "$checkout_root/skills/tgd-rules/SKILL.md" ]] \
+                || [[ -f "$checkout_root/skills/rules/SKILL.md" ]]
+        }
+}
+
+is_recognized_legacy_target() {
+    local target="$1"
+    local relative="$2"
+    local checkout_root
+
+    [[ "$target" == */"$relative" ]] || return 1
+    checkout_root="${target%"/$relative"}"
+    [[ -n "$checkout_root" && "$checkout_root" != "$target" ]] || return 1
+    is_recognized_tgd_checkout "$checkout_root"
+}
+
 managed_link() {
     local source="${1%/}"
     local destination="$2"
     local policy="${3:-required}"
+    local legacy_file_sha256="${4:-}"
     local source_relative="${source#"$TGD_REPO_ROOT"/}"
     local legacy_target=""
     local legacy_args=()
+    local legacy_file_args=()
 
     if [[ "$source_relative" == "$source" ]]; then
         echo "❌ Refusing to manage a source outside this tGD checkout: $source" >&2
@@ -165,18 +200,20 @@ managed_link() {
 
     if [[ -L "$destination" ]]; then
         legacy_target=$(absolute_symlink_target "$destination")
-        case "$legacy_target" in
-            */"$source_relative")
-                legacy_args=(--legacy-target "$legacy_target")
-                ;;
-        esac
+        if is_recognized_legacy_target "$legacy_target" "$source_relative"; then
+            legacy_args=(--legacy-target "$legacy_target")
+        fi
+    fi
+    if [[ -n "$legacy_file_sha256" ]]; then
+        legacy_file_args=(--legacy-file-sha256 "$legacy_file_sha256")
     fi
 
     if ! python3 "$INSTALL_STATE_HELPER" link \
         --manifest "$INSTALL_MANIFEST" \
         --path "$destination" \
         --target "$source" \
-        "${legacy_args[@]}" >/dev/null; then
+        "${legacy_args[@]}" \
+        "${legacy_file_args[@]}" >/dev/null; then
         if [[ "$policy" == "optional" ]]; then
             echo "   ℹ️  Keeping existing user path: $destination"
             return 0
@@ -185,6 +222,65 @@ managed_link() {
         echo "   Existing user data was preserved. Move it aside, then retry." >&2
         return 1
     fi
+}
+
+remove_exact_symlink_safely() {
+    python3 "$INSTALL_STATE_HELPER" remove-exact-symlink \
+        --manifest "$INSTALL_MANIFEST" \
+        --path "$1" \
+        --target "$2" >/dev/null
+}
+
+retire_one_legacy_global_rule() {
+    local destination="$1"
+    local suffix_size="$2"
+    local suffix_sha256="$3"
+    local label="$4"
+    local result=""
+
+    [[ -f "$destination" && ! -L "$destination" ]] || return 0
+    grep -qF "$LEGACY_RULES_HEADER" "$destination" 2>/dev/null || return 0
+    if ! result=$(python3 "$INSTALL_STATE_HELPER" remove-legacy-suffix \
+        --manifest "$INSTALL_MANIFEST" \
+        --path "$destination" \
+        --size "$suffix_size" \
+        --sha256 "$suffix_sha256"); then
+        echo "   ❌ Failed to inspect historical tGD block: $destination" >&2
+        return 1
+    fi
+    if [[ "$result" == removed* ]]; then
+        echo "   🧹 Removed exact historical tGD block: $label"
+    else
+        echo "   ⚠️  Preserved modified historical-looking file: $destination"
+    fi
+}
+
+retire_legacy_global_rules() {
+    retire_one_legacy_global_rule \
+        "$HOME/.claude/CLAUDE.md" \
+        1135 \
+        "43172b04edbf5cdf95c2301a39c28652f94e23da21587f1f659c9c71f8599c98" \
+        "Claude global rules" || return 1
+    retire_one_legacy_global_rule \
+        "$HOME/.codex/AGENTS.md" \
+        10651 \
+        "16a4ae9d30e746291edb4aec50cef4de0c459d491f24b105b92ef648e16154f9" \
+        "Codex global rules" || return 1
+    retire_one_legacy_global_rule \
+        "$HOME/.config/opencode/AGENTS.md" \
+        10651 \
+        "16a4ae9d30e746291edb4aec50cef4de0c459d491f24b105b92ef648e16154f9" \
+        "OpenCode global rules" || return 1
+    retire_one_legacy_global_rule \
+        "$HOME/.gemini/GEMINI.md" \
+        1041 \
+        "4f9be9f0faa5371b95fb5062a00c11b4b9ee22ee8e243fdd7cedc840eb0af689" \
+        "Gemini global rules" || return 1
+    retire_one_legacy_global_rule \
+        "$HOME/.pi/agent/instructions.md" \
+        1041 \
+        "4f9be9f0faa5371b95fb5062a00c11b4b9ee22ee8e243fdd7cedc840eb0af689" \
+        "Pi global rules" || return 1
 }
 
 link_tgd_skills_to_hermes_home() {
@@ -235,18 +331,13 @@ link_skill_folder_to_hermes_homes() {
 
 # ─── Prerequisite checks ─────────────────────────────────────────────────────
 missing_deps=()
-command -v python3 &> /dev/null || missing_deps+=("python3")
-if [[ "$MODE" != "uninstall" ]]; then
-    if command -v node &> /dev/null; then
-        node_version=$(node -p 'process.versions.node' 2>/dev/null || echo "0.0.0")
-        IFS=. read -r node_major node_minor _node_patch <<< "$node_version"
-        if ! [[ "$node_major" =~ ^[0-9]+$ && "$node_minor" =~ ^[0-9]+$ ]] \
-            || (( node_major < 22 || (node_major == 22 && node_minor < 12) )); then
-            missing_deps+=("node >= 22.12.0 (found $(node -v 2>/dev/null || echo 'unknown'))")
-        fi
-    else
-        missing_deps+=("node (Node.js >= 22.12.0)")
+if command -v python3 &> /dev/null; then
+    if ! python3 -c 'import sys; raise SystemExit(sys.version_info < (3, 9))' \
+        >/dev/null 2>&1; then
+        missing_deps+=("python3 >= 3.9 (found $(python3 --version 2>&1 || echo 'unknown'))")
     fi
+else
+    missing_deps+=("python3 >= 3.9")
 fi
 if [ ${#missing_deps[@]} -gt 0 ]; then
     echo "❌ Missing required dependencies:"
@@ -257,19 +348,17 @@ if [ ${#missing_deps[@]} -gt 0 ]; then
     echo "Install them and re-run: bash setup.sh"
     exit 1
 fi
-# jq is optional: the session-start hook needs it to inject the tgd-router
-# meta-skill, but degrades gracefully without it. Warn, don't abort.
-if [[ "$MODE" != "uninstall" ]] && ! command -v jq &> /dev/null; then
-    echo "⚠️  jq not found — session-start hooks will skip meta-skill injection."
-    echo "   Install for full functionality: apt-get install jq / brew install jq"
-fi
-
 # ─── Uninstall mode ──────────────────────────────────────────────────────────
 if [[ "$MODE" == "uninstall" ]]; then
     echo "🗑️  tGD Uninstall — Removing managed deployments..."
     echo "====================================="
     echo ""
     UNINSTALL_FAILED=0
+
+    echo "🧹 Removing exact historical global rule blocks..."
+    if ! retire_legacy_global_rules; then
+        UNINSTALL_FAILED=1
+    fi
 
     echo "🧹 Removing tGD hooks from config files..."
     for hook_spec in \
@@ -278,11 +367,14 @@ if [[ "$MODE" == "uninstall" ]]; then
         "gemini:$HOME/.gemini/settings.json"; do
         hook_platform="${hook_spec%%:*}"
         hook_destination="${hook_spec#*:}"
-        [[ -f "$hook_destination" ]] || continue
+        if [[ ! -f "$hook_destination" && ! -f "$HOOK_STATE_FILE" ]]; then
+            continue
+        fi
         if ! python3 "$HOOK_MERGE_HELPER" remove \
             --platform "$hook_platform" \
             --repo-root "$TGD_REPO_ROOT" \
-            --destination "$hook_destination"; then
+            --destination "$hook_destination" \
+            --state "$HOOK_STATE_FILE"; then
             UNINSTALL_FAILED=1
         fi
     done
@@ -298,9 +390,8 @@ if [[ "$MODE" == "uninstall" ]]; then
         echo "      Run bash setup.sh once to migrate a legacy installation before uninstalling it."
     fi
 
-    if [[ -f "$HOME/.tgd-installed-version" ]]; then
-        echo "   🗑️  Removing installed version marker: $HOME/.tgd-installed-version"
-        rm -f "$HOME/.tgd-installed-version"
+    if [[ -e "$VERSION_FILE" || -L "$VERSION_FILE" ]]; then
+        echo "   ℹ️  Preserving unowned or changed version marker: $VERSION_FILE"
     fi
 
     echo ""
@@ -324,36 +415,55 @@ else
 fi
 
 # ─── Version marker ──────────────────────────────────────────────────────────
-# Version is derived from git tags (CalVer). To bump: git tag v2026.07.04
+# Release preparation writes the tracked CalVer value (including .N micro tags).
 if [[ ! -r "$TGD_REPO_ROOT/VERSION" ]]; then
     echo "❌ Repository VERSION is missing or unreadable." >&2
     exit 1
 fi
 TGD_VERSION=$(cat "$TGD_REPO_ROOT/VERSION")
-VERSION_FILE="$HOME/.tgd-installed-version"
+MARKER_LEGACY_ARGS=()
+if [[ -f "$VERSION_FILE" && ! -L "$VERSION_FILE" ]]; then
+    LEGACY_VERSION=$(cat "$VERSION_FILE" 2>/dev/null || echo "")
+    if [[ "$LEGACY_VERSION" =~ ^v[0-9]{4}\.[0-9]{2}\.[0-9]{2}(\.[1-9][0-9]*)?$ ]]; then
+        MARKER_LEGACY_ARGS=(--legacy-version "$LEGACY_VERSION")
+    fi
+fi
+if ! python3 "$INSTALL_STATE_HELPER" check-marker \
+    --manifest "$INSTALL_MANIFEST" \
+    --path "$VERSION_FILE" \
+    --recovery-version "$TGD_VERSION" \
+    "${MARKER_LEGACY_ARGS[@]}" >/dev/null; then
+    echo "❌ Installation collision at $VERSION_FILE." >&2
+    echo "   Existing user data was preserved. Move it aside, then retry." >&2
+    exit 1
+fi
 
 cleanup_generated_source_links() {
     local skills_root="$1"
-    local root_self_link skill_dir link parent_name link_name target
-    [[ -d "$skills_root" ]] || return 0
+    local root_self_link skill_dir link parent_name link_name target legacy_name
+    [[ ! -L "$skills_root" && -d "$skills_root" ]] || return 0
     root_self_link="$skills_root/$(basename "$skills_root")"
     if [[ -L "$root_self_link" ]] \
         && [[ "$(absolute_symlink_target "$root_self_link")" == "$skills_root" ]]; then
         echo "   🧹 Removing installer-generated source symlink: $root_self_link"
-        rm -f "$root_self_link"
+        remove_exact_symlink_safely "$root_self_link" "$skills_root"
     fi
     for skill_dir in "$skills_root"/*/; do
-        [[ -d "$skill_dir" ]] || continue
         skill_dir="${skill_dir%/}"
+        [[ ! -L "$skill_dir" && -d "$skill_dir" ]] || continue
         parent_name=$(basename "$skill_dir")
+        legacy_name="${parent_name#tgd-}"
         for link in "$skill_dir"/*; do
             [[ -L "$link" ]] || continue
             link_name=$(basename "$link")
             target=$(absolute_symlink_target "$link")
             if [[ "$link_name" == "$parent_name" && "$target" == "$skill_dir" ]] \
-                || [[ ! -e "$link" && "$target" == "$skills_root/$link_name" ]]; then
+                || [[ "$parent_name" == tgd-* \
+                    && "$link_name" == "$legacy_name" \
+                    && ! -e "$link" \
+                    && "$target" == "$skills_root/$legacy_name" ]]; then
                 echo "   🧹 Removing installer-generated source symlink: $link"
-                rm -f "$link"
+                remove_exact_symlink_safely "$link" "$target"
             fi
         done
     done
@@ -362,6 +472,15 @@ cleanup_generated_source_links() {
 cleanup_generated_source_links "$TGD_REPO_ROOT/skills"
 cleanup_generated_source_links \
     "$TGD_REPO_ROOT/vendor/understand-anything/understand-anything-plugin/skills"
+hermes_plugin_self_link="$TGD_REPO_ROOT/.hermes/plugins/tgd/tgd"
+if [[ -L "$hermes_plugin_self_link" ]] \
+    && [[ "$(absolute_symlink_target "$hermes_plugin_self_link")" \
+        == "$TGD_REPO_ROOT/.hermes/plugins/tgd" ]]; then
+    echo "   🧹 Removing installer-generated source symlink: $hermes_plugin_self_link"
+    remove_exact_symlink_safely \
+        "$hermes_plugin_self_link" \
+        "$TGD_REPO_ROOT/.hermes/plugins/tgd"
+fi
 
 if [[ "$MODE" == "install" ]] && [[ -f "$VERSION_FILE" ]]; then
     INSTALLED_VERSION=$(cat "$VERSION_FILE" 2>/dev/null || echo "unknown")
@@ -388,12 +507,10 @@ purge_old_tgd_symlinks() {
         link="$dir/$legacy_name"
         [[ -L "$link" ]] || continue
         target=$(absolute_symlink_target "$link")
-        case "$target" in
-            */skills/"$legacy_name")
-                echo "   🗑️  Removing exact legacy tGD symlink ($label): $link"
-                rm -f "$link"
-                ;;
-        esac
+        if is_recognized_legacy_target "$target" "skills/$legacy_name"; then
+            echo "   🗑️  Removing verified legacy tGD symlink ($label): $link"
+            remove_exact_symlink_safely "$link" "$target"
+        fi
     done
 }
 
@@ -411,12 +528,76 @@ if [[ "$MODE" == "upgrade" ]]; then
     echo ""
 fi
 
+remove_verified_legacy_link() {
+    local destination="$1"
+    local source_relative="$2"
+    local label="$3"
+    local target
+
+    [[ -L "$destination" ]] || return 0
+    target=$(absolute_symlink_target "$destination")
+    if is_recognized_legacy_target "$target" "$source_relative"; then
+        echo "   🗑️  Removing verified legacy $label: $destination"
+        remove_exact_symlink_safely "$destination" "$target"
+    fi
+}
+
+retire_verified_legacy_bundle() {
+    local destination="$1"
+    local source="$2"
+    local source_relative="$3"
+    local label="$4"
+    local target
+
+    [[ -L "$destination" ]] || return 0
+    target=$(absolute_symlink_target "$destination")
+    if ! is_recognized_legacy_target "$target" "$source_relative"; then
+        return 0
+    fi
+
+    # Adopt the exact verified legacy link before removing it so the
+    # ownership manifest remains authoritative throughout the migration.
+    managed_link "$source" "$destination"
+    python3 "$INSTALL_STATE_HELPER" remove \
+        --manifest "$INSTALL_MANIFEST" \
+        --path "$destination" >/dev/null
+    echo "   🗑️  Retired verified legacy $label: $destination"
+}
+
+retire_exact_managed_link() {
+    local source="$1"
+    local destination="$2"
+    local label="$3"
+
+    if python3 "$INSTALL_STATE_HELPER" verify \
+        --manifest "$INSTALL_MANIFEST" \
+        --path "$destination" \
+        --target "$source" >/dev/null 2>&1; then
+        python3 "$INSTALL_STATE_HELPER" remove \
+            --manifest "$INSTALL_MANIFEST" \
+            --path "$destination" >/dev/null
+        echo "   🗑️  Retired managed $label: $destination"
+    fi
+}
+
+# These integrations were intentionally retired. Remove them only when their
+# exact source can still be proven to belong to a tGD checkout.
+retire_legacy_global_rules
+remove_verified_legacy_link \
+    "$HOME/.claude/rules/tgd.md" \
+    "skills/tgd-rules/SKILL.md" \
+    "Claude global rule"
+remove_verified_legacy_link \
+    "$HOME/.pi/agent/extensions/tgd-commands.ts" \
+    ".pi/extensions/tgd-commands.ts" \
+    "Pi command extension"
+
 # Configure Agents
 echo "🤖 Configuring Agents..."
 
 # OpenCode
-if command -v opencode &> /dev/null; then
-    echo "   📂 OpenCode detected."
+if command -v opencode &> /dev/null || [[ -d "$HOME/.config/opencode" ]]; then
+    echo "   📂 OpenCode detected or existing config found."
     # Create global commands link (individual files, not subdirectory)
     mkdir -p ~/.config/opencode/commands
     for cmd in "$TGD_REPO_ROOT"/.opencode/commands/*.md; do
@@ -442,8 +623,8 @@ if command -v opencode &> /dev/null; then
 fi
 
 # Claude Code
-if command -v claude &> /dev/null; then
-    echo "   📂 Claude Code detected."
+if command -v claude &> /dev/null || [[ -d "$HOME/.claude" ]]; then
+    echo "   📂 Claude Code detected or existing config found."
     if [ -d "$TGD_REPO_ROOT/.claude" ]; then
         # Link skills
         mkdir -p ~/.claude/skills
@@ -471,14 +652,15 @@ if command -v claude &> /dev/null; then
             python3 "$HOOK_MERGE_HELPER" install \
                 --platform claude \
                 --repo-root "$TGD_REPO_ROOT" \
-                --destination "$HOME/.claude/settings.json"
+                --destination "$HOME/.claude/settings.json" \
+                --state "$HOOK_STATE_FILE"
         fi
     fi
 fi
 
 # Gemini CLI
-if command -v gemini &> /dev/null; then
-    echo "   📂 Gemini CLI detected."
+if command -v gemini &> /dev/null || [[ -d "$HOME/.gemini" ]]; then
+    echo "   📂 Gemini CLI detected or existing config found."
     if [ -d "$TGD_REPO_ROOT/.gemini" ]; then
         mkdir -p ~/.gemini/commands
         for command_file in "$TGD_REPO_ROOT"/.gemini/commands/*; do
@@ -487,23 +669,38 @@ if command -v gemini &> /dev/null; then
         done
         echo "   ✅ Commands linked."
     fi
-    # Link skills for auto-detection
+    # Gemini discovers skills only one directory below ~/.gemini/skills.
+    # Retire the historical aggregate link, then link each skill directly.
     if [ -d "$TGD_REPO_ROOT/skills" ]; then
         mkdir -p ~/.gemini/skills
-        managed_link "$TGD_REPO_ROOT/skills" "$HOME/.gemini/skills/tGD"
-        echo "   ✅ Skills linked for auto-detection."
+        retire_verified_legacy_bundle \
+            "$HOME/.gemini/skills/tGD" \
+            "$TGD_REPO_ROOT/skills" \
+            "skills" \
+            "Gemini aggregate skill link"
+        gemini_skill_count=0
+        for skill in "$TGD_REPO_ROOT"/skills/*/; do
+            skill="${skill%/}"
+            [[ ! -L "$skill" && -d "$skill" ]] || continue
+            skill_name=$(basename "$skill")
+            [[ "$skill_name" != "skills" ]] || continue
+            managed_link "$skill" "$HOME/.gemini/skills/$skill_name"
+            gemini_skill_count=$((gemini_skill_count + 1))
+        done
+        echo "   ✅ Gemini skills linked directly ($gemini_skill_count skills)."
     fi
     if [ -f "$TGD_REPO_ROOT/hooks/gemini/session-start.sh" ]; then
         python3 "$HOOK_MERGE_HELPER" install \
             --platform gemini \
             --repo-root "$TGD_REPO_ROOT" \
-            --destination "$HOME/.gemini/settings.json"
+            --destination "$HOME/.gemini/settings.json" \
+            --state "$HOOK_STATE_FILE"
     fi
 fi
 
 # Codex CLI
-if command -v codex &> /dev/null; then
-    echo "   📂 Codex CLI detected."
+if command -v codex &> /dev/null || [[ -d "$HOME/.codex" ]]; then
+    echo "   📂 Codex CLI detected or existing config found."
     mkdir -p ~/.codex
     if [ -d "$TGD_REPO_ROOT/skills" ]; then
         managed_link "$TGD_REPO_ROOT/skills" "$HOME/.codex/skills/tGD"
@@ -521,13 +718,15 @@ if command -v codex &> /dev/null; then
         python3 "$HOOK_MERGE_HELPER" install \
             --platform codex \
             --repo-root "$TGD_REPO_ROOT" \
-            --destination "$HOME/.codex/hooks.json"
+            --destination "$HOME/.codex/hooks.json" \
+            --state "$HOOK_STATE_FILE"
+        echo "   ℹ️  Codex reviews user hooks by exact definition. If Codex warns, open /hooks and trust this hook."
     fi
 fi
 
 # Pi Coding Agent
-if command -v pi &> /dev/null; then
-    echo "   📂 Pi Coding Agent detected."
+if command -v pi &> /dev/null || [[ -d "$HOME/.pi/agent" ]]; then
+    echo "   📂 Pi Coding Agent detected or existing config found."
     # Install prompt templates + instructions to ~/.pi/agent/. tGD commands are
     # native pi prompt templates (.pi/prompts/*.md → /tgd-map etc.), NOT a
     # TypeScript extension — an extension had to call pi.sendUserMessage(body),
@@ -541,7 +740,10 @@ if command -v pi &> /dev/null; then
         echo "   ✅ Prompt templates installed to ~/.pi/agent/prompts/ (/tgd-* commands)."
     fi
     if [ -f "$TGD_REPO_ROOT/.pi/instructions.md" ]; then
-        managed_link "$TGD_REPO_ROOT/.pi/instructions.md" "$HOME/.pi/agent/instructions.md"
+        managed_link \
+            "$TGD_REPO_ROOT/.pi/instructions.md" \
+            "$HOME/.pi/agent/instructions.md" \
+            optional
         echo "   ✅ Instructions installed to ~/.pi/agent/instructions.md"
     fi
     # Link skills for auto-detection
@@ -555,8 +757,8 @@ else
 fi
 
 # Hermes Agent
-if command -v hermes &> /dev/null; then
-    echo "   📂 Hermes Agent detected."
+if command -v hermes &> /dev/null || [[ -d "$HOME/.hermes" ]]; then
+    echo "   📂 Hermes Agent detected or existing config found."
     if [ -d "$TGD_REPO_ROOT/skills" ]; then
         while IFS= read -r hermes_home; do
             [[ -n "$hermes_home" ]] || continue
@@ -606,18 +808,47 @@ fi
 # ─── Install UA dependencies (subshell-safe: cd won't leak) ──────────────────
 install_ua_deps() {
     local ua_dir="$1"
+    local build_state_status=0
     local install_log=""
+    local node_version=""
+    local node_major=""
+    local node_minor=""
     local pnpm_version=""
     local pnpm_command=()
 
-    if [ -d "$ua_dir/node_modules" ] \
-        && [ -d "$ua_dir/understand-anything-plugin/packages/core/dist" ]; then
+    if python3 "$UA_BUILD_STATE_HELPER" is-current \
+        --ua-root "$ua_dir" \
+        --stamp "$UA_BUILD_STAMP" >/dev/null 2>&1; then
         echo "   ✅ UA dependencies already installed."
         return 0
+    else
+        build_state_status=$?
+    fi
+    if [[ "$build_state_status" -gt 1 ]]; then
+        echo "   ⚠️  Could not verify UA build freshness."
+        return 1
+    fi
+    if [ -f "$ua_dir/node_modules/.modules.yaml" ] \
+        && [ -f "$ua_dir/understand-anything-plugin/packages/core/dist/index.js" ]; then
+        echo "   🔄 UA build inputs changed or the build stamp is missing; rebuilding."
     fi
 
     if [[ "$SKIP_DEPS" -eq 1 ]]; then
         echo "   ⚠️  UA dependency installation skipped by --no-deps."
+        return 1
+    fi
+
+    if ! command -v node &> /dev/null; then
+        echo "   ⚠️  UA requires Node.js >= 22.12.0; Node.js was not found."
+        echo "      Core tGD links and hooks will still be installed."
+        return 1
+    fi
+    node_version=$(node -p 'process.versions.node' 2>/dev/null || echo "0.0.0")
+    IFS=. read -r node_major node_minor _node_patch <<< "$node_version"
+    if ! [[ "$node_major" =~ ^[0-9]+$ && "$node_minor" =~ ^[0-9]+$ ]] \
+        || (( node_major < 22 || (node_major == 22 && node_minor < 12) )); then
+        echo "   ⚠️  UA requires Node.js >= 22.12.0; found $(node -v 2>/dev/null || echo 'unknown')."
+        echo "      Core tGD links and hooks will still be installed."
         return 1
     fi
 
@@ -649,8 +880,8 @@ install_ua_deps() {
     install_log=$(mktemp "${TMPDIR:-/tmp}/tgd-ua-install.XXXXXX")
     if (cd "$ua_dir" && "${pnpm_command[@]}" install --frozen-lockfile) \
         >"$install_log" 2>&1; then
-        if [ ! -d "$ua_dir/node_modules" ]; then
-            echo "   ⚠️  pnpm install exited successfully but node_modules was not created."
+        if [ ! -f "$ua_dir/node_modules/.modules.yaml" ]; then
+            echo "   ⚠️  pnpm install exited successfully but its module manifest is missing."
             rm -f "$install_log"
             return 1
         fi
@@ -664,11 +895,17 @@ install_ua_deps() {
     fi
     rm -f "$install_log"
 
-    if [ -d "$ua_dir/node_modules" ]; then
+    if [ -f "$ua_dir/node_modules/.modules.yaml" ]; then
         echo "   🔨 Building UA (pnpm build)..."
         if (cd "$ua_dir" && "${pnpm_command[@]}" build); then
-            if [ ! -d "$ua_dir/understand-anything-plugin/packages/core/dist" ]; then
+            if [ ! -f "$ua_dir/understand-anything-plugin/packages/core/dist/index.js" ]; then
                 echo "   ⚠️  pnpm build exited successfully but UA core output is missing."
+                return 1
+            fi
+            if ! python3 "$UA_BUILD_STATE_HELPER" write \
+                --ua-root "$ua_dir" \
+                --stamp "$UA_BUILD_STAMP" >/dev/null; then
+                echo "   ⚠️  UA built, but its build freshness stamp could not be recorded."
                 return 1
             fi
             echo "   ✅ UA built successfully."
@@ -689,15 +926,20 @@ if [ -d "$UA_SKILLS_DIR" ]; then
         SETUP_DEGRADED=1
     fi
 
-    UA_REPO_LINK="$HOME/.understand-anything/repo"
     UA_PLUGIN_TARGET="$UA_DIR/understand-anything-plugin"
-    managed_link "$UA_PLUGIN_TARGET" "$UA_REPO_LINK" optional
-    if [[ -L "$UA_REPO_LINK" ]] \
-        && [[ "$(absolute_symlink_target "$UA_REPO_LINK")" == "$UA_PLUGIN_TARGET" ]]; then
-        echo "   🔗 ~/.understand-anything/repo → vendor (tGD-managed)"
+    UA_PLUGIN_LINK="$HOME/.understand-anything-plugin"
+    managed_link "$UA_PLUGIN_TARGET" "$UA_PLUGIN_LINK" optional
+    if [[ -L "$UA_PLUGIN_LINK" ]] \
+        && [[ "$(absolute_symlink_target "$UA_PLUGIN_LINK")" == "$UA_PLUGIN_TARGET" ]]; then
+        echo "   🔗 ~/.understand-anything-plugin → vendor (tGD-managed)"
     else
-        echo "   ℹ️  Existing ~/.understand-anything/repo remains authoritative."
+        echo "   ℹ️  Existing ~/.understand-anything-plugin remains authoritative."
     fi
+    retire_verified_legacy_bundle \
+        "$HOME/.understand-anything/repo" \
+        "$UA_PLUGIN_TARGET" \
+        "vendor/understand-anything/understand-anything-plugin" \
+        "Understand-Anything legacy repo link"
 else
     echo "   ⚠️  Understand-Anything not found at vendor/understand-anything/"
     echo "      Re-clone tGD or manually download from: https://github.com/Lum1104/Understand-Anything"
@@ -706,9 +948,44 @@ fi
 
 # Link Understand-Anything skills to each platform
 if [ -d "$UA_SKILLS_DIR" ]; then
-    # Universal: ~/.agents/skills/understand (SKILL.md's primary fallback for plugin root resolution)
+    # Universal canonical links shared by Gemini, Codex, OpenCode, and Pi.
     mkdir -p "$HOME/.agents/skills"
-    managed_link "$UA_SKILLS_DIR/understand" "$HOME/.agents/skills/understand" optional
+    GEMINI_UA_ACTIVE=0
+    if [ -d "$HOME/.gemini" ] || [ -L "$HOME/.gemini" ]; then
+        GEMINI_UA_ACTIVE=1
+        mkdir -p "$HOME/.gemini/skills"
+        retire_verified_legacy_bundle \
+            "$HOME/.gemini/skills/understand-anything" \
+            "$UA_SKILLS_DIR" \
+            "vendor/understand-anything/understand-anything-plugin/skills" \
+            "Gemini Understand-Anything aggregate skill link"
+    fi
+    for skill in "$UA_SKILLS_DIR"/*/; do
+        skill="${skill%/}"
+        [[ ! -L "$skill" && -d "$skill" ]] || continue
+        skill_name=$(basename "$skill")
+        universal_skill_link="$HOME/.agents/skills/$skill_name"
+        managed_link "$skill" "$universal_skill_link" optional
+
+        if [[ "$GEMINI_UA_ACTIVE" -eq 1 ]]; then
+            retire_exact_managed_link \
+                "$skill" \
+                "$HOME/.gemini/skills/understand-$skill_name" \
+                "Gemini Understand-Anything prefixed skill link"
+            if [[ -L "$universal_skill_link" ]] \
+                && [[ "$(absolute_symlink_target "$universal_skill_link")" == "$skill" ]]; then
+                retire_exact_managed_link \
+                    "$skill" \
+                    "$HOME/.gemini/skills/$skill_name" \
+                    "Gemini Understand-Anything direct fallback"
+            else
+                managed_link \
+                    "$skill" \
+                    "$HOME/.gemini/skills/$skill_name" \
+                    optional
+            fi
+        fi
+    done
     # Claude Code: per-skill symlinks in ~/.claude/skills/
     if [ -d "$HOME/.claude" ] || [ -L "$HOME/.claude" ]; then
         for skill in "$UA_SKILLS_DIR"/*/; do
@@ -731,11 +1008,8 @@ if [ -d "$UA_SKILLS_DIR" ]; then
         mkdir -p "$HOME/.config/opencode/skills"
         managed_link "$UA_SKILLS_DIR" "$HOME/.config/opencode/skills/understand-anything" optional
     fi
-    # Gemini: folder symlink in ~/.gemini/skills/
-    if [ -d "$HOME/.gemini" ] || [ -L "$HOME/.gemini" ]; then
-        mkdir -p "$HOME/.gemini/skills"
-        managed_link "$UA_SKILLS_DIR" "$HOME/.gemini/skills/understand-anything" optional
-    fi
+    # Gemini uses the universal links above. A direct child fallback is created
+    # only for a canonical name blocked by an existing ~/.agents path.
     # Pi: folder symlink in ~/.pi/agent/skills/
     if [ -d "$HOME/.pi" ] || [ -L "$HOME/.pi" ]; then
         mkdir -p "$HOME/.pi/agent/skills"
@@ -774,9 +1048,11 @@ if [ -d "skills/tgd-agent-browser" ]; then
                 CHROME_BIN="/usr/bin/google-chrome"
             fi
 
-        CONFIG_DIR="$HOME/.agent-browser"
-        CONFIG_FILE="$CONFIG_DIR/config.json"
-            python3 - "$CONFIG_FILE" "$CHROME_BIN" <<'PYEOF'
+            CONFIG_DIR="$HOME/.agent-browser"
+            CONFIG_FILE="$CONFIG_DIR/config.json"
+            CONFIG_LOCK="$TGD_STATE_DIR/agent-browser-config.lock"
+            python3 - "$CONFIG_FILE" "$CHROME_BIN" "$CONFIG_LOCK" <<'PYEOF'
+import fcntl
 import json
 import os
 from pathlib import Path
@@ -786,39 +1062,90 @@ import tempfile
 
 path = Path(sys.argv[1])
 chrome = sys.argv[2]
-if path.is_symlink():
-    raise SystemExit("refusing symlinked Agent Browser config: {}".format(path))
-if path.exists():
-    with path.open(encoding="utf-8") as stream:
-        config = json.load(stream)
-    mode = stat.S_IMODE(path.stat().st_mode)
-else:
-    config = {}
-    mode = 0o600
-if not isinstance(config, dict):
-    raise SystemExit("Agent Browser config must be a JSON object")
-config["autoConnect"] = True
-if chrome:
-    config["executablePath"] = chrome
-path.parent.mkdir(parents=True, exist_ok=True)
-descriptor, temporary_name = tempfile.mkstemp(
-    dir=str(path.parent),
-    prefix=".{}.".format(path.name),
-)
-try:
-    os.fchmod(descriptor, mode)
-    with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
-        json.dump(config, stream, indent=2)
-        stream.write("\n")
-        stream.flush()
-        os.fsync(stream.fileno())
-    os.replace(temporary_name, path)
-except BaseException:
+lock_path = Path(sys.argv[3])
+
+
+def fsync_directory(directory):
+    flags = os.O_RDONLY
+    if hasattr(os, "O_DIRECTORY"):
+        flags |= os.O_DIRECTORY
     try:
-        os.unlink(temporary_name)
-    except FileNotFoundError:
-        pass
-    raise
+        descriptor = os.open(str(directory), flags)
+    except OSError:
+        return
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
+def update_config():
+    if path.is_symlink():
+        raise SystemExit("refusing symlinked Agent Browser config: {}".format(path))
+    if path.exists():
+        original = path.read_bytes()
+        config = json.loads(original.decode("utf-8"))
+        mode = stat.S_IMODE(path.stat().st_mode)
+    else:
+        original = None
+        config = {}
+        mode = 0o600
+    if not isinstance(config, dict):
+        raise SystemExit("Agent Browser config must be a JSON object")
+    config["autoConnect"] = True
+    if chrome:
+        config["executablePath"] = chrome
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary_name = tempfile.mkstemp(
+        dir=str(path.parent),
+        prefix=".{}.".format(path.name),
+    )
+    try:
+        os.fchmod(descriptor, mode)
+        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+            descriptor = -1
+            json.dump(config, stream, indent=2)
+            stream.write("\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+        if path.is_symlink():
+            raise SystemExit(
+                "Agent Browser config changed to a symlink during update"
+            )
+        if original is None:
+            if os.path.lexists(str(path)):
+                raise SystemExit("Agent Browser config changed during update")
+        elif not path.is_file() or path.read_bytes() != original:
+            raise SystemExit("Agent Browser config changed during update")
+        os.replace(temporary_name, path)
+        fsync_directory(path.parent)
+    except BaseException:
+        if descriptor >= 0:
+            os.close(descriptor)
+        try:
+            os.unlink(temporary_name)
+        except FileNotFoundError:
+            pass
+        raise
+
+
+lock_path.parent.mkdir(parents=True, exist_ok=True)
+lock_flags = os.O_CREAT | os.O_RDWR
+if hasattr(os, "O_NOFOLLOW"):
+    lock_flags |= os.O_NOFOLLOW
+try:
+    lock_descriptor = os.open(str(lock_path), lock_flags, 0o600)
+except OSError as error:
+    raise SystemExit(
+        "cannot safely open Agent Browser config lock: {}".format(error)
+    )
+try:
+    if not stat.S_ISREG(os.fstat(lock_descriptor).st_mode):
+        raise SystemExit("Agent Browser config lock is not a regular file")
+    fcntl.flock(lock_descriptor, fcntl.LOCK_EX)
+    update_config()
+finally:
+    os.close(lock_descriptor)
 PYEOF
             echo "   ✅ Agent Browser auto-connect configured by explicit request."
         fi
@@ -887,6 +1214,21 @@ fi
 mkdir -p "$HOME/.local/bin"
 managed_link "$TGD_BIN" "$HOME/.local/bin/tgd"
 echo "   🔧 tgd CLI → ~/.local/bin/tgd"
+LEGACY_GLOBAL_TGD="/usr/local/bin/tgd"
+if [[ "$CI_ACTIVE" -eq 0 ]] \
+    && [[ "${TGD_DISABLE_GLOBAL_MIGRATION_FOR_TESTS:-0}" != "1" ]] \
+    && [[ -L "$LEGACY_GLOBAL_TGD" ]] \
+    && is_recognized_legacy_target \
+        "$(absolute_symlink_target "$LEGACY_GLOBAL_TGD")" \
+        "bin/tgd"; then
+    managed_link "$TGD_BIN" "$LEGACY_GLOBAL_TGD" optional
+    if [[ -L "$LEGACY_GLOBAL_TGD" ]] \
+        && [[ "$(absolute_symlink_target "$LEGACY_GLOBAL_TGD")" == "$TGD_BIN" ]]; then
+        echo "   🔄 Adopted existing legacy CLI link: $LEGACY_GLOBAL_TGD"
+    else
+        echo "   ⚠️  Existing legacy CLI remains at $LEGACY_GLOBAL_TGD; it may shadow ~/.local/bin/tgd."
+    fi
+fi
 if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
     echo "   ⚠️  Add ~/.local/bin to PATH: export PATH=\"\$HOME/.local/bin:\$PATH\""
 fi
@@ -902,37 +1244,63 @@ echo "🔎 Final verification:"
 SETUP_FAILED=0
 
 verify_cmd_links() {
-    local label="$1" dir="$2" pattern="$3"
-    local n=0 f
-    for f in "$dir"/$pattern; do
-        [ -e "$f" ] && n=$((n + 1))   # -e follows symlinks: dangling links don't count
+    local label="$1" destination_dir="$2" source_dir="$3" pattern="$4"
+    local source_count=0 verified_count=0 source destination
+    for source in "$source_dir"/$pattern; do
+        [[ -e "$source" ]] || continue
+        source_count=$((source_count + 1))
+        destination="$destination_dir/$(basename "$source")"
+        if python3 "$INSTALL_STATE_HELPER" verify \
+            --manifest "$INSTALL_MANIFEST" \
+            --path "$destination" \
+            --target "$source" >/dev/null 2>&1; then
+            verified_count=$((verified_count + 1))
+        fi
     done
-    if [ "$n" -eq 7 ]; then
-        echo "   ✅ $label: 7/7 commands linked ($dir)"
+    if [[ "$source_count" -eq 7 && "$verified_count" -eq 7 ]]; then
+        echo "   ✅ $label: 7/7 canonical commands verified ($destination_dir)"
     else
-        echo "   ❌ $label: $n/7 commands resolve in $dir"
+        echo "   ❌ $label: $verified_count/7 canonical commands verified in $destination_dir (source has $source_count)"
         SETUP_FAILED=1
     fi
 }
 
-command -v claude   &> /dev/null && verify_cmd_links "Claude Code" "$HOME/.claude/commands" "tgd-*.md"           || echo "   ⏭️  Claude Code not detected — skipped"
-command -v opencode &> /dev/null && verify_cmd_links "OpenCode"    "$HOME/.config/opencode/commands" "tgd-*.md"  || echo "   ⏭️  OpenCode not detected — skipped"
-command -v gemini   &> /dev/null && verify_cmd_links "Gemini CLI"  "$HOME/.gemini/commands" "tgd-*.toml"         || echo "   ⏭️  Gemini CLI not detected — skipped"
-command -v codex    &> /dev/null && verify_cmd_links "Codex CLI"   "$HOME/.codex/prompts" "tgd-*.md"             || echo "   ⏭️  Codex CLI not detected — skipped"
-command -v pi       &> /dev/null && verify_cmd_links "Pi"          "$HOME/.pi/agent/prompts" "tgd-*.md"          || echo "   ⏭️  Pi not detected — skipped"
+command -v claude &> /dev/null \
+    && verify_cmd_links "Claude Code" "$HOME/.claude/commands" "$TGD_REPO_ROOT/.claude/commands" "tgd-*.md" \
+    || echo "   ⏭️  Claude Code not detected — skipped"
+command -v opencode &> /dev/null \
+    && verify_cmd_links "OpenCode" "$HOME/.config/opencode/commands" "$TGD_REPO_ROOT/.opencode/commands" "tgd-*.md" \
+    || echo "   ⏭️  OpenCode not detected — skipped"
+command -v gemini &> /dev/null \
+    && verify_cmd_links "Gemini CLI" "$HOME/.gemini/commands" "$TGD_REPO_ROOT/.gemini/commands" "tgd-*.toml" \
+    || echo "   ⏭️  Gemini CLI not detected — skipped"
+command -v codex &> /dev/null \
+    && verify_cmd_links "Codex CLI" "$HOME/.codex/prompts" "$TGD_REPO_ROOT/.codex/prompts" "tgd-*.md" \
+    || echo "   ⏭️  Codex CLI not detected — skipped"
+command -v pi &> /dev/null \
+    && verify_cmd_links "Pi" "$HOME/.pi/agent/prompts" "$TGD_REPO_ROOT/.pi/prompts" "tgd-*.md" \
+    || echo "   ⏭️  Pi not detected — skipped"
 
 # Understand-Anything runtime state (needed by /tgd-map Steps 4-5)
 if [ -d "$UA_SKILLS_DIR" ]; then
-    if [ -d "$UA_DIR/node_modules" ]; then
-        echo "   ✅ UA dependencies installed (node_modules present)"
+    if [ -f "$UA_DIR/node_modules/.modules.yaml" ]; then
+        echo "   ✅ UA dependencies installed (pnpm module manifest present)"
     else
         echo "   ⚠️  UA dependencies NOT installed — /understand scans and the dashboard will not run."
         echo "      (pnpm missing or registry policy deferred the install — see messages above)"
     fi
-    if [ -d "$UA_DIR/understand-anything-plugin/packages/core/dist" ]; then
-        echo "   ✅ UA core built (packages/core/dist present)"
+    if [ -f "$UA_DIR/understand-anything-plugin/packages/core/dist/index.js" ]; then
+        echo "   ✅ UA core built (packages/core/dist/index.js present)"
     else
         echo "   ⚠️  UA core NOT built — run: cd vendor/understand-anything && pnpm install && pnpm build"
+    fi
+    if python3 "$UA_BUILD_STATE_HELPER" is-current \
+        --ua-root "$UA_DIR" \
+        --stamp "$UA_BUILD_STAMP" >/dev/null 2>&1; then
+        echo "   ✅ UA build fingerprint matches the current vendored inputs"
+    else
+        echo "   ⚠️  UA build fingerprint is missing or stale — a supported Node runtime must rebuild it."
+        SETUP_DEGRADED=1
     fi
 else
     echo "   ⏭️  Understand-Anything vendor not present — skipped"
@@ -954,31 +1322,11 @@ if [ "$SETUP_FAILED" -eq 1 ]; then
     exit 1
 fi
 
-python3 - "$VERSION_FILE" "$TGD_VERSION" <<'PYEOF'
-import os
-from pathlib import Path
-import sys
-import tempfile
-
-path = Path(sys.argv[1])
-path.parent.mkdir(parents=True, exist_ok=True)
-descriptor, temporary_name = tempfile.mkstemp(
-    dir=str(path.parent),
-    prefix=".{}.".format(path.name),
-)
-try:
-    with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
-        stream.write(sys.argv[2] + "\n")
-        stream.flush()
-        os.fsync(stream.fileno())
-    os.replace(temporary_name, path)
-except BaseException:
-    try:
-        os.unlink(temporary_name)
-    except FileNotFoundError:
-        pass
-    raise
-PYEOF
+python3 "$INSTALL_STATE_HELPER" write-marker \
+    --manifest "$INSTALL_MANIFEST" \
+    --path "$VERSION_FILE" \
+    --version "$TGD_VERSION" \
+    "${MARKER_LEGACY_ARGS[@]}" >/dev/null
 
 echo ""
 if [[ "$SETUP_DEGRADED" -eq 1 ]]; then

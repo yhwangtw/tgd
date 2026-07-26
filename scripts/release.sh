@@ -27,6 +27,7 @@
 #   - Explicit version argument is honored but refused if the tag exists.
 #
 # Usage: bash scripts/release.sh [version] [--yes] [--dry-run]
+#   version:   vYYYY.MM.DD or vYYYY.MM.DD.N (leading v optional; N starts at 1)
 #   --yes:     skip the confirmation prompt (non-interactive)
 #   --dry-run: print the computed version and CHANGELOG entry, change nothing
 #
@@ -41,26 +42,95 @@ cd "$REPO_ROOT"
 AUTO_YES=false
 DRY_RUN=false
 VERSION=""
+
+usage() {
+    echo "Usage: bash scripts/release.sh [version] [--yes] [--dry-run]"
+}
+
+usage_error() {
+    printf '❌ %s\n' "$1" >&2
+    usage >&2
+    exit 2
+}
+
 for arg in "$@"; do
     case "$arg" in
         --yes|-y) AUTO_YES=true ;;
         --dry-run) DRY_RUN=true ;;
         --help|-h)
-            sed -n '2,36p' "$0" | sed 's/^# \{0,1\}//'
+            sed -n '2,34p' "$0" | sed 's/^# \{0,1\}//'
             exit 0
             ;;
-        *) [ -z "$VERSION" ] && VERSION="$arg" ;;
+        -*) usage_error "Unknown option: $arg" ;;
+        *)
+            if [ -n "$VERSION" ]; then
+                usage_error "Unexpected extra argument: $arg"
+            fi
+            VERSION="$arg"
+            ;;
     esac
 done
 
-git fetch --tags --quiet origin 2>/dev/null || echo "⚠️  Could not fetch tags — using local tag list"
+if [ -n "$VERSION" ]; then
+    RAW_VERSION="$VERSION"
+    [[ "$VERSION" =~ ^v ]] || VERSION="v$VERSION"
+    if ! [[ "$VERSION" =~ ^v[0-9]{4}\.[0-9]{2}\.[0-9]{2}(\.[1-9][0-9]*)?$ ]]; then
+        usage_error "Invalid version: $RAW_VERSION (expected vYYYY.MM.DD or vYYYY.MM.DD.N with N >= 1)"
+    fi
+    if ! command -v python3 >/dev/null 2>&1; then
+        usage_error "python3 is required to validate release dates"
+    fi
+    if ! python3 -c \
+        'import datetime, sys; year, month, day = map(int, sys.argv[1][1:].split(".")[:3]); datetime.date(year, month, day)' \
+        "$VERSION" >/dev/null 2>&1; then
+        usage_error "Invalid calendar date: $RAW_VERSION"
+    fi
+fi
+
+START_BRANCH=""
+START_HEAD=""
+if [ "$DRY_RUN" != true ]; then
+    START_BRANCH=$(git branch --show-current)
+    if [ -z "$START_BRANCH" ]; then
+        echo "❌ Detached HEAD — check out a branch first."
+        exit 1
+    fi
+    START_HEAD=$(git rev-parse --verify HEAD)
+fi
+
+validate_release_state() {
+    local phase="$1"
+    local current_branch current_head worktree_status
+
+    current_branch=$(git branch --show-current)
+    current_head=$(git rev-parse --verify HEAD)
+    if [ "$current_branch" != "$START_BRANCH" ] || [ "$current_head" != "$START_HEAD" ]; then
+        echo "❌ Repository branch or HEAD changed $phase; refusing to modify release files." >&2
+        return 1
+    fi
+
+    worktree_status=$(git status --porcelain --untracked-files=normal)
+    if [ -n "$worktree_status" ]; then
+        echo "❌ Release requires a clean worktree $phase; commit or stash changes first." >&2
+        printf '%s\n' "$worktree_status" >&2
+        return 1
+    fi
+}
+
+if ! git fetch --tags --quiet origin 2>/dev/null; then
+    if [ "$DRY_RUN" = true ]; then
+        echo "⚠️  Could not fetch tags — dry run is using the local tag list"
+    else
+        echo "❌ Could not fetch tags from origin; refusing to prepare a release with an unverified tag list." >&2
+        exit 1
+    fi
+fi
 
 # === Compute version ===
 
 tag_exists() { git rev-parse -q --verify "refs/tags/$1" >/dev/null 2>&1; }
 
 if [ -n "$VERSION" ]; then
-    [[ "$VERSION" =~ ^v ]] || VERSION="v$VERSION"
     if tag_exists "$VERSION"; then
         echo "❌ Tag $VERSION already exists. Published tags are immutable —"
         echo "   pick a new version (same-day releases take a micro segment, e.g. ${VERSION}.1)."
@@ -100,34 +170,36 @@ while IFS= read -r line; do
     MSG="${line%%|||*}"
     HASH="${line##*|||}"
     case "$MSG" in
-        feat*:*|feat*)         FEATS="${FEATS}- ${MSG#*: } (\`$HASH\`)\n" ;;
-        fix*:*|fix*)           FIXES="${FIXES}- ${MSG#*: } (\`$HASH\`)\n" ;;
-        docs*:*|docs*)         DOCS="${DOCS}- ${MSG#*: } (\`$HASH\`)\n" ;;
-        refactor*:*|refactor*) REFACTORS="${REFACTORS}- ${MSG#*: } (\`$HASH\`)\n" ;;
-        test*:*|test*)         TESTS="${TESTS}- ${MSG#*: } (\`$HASH\`)\n" ;;
-        chore*:*|chore*|ci*:*|ci*) CHORES="${CHORES}- ${MSG#*: } (\`$HASH\`)\n" ;;
+        feat*:*|feat*)         FEATS="${FEATS}- ${MSG#*: } (\`$HASH\`)"$'\n' ;;
+        fix*:*|fix*)           FIXES="${FIXES}- ${MSG#*: } (\`$HASH\`)"$'\n' ;;
+        docs*:*|docs*)         DOCS="${DOCS}- ${MSG#*: } (\`$HASH\`)"$'\n' ;;
+        refactor*:*|refactor*) REFACTORS="${REFACTORS}- ${MSG#*: } (\`$HASH\`)"$'\n' ;;
+        test*:*|test*)         TESTS="${TESTS}- ${MSG#*: } (\`$HASH\`)"$'\n' ;;
+        chore*:*|chore*|ci*:*|ci*) CHORES="${CHORES}- ${MSG#*: } (\`$HASH\`)"$'\n' ;;
         Merge\ *)              : ;;  # merge commits carry no release info
-        *)                     OTHERS="${OTHERS}- ${MSG} (\`$HASH\`)\n" ;;
+        *)                     OTHERS="${OTHERS}- ${MSG} (\`$HASH\`)"$'\n' ;;
     esac
 done <<< "$COMMITS"
 
-build_section() {
-    [ -n "$2" ] && { echo "### $1"; echo -e "$2"; }
+NEW_ENTRY="## $VERSION"$'\n\n'
+append_section() {
+    if [ -n "$2" ]; then
+        NEW_ENTRY="${NEW_ENTRY}### $1"$'\n'"$2"$'\n'
+    fi
 }
 
-NEW_ENTRY="## $VERSION\n\n"
-[ -n "$FEATS" ]     && NEW_ENTRY+=$(build_section "✨ Features" "$FEATS")"\n"
-[ -n "$FIXES" ]     && NEW_ENTRY+=$(build_section "🐛 Bug Fixes" "$FIXES")"\n"
-[ -n "$DOCS" ]      && NEW_ENTRY+=$(build_section "📝 Documentation" "$DOCS")"\n"
-[ -n "$REFACTORS" ] && NEW_ENTRY+=$(build_section "♻️ Refactoring" "$REFACTORS")"\n"
-[ -n "$TESTS" ]     && NEW_ENTRY+=$(build_section "✅ Tests" "$TESTS")"\n"
-[ -n "$CHORES" ]    && NEW_ENTRY+=$(build_section "🔧 Chores" "$CHORES")"\n"
-[ -n "$OTHERS" ]    && NEW_ENTRY+=$(build_section "📦 Other Changes" "$OTHERS")"\n"
+append_section "✨ Features" "$FEATS"
+append_section "🐛 Bug Fixes" "$FIXES"
+append_section "📝 Documentation" "$DOCS"
+append_section "♻️ Refactoring" "$REFACTORS"
+append_section "✅ Tests" "$TESTS"
+append_section "🔧 Chores" "$CHORES"
+append_section "📦 Other Changes" "$OTHERS"
 
 echo ""
 echo "🚀 Preparing release $VERSION (commits: $RANGE)"
 echo "---"
-echo -e "$NEW_ENTRY"
+printf '%s' "$NEW_ENTRY"
 echo "---"
 
 if [ "$DRY_RUN" = true ]; then
@@ -136,6 +208,8 @@ if [ "$DRY_RUN" = true ]; then
 fi
 
 # === Confirm ===
+
+validate_release_state "before confirmation"
 
 if [ "$AUTO_YES" != true ]; then
     read -p "Write VERSION + CHANGELOG.md and commit? (Y/n) " -n 1 -r
@@ -146,34 +220,61 @@ if [ "$AUTO_YES" != true ]; then
     fi
 fi
 
+validate_release_state "after confirmation"
+
 # === Write VERSION + CHANGELOG (before any commit — CI tags the result) ===
 
-echo "$VERSION" > VERSION
+CHANGELOG_HEADER="# Changelog"$'\n\n'
+CHANGELOG_HEADER="${CHANGELOG_HEADER}All notable changes to tGD will be documented in this file."$'\n\n'
+CHANGELOG_HEADER="${CHANGELOG_HEADER}Format based on [Keep a Changelog](https://keepachangelog.com/). Versions follow [CalVer](https://calver.org/) (YYYY.MM.DD)."$'\n\n'
+EXISTING_ENTRIES_FILE=""
+cleanup_release_temp() {
+    if [ -n "$EXISTING_ENTRIES_FILE" ]; then
+        rm -f "$EXISTING_ENTRIES_FILE"
+    fi
+}
+trap cleanup_release_temp EXIT
 
-CHANGELOG_HEADER="# Changelog\n\nAll notable changes to tGD will be documented in this file.\n\nFormat based on [Keep a Changelog](https://keepachangelog.com/). Versions follow [CalVer](https://calver.org/) (YYYY.MM.DD).\n\n"
 if [ -f "CHANGELOG.md" ]; then
-    EXISTING_ENTRIES=$(sed -n '6,$p' CHANGELOG.md)
-    echo -e "${CHANGELOG_HEADER}${NEW_ENTRY}\n${EXISTING_ENTRIES}" > CHANGELOG.md
-else
-    echo -e "${CHANGELOG_HEADER}${NEW_ENTRY}" > CHANGELOG.md
+    EXISTING_ENTRIES_FILE=$(mktemp "${TMPDIR:-/tmp}/tgd-release-changelog.XXXXXX")
+    tail -n +7 CHANGELOG.md > "$EXISTING_ENTRIES_FILE"
 fi
+
+echo "$VERSION" > VERSION
+{
+    printf '%s' "$CHANGELOG_HEADER"
+    printf '%s' "$NEW_ENTRY"
+    if [ -n "$EXISTING_ENTRIES_FILE" ]; then
+        cat "$EXISTING_ENTRIES_FILE"
+    fi
+} > CHANGELOG.md
+cleanup_release_temp
+trap - EXIT
 echo "📝 Updated VERSION + CHANGELOG.md"
 
-# === Commit + push (current branch) ===
+# === Commit + push the exact release commit ===
 
-BRANCH=$(git branch --show-current)
-if [ -z "$BRANCH" ]; then
-    echo "❌ Detached HEAD — check out a branch first."
+git commit --only -m "chore: release $VERSION" -- VERSION CHANGELOG.md
+RELEASE_COMMIT=$(git rev-parse HEAD)
+RELEASE_PARENT=$(git rev-parse "$RELEASE_COMMIT^")
+if [ "$RELEASE_PARENT" != "$START_HEAD" ]; then
+    echo "❌ Release commit was not created from the starting HEAD; refusing to push." >&2
     exit 1
 fi
 
-git add VERSION CHANGELOG.md
-git commit -m "chore: release $VERSION"
-git push origin "$BRANCH"
+CURRENT_BRANCH=$(git branch --show-current)
+CURRENT_BRANCH_HEAD=$(git rev-parse "refs/heads/$START_BRANCH")
+if [ "$CURRENT_BRANCH" != "$START_BRANCH" ] \
+    || [ "$CURRENT_BRANCH_HEAD" != "$RELEASE_COMMIT" ]; then
+    echo "❌ Local branch moved while creating the release commit; refusing to push." >&2
+    exit 1
+fi
+
+git push origin "$RELEASE_COMMIT:refs/heads/$START_BRANCH"
 
 echo ""
-echo "✅ Release $VERSION prepared and pushed to '$BRANCH'."
-if [ "$BRANCH" = "main" ]; then
+echo "✅ Release $VERSION prepared and pushed to '$START_BRANCH'."
+if [ "$START_BRANCH" = "main" ]; then
     echo "   CI (release.yml) will now tag and publish it."
 else
     echo "   Open a PR and merge to main — CI (release.yml) tags and publishes on merge."

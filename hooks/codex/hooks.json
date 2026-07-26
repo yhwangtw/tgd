@@ -2,12 +2,12 @@
   "hooks": {
     "SessionStart": [
       {
-        "matcher": "startup|resume",
+        "matcher": "startup|resume|clear|compact",
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${TGD_DIR}/hooks/codex/session-start.sh\"",
-            "statusMessage": "Loading tGD meta-skill"
+            "command": "bash \"${PLUGIN_ROOT}/hooks/codex/session-start.sh\"",
+            "statusMessage": "Loading tGD session guidance"
           }
         ]
       }

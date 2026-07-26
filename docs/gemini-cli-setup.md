@@ -4,25 +4,46 @@
 
 ### Option 1: Install as Skills (Recommended)
 
-Gemini CLI has a native skills system that auto-discovers `SKILL.md` files in `.gemini/skills/` or `.agents/skills/` directories. Each skill activates on demand when it matches your task.
+Gemini CLI has a native skills system that auto-discovers `SKILL.md` files in
+`.gemini/skills/` or `.agents/skills/` directories. A `SKILL.md` is discovered
+at the skills root or one directory deep; deeper nesting is ignored. tGD
+therefore links every `skills/<skill-name>/` directory directly into
+`~/.gemini/skills/<skill-name>/`. Each skill activates on demand when it
+matches your task.
 
-**Install from the repo:**
+For bundled Understand-Anything, setup links every skill at the shared
+`~/.agents/skills/<canonical-name>` path and links the plugin root at
+`~/.understand-anything-plugin`. Gemini uses those universal links directly.
+Only when a universal canonical path has a collision with an existing user
+path does setup add that one skill as a direct fallback under
+`~/.gemini/skills/<canonical-name>`. This keeps normal installs deduplicated
+without overwriting a user-owned collision.
 
-```bash
-gemini skills install https://github.com/openclawyhwang-hub/tGD.git --path skills
-```
-
-**Or install from a local clone:**
+**Install all tGD integration assets from a local clone:**
 
 ```bash
 git clone https://github.com/openclawyhwang-hub/tGD.git
-gemini skills install /path/to/tGD/skills/
+cd tGD
+bash setup.sh
 ```
 
-**Install for a specific workspace only:**
+**Or link only the skills from an existing local clone:**
 
 ```bash
-gemini skills install /path/to/tGD/skills/ --scope workspace
+cd /path/to/tGD
+mkdir -p "$HOME/.gemini/skills"
+for skill_dir in "$(pwd)"/skills/*/; do
+  ln -sf "$skill_dir" "$HOME/.gemini/skills/$(basename "$skill_dir")"
+done
+```
+
+**Link the skills for a specific workspace only:**
+
+```bash
+cd /path/to/workspace
+for skill_dir in /path/to/tGD/skills/*/; do
+  gemini skills link "$skill_dir" --scope workspace
+done
 ```
 
 Skills installed at workspace scope go into `.gemini/skills/` (or `.agents/skills/`). User-level skills go into `~/.gemini/skills/`.
@@ -87,7 +108,9 @@ Many skills in this pack leverage [Model Context Protocol (MCP)](https://modelco
 - `tgd-agent-browser` uses CDP-based browser automation via Rust CLI.
 - `tgd-performance-optimization` can benefit from performance-related MCP tools.
 
-To enable these, ensure you have the relevant MCP extensions installed in your Gemini CLI configuration (`~/.gemini/config.json`).
+To enable these, configure the relevant MCP servers with the `gemini mcp`
+command (use `gemini mcp list` to verify them). Gemini CLI stores user-level
+MCP settings in `~/.gemini/settings.json`.
 
 ### Session Hooks
 
@@ -95,7 +118,7 @@ Gemini CLI supports session lifecycle hooks. tGD installs one `SessionStart` hoo
 
 | Hook | Event | Purpose |
 |------|-------|---------|
-| `session-start.sh` | `SessionStart` | Injects `tgd-router` meta-skill |
+| `session-start.sh` | `SessionStart` | Injects a bounded tGD session preamble |
 
 #### Installation
 
@@ -113,12 +136,16 @@ foreign hooks.
 python3 scripts/merge-agent-hooks.py install \
   --platform gemini \
   --repo-root "$(pwd)" \
-  --destination "$HOME/.gemini/settings.json"
+  --destination "$HOME/.gemini/settings.json" \
+  --state "$HOME/.tgd/hook-ownership.json"
 ```
 
 #### How It Works
 
-**session-start** — Injects the `tgd-router` meta-skill into the agent's context at session start so the router skill is always available.
+**session-start** — Injects the bounded `hooks/session-preamble.md` content at
+session start. The preamble carries the core verification rule and tells
+Gemini to load `tgd-router` on demand when it needs skill routing. The full
+router skill is not injected into every session.
 
 ### Explicit Context Loading
 

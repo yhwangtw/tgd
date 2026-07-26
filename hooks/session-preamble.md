@@ -6,8 +6,11 @@ Edit THIS file only. The per-platform always-load files are generated from it:
   .pi/instructions.md      (→ ~/.pi/agent/instructions.md)
   .hermes/AGENTS.md        (→ each Hermes profile home)
 Run: python3 scripts/generate-mirrors.py   (CI "Mirror sync" fails on drift)
-The hook/plugin platforms (Claude, Codex, Gemini, OpenCode) inject tgd-router
-at session start instead; tgd-router points back here + to tgd-rules.
+The command-hook platforms (Claude, Codex, Gemini) inject this bounded
+preamble at session start. The preamble tells the agent to load tgd-router on
+demand; it does not inject the full router into every session. OpenCode's
+plugin only logs session availability, so its routing comes from installed
+skills, AGENTS.md, and commands.
 
 NOT generated from this file (deliberately): .claude/CLAUDE.md. That file is
 instructions for agents developing tGD ITSELF — setup.sh never installs it

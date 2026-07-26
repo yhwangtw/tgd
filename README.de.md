@@ -62,24 +62,41 @@ bash setup.sh
 > tGD-eigenen Symlink in einem Ownership-Manifest. Derselbe Befehl kann auch
 > für bestehende und ältere Installationen erneut ausgeführt werden: Erkannte
 > tGD-Links werden direkt migriert, fremde Dateien und Einstellungen bleiben
-> erhalten.
+> erhalten. Das Setup benötigt Python 3.9 oder neuer.
 >
-> Globale Werkzeuge von Drittanbietern sind opt-in. Der Installer verlinkt
-> `tgd` unter `~/.local/bin/tgd` und weist darauf hin, falls dieses Verzeichnis
-> noch nicht in `PATH` enthalten ist.
+> Das normale Setup führt kein `npm install -g` aus; globale Werkzeuge von
+> Drittanbietern sind ausdrücklich opt-in. Wenn das gebündelte
+> Understand-Anything noch nicht gebaut ist, kann das Setup das im Repository
+> festgelegte pnpm über Corepack (oder ein bereits installiertes pnpm derselben
+> Version) verwenden, um lokale Abhängigkeiten unter
+> `vendor/understand-anything/` zu installieren und zu bauen. Der UA-Build
+> benötigt Node.js 22.12 oder neuer. Ein Fingerprint der Sources und Lockfiles
+> löst bei Änderungen einen neuen Build aus; nur passende vorhandene Artefakte
+> dürfen die Node-Anforderung überspringen. Jeder UA-Skill wird unter
+> `~/.agents/skills/<name>` und das Plugin-Root unter
+> `~/.understand-anything-plugin` verlinkt. Bei einer älteren oder fehlenden
+> Node-Laufzeit installiert setup weiterhin die Kern-Links und Hooks und
+> meldet den UA-Status als degraded. Mit `--no-deps` werden alle Downloads und
+> Builds von Abhängigkeiten übersprungen. Der Installer verlinkt `tgd` unter
+> `~/.local/bin/tgd` und weist darauf hin, falls dieses Verzeichnis noch nicht
+> in `PATH` enthalten ist.
 
 ### Installationsoptionen
 
 | Befehl | Beschreibung |
 |--------|-------------|
 | `bash setup.sh` | tGD installieren, aktualisieren oder eine bestehende Installation sicher migrieren |
-| `bash setup.sh --with-tools` | Fest versionierte CodeGraph-/pnpm-Abhängigkeiten installieren, falls sie fehlen |
+| `bash setup.sh --with-tools` | Globale npm-Installationen der fest versionierten Werkzeuge CodeGraph und Fallback-pnpm ausdrücklich erlauben |
 | `bash setup.sh --with-browser` | Den fest versionierten Agent Browser installieren/konfigurieren (schließt `--with-tools` ein) |
-| `bash setup.sh --no-deps` | Grundlegende Links/Hooks ohne Downloads von Abhängigkeiten installieren (Offline-/CI-Modus) |
+| `bash setup.sh --no-deps` | Nur grundlegende Links/Hooks installieren und alle Downloads von Abhängigkeiten sowie den bundled-UA-Build überspringen (Offline-/CI-Modus) |
 | `tgd` | Nach dem ersten Setup dieselbe sichere Installation/Aktualisierung ausführen |
 | `tgd --version` (`-v`) | Aktuelle Version anzeigen (CalVer: YYYY.MM.DD) |
 | `tgd --upgrade` (`-u`) | Eine verwaltete Aktualisierung erzwingen und erkannte ältere Links migrieren |
 | `tgd --uninstall` | Im Manifest erfasste Links und tGD-Hooks entfernen; Benutzerdateien und Abhängigkeiten beibehalten |
+
+Codex verlangt eine einmalige Prüfung neuer oder geänderter User-Hooks. Wenn
+nach dem Setup ein ausstehender Hook gemeldet wird, öffnen Sie `/hooks` in
+Codex und vertrauen Sie der tGD-Definition.
 
 ### Auf neueste Version aktualisieren
 
@@ -537,10 +554,15 @@ Jeder Skill folgt einer konsistenten Anatomie:
 ## ❓ FAQ
 
 **Q: Muss ich etwas außer dem Agent installieren?**
-A: Repository klonen und `bash setup.sh` ausführen. Grundlegende Skills,
-Commands, Hooks und die `tgd` CLI werden ohne globale Paketinstallationen
-konfiguriert. CodeGraph, pnpm und Agent Browser bleiben über die oben
-beschriebenen Setup-Optionen ausdrücklich opt-in.
+A: Repository klonen und `bash setup.sh` ausführen. Das normale Setup führt
+kein `npm install -g` aus. Wenn das gebündelte Understand-Anything noch nicht
+gebaut ist, kann es das im Repository festgelegte pnpm über Corepack (oder ein
+bereits installiertes pnpm derselben Version) verwenden, um lokale
+Abhängigkeiten ausschließlich unter `vendor/understand-anything/` zu
+installieren und zu bauen. Mit `--no-deps` werden alle Downloads und Builds
+von Abhängigkeiten übersprungen. Globale Installationen von CodeGraph,
+Fallback-pnpm und Agent Browser bleiben über die oben beschriebenen
+Setup-Optionen ausdrücklich opt-in.
 
 **Q: Was wenn mein Agent keine Slash Commands unterstützt?**
 A: Sagen Sie "Plane dieses Feature" – tGD mappt Intent automatisch.
@@ -811,16 +833,18 @@ es erstellt weder den Tag noch das GitHub-Release.
 
 ```bash
 # Den erzeugten Release-Eintrag prüfen, ohne etwas zu ändern
-bash scripts/release.sh v2026.06.09 --dry-run
+bash scripts/release.sh --dry-run
 
 # Ohne interaktive Rückfrage vorbereiten, committen und pushen
-bash scripts/release.sh v2026.06.09 --yes
+bash scripts/release.sh --yes
 ```
 
 `tgd --release [version]` delegiert an dasselbe Script. Wenn Sie das Release
 auf einem Feature-Branch vorbereiten, mergen Sie dessen PR nach `main`; CI
 erstellt den Tag und veröffentlicht erst, nachdem der Release-Commit `main`
-erreicht hat.
+erreicht hat. Ein echter Release-Lauf erfordert einen ausgecheckten Branch und
+einen clean worktree; andernfalls bricht das Script ab, bevor es Dateien
+ändert.
 
 ---
 
@@ -847,7 +871,10 @@ ln -sf "$(pwd)/.claude/commands"/* ~/.claude/commands/
 
 ### Gemini CLI
 ```bash
-ln -sf "$(pwd)/skills" ~/.gemini/skills/tGD
+mkdir -p "$HOME/.gemini/skills"
+for skill_dir in "$(pwd)"/skills/*/; do
+  ln -sf "$skill_dir" "$HOME/.gemini/skills/$(basename "$skill_dir")"
+done
 ln -sf "$(pwd)/.gemini/commands"/* ~/.gemini/commands/
 ```
 
