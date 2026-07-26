@@ -4,6 +4,24 @@ All notable changes to tGD will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/). Versions follow [CalVer](https://calver.org/) (YYYY.MM.DD).
 
+## v2026.07.26
+
+### ✨ Features
+- add ownership-safe installer state (`de0a538`)
+
+### 🐛 Bug Fixes
+- retire legacy router source aliases (`8188e8b`)
+- show Codex skill invocation after setup (`6ed3b34`)
+- default agent integrations to on-demand loading (`2ad27e5`)
+- close setup lifecycle review gaps (`cb2e4c6`)
+- complete setup lifecycle verification (`c966077`)
+- make installer dependencies explicit and pinned (`5ed8d79`)
+- make setup lifecycle ownership-safe (`6c37a3a`)
+- reconcile agent hooks without clobbering user config (`9563197`)
+
+### 📝 Documentation
+- align setup and release contracts (`9139e66`)
+
 ## v2026.07.23
 
 ### ✨ Features
