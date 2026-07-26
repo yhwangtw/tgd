@@ -304,6 +304,29 @@ exec /bin/ln "$@"
         self.assertTrue(foreign_link.is_symlink())
         self.assertEqual(user_target.resolve(), foreign_link.resolve())
 
+    def test_source_cleanup_removes_only_known_router_alias_links(self) -> None:
+        router = self.repo / "skills" / "tgd-router"
+        router.mkdir()
+        (router / "SKILL.md").write_text("# router\n", encoding="utf-8")
+        aliases = []
+        for alias in ("using-tgd", "tgd-using-tgd"):
+            link = router / alias
+            link.symlink_to(self.repo / "skills" / alias)
+            aliases.append(link)
+        foreign_link = router / "company-router"
+        foreign_link.symlink_to(self.repo / "skills" / "company-router")
+
+        result = self._run_setup("--no-deps")
+
+        self._assert_success(result)
+        for alias in aliases:
+            self.assertFalse(os.path.lexists(alias), result.stdout)
+        self.assertTrue(foreign_link.is_symlink())
+        self.assertEqual(
+            self.repo / "skills" / "company-router",
+            Path(os.readlink(foreign_link)),
+        )
+
     def test_install_preserves_foreign_directory_on_name_collision(self) -> None:
         self._write_fake("hermes", "exit 0")
         collision = self.home / ".hermes" / "skills" / "tgd-rules"

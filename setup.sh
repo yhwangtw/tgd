@@ -168,6 +168,15 @@ print(os.path.abspath(target))
 PYEOF
 }
 
+canonical_path_for_compare() {
+    python3 - "$1" <<'PYEOF'
+import os
+import sys
+
+print(os.path.realpath(os.path.abspath(os.path.expanduser(sys.argv[1]))))
+PYEOF
+}
+
 is_recognized_tgd_checkout() {
     local checkout_root="$1"
     [[ -f "$checkout_root/setup.sh" ]] \
@@ -440,6 +449,7 @@ fi
 cleanup_generated_source_links() {
     local skills_root="$1"
     local root_self_link skill_dir link parent_name link_name target legacy_name
+    local canonical_target canonical_alias_target
     [[ ! -L "$skills_root" && -d "$skills_root" ]] || return 0
     root_self_link="$skills_root/$(basename "$skills_root")"
     if [[ -L "$root_self_link" ]] \
@@ -456,11 +466,20 @@ cleanup_generated_source_links() {
             [[ -L "$link" ]] || continue
             link_name=$(basename "$link")
             target=$(absolute_symlink_target "$link")
+            canonical_target=$(canonical_path_for_compare "$target")
+            canonical_alias_target=$(
+                canonical_path_for_compare "$skills_root/$link_name"
+            )
             if [[ "$link_name" == "$parent_name" && "$target" == "$skill_dir" ]] \
                 || [[ "$parent_name" == tgd-* \
                     && "$link_name" == "$legacy_name" \
                     && ! -e "$link" \
-                    && "$target" == "$skills_root/$legacy_name" ]]; then
+                    && "$target" == "$skills_root/$legacy_name" ]] \
+                || [[ "$parent_name" == "tgd-router" \
+                    && ! -e "$link" \
+                    && "$canonical_target" == "$canonical_alias_target" \
+                    && ( "$link_name" == "using-tgd" \
+                        || "$link_name" == "tgd-using-tgd" ) ]]; then
                 echo "   🧹 Removing installer-generated source symlink: $link"
                 remove_exact_symlink_safely "$link" "$target"
             fi
