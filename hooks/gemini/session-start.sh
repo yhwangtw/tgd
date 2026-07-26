@@ -3,7 +3,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-SKILLS_DIR="$(dirname "$SCRIPT_DIR")/skills"
+# Script lives at hooks/gemini/session-start.sh, so skills/ is two levels up.
+SKILLS_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)/skills"
 META_SKILL="$SKILLS_DIR/tgd-router/SKILL.md"
 
 if ! command -v jq >/dev/null 2>&1; then
