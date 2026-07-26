@@ -54,27 +54,40 @@ Map → Define → Plan → Develop → Verify → Review → Release
 git clone https://github.com/openclawyhwang-hub/tGD.git && cd tGD
 bash setup.sh
 ```
-> Auto-detects your installed CLIs (Claude, Codex, Gemini, OpenCode, Pi, Hermes) and configures everything. tgd-agent-browser dependencies installed automatically.
+> Auto-detects installed CLIs (Claude, Codex, Gemini, OpenCode, Pi, and
+> Hermes), installs the core links/hooks, and records every tGD-owned symlink
+> in an ownership manifest. Existing and legacy installs can run the same
+> command again: recognized tGD links are migrated in place, while foreign
+> files and settings are preserved.
 >
-> This also installs the `tgd` CLI to your PATH for future use.
+> Third-party global tools are opt-in. The installer links `tgd` at
+> `~/.local/bin/tgd` and tells you if that directory is not yet on `PATH`.
 
 ### Setup Options
 
 | Command | What it does |
 |---------|-------------|
-| `bash setup.sh` | First-time install (run from cloned repo) |
-| `tgd` | Install or update tGD (after first install) |
+| `bash setup.sh` | Install, refresh, or safely migrate an existing installation |
+| `bash setup.sh --with-tools` | Install pinned CodeGraph/pnpm dependencies when missing |
+| `bash setup.sh --with-browser` | Install/configure pinned Agent Browser (implies `--with-tools`) |
+| `bash setup.sh --no-deps` | Install core links/hooks without dependency downloads (offline/CI mode) |
+| `tgd` | Run the same safe install/refresh after the first setup |
 | `tgd --version` (`-v`) | Show current version (CalVer: YYYY.MM.DD) |
-| `tgd --upgrade` (`-u`) | Force refresh: clean broken symlinks and rebuild all links/hooks |
-| `tgd --uninstall` | Remove all tGD symlinks and hooks without touching your other files |
+| `tgd --upgrade` (`-u`) | Force a managed refresh and migrate recognized legacy links |
+| `tgd --uninstall` | Remove manifest-owned links and tGD hooks; preserve user files and dependencies |
 
 ### Updating to Latest
 
 ```bash
-cd ~/tGD && git pull && tgd --upgrade
+cd ~/tGD
+git pull
+bash setup.sh
 ```
 
-This pulls the latest source from GitHub and rebuilds all symlinks/hooks. Your existing features in `$TGD_DIR/<feature>/` are preserved.
+The plain setup command works for both new and previously installed copies. It
+detects the installed version, refreshes links/hooks, and migrates recognized
+legacy links without requiring uninstall/reinstall. `tgd --upgrade` is
+available when you want to request the refresh explicitly.
 
 ### 2. Start Your Agent
 ```bash
@@ -275,12 +288,12 @@ The `tgd` CLI manages installation, updates, and diagnostics:
 
 | Command | Description |
 |---------|-------------|
-| `bash setup.sh` | First-time install (run from cloned repo) |
+| `bash setup.sh` | Install, refresh, or migrate tGD safely |
 | `tgd` | Install or update tGD (after first install) |
 | `tgd --version` (`-v`) | Show current version (CalVer: YYYY.MM.DD) |
-| `tgd --upgrade` (`-u`) | Force refresh links and hooks |
-| `tgd --release` | Create a GitHub release (reads VERSION) |
-| `tgd --uninstall` | Remove all tGD installations |
+| `tgd --upgrade` (`-u`) | Force a managed refresh of links and hooks |
+| `tgd --release [version]` | Prepare VERSION + CHANGELOG, commit, and push; CI publishes |
+| `tgd --uninstall` | Remove only tGD-managed links and hooks |
 
 ### Slash Commands
 
@@ -531,7 +544,7 @@ Skills use **progressive disclosure** — the agent only loads details when need
 ## ❓ FAQ
 
 **Q: Do I need to install anything besides the agent?**
-A: Clone the repo and run `bash setup.sh`. It auto-detects your CLI and configures everything. The `tgd` CLI is installed automatically for future use.
+A: Clone the repo and run `bash setup.sh`. Core skills, commands, hooks, and the `tgd` CLI are configured without global package installs. CodeGraph, pnpm, and Agent Browser remain explicit opt-ins through the setup flags above.
 
 **Q: What if my agent doesn't support slash commands?**
 A: Say "Plan this feature" in natural language — tGD maps intent to skills automatically.
@@ -768,26 +781,23 @@ Want to add a skill or improve tGD? See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## 🏷️ Release
 
-### Automated (recommended)
-When `VERSION` is updated and pushed to `main`, GitHub Actions automatically creates a tag and release with changelog.
+### Prepare and publish (recommended)
 
-**To release a new version:**
-1. Update `VERSION` with the new version (e.g., `v2026.06.09`)
-2. Update `TGD_VERSION` in `setup.sh` (CalVer format, e.g., `2026-06-09`)
-3. Commit and push to `main`
-4. GitHub Actions creates the release automatically
+The release script computes the changelog entry, updates `VERSION` and
+`CHANGELOG.md`, commits those two files, and pushes the current branch. When
+that commit lands on `main`, CI tags and publishes the GitHub release.
 
-### Manual
 ```bash
-# Using the release script
-bash scripts/release.sh          # reads version from VERSION
-bash scripts/release.sh v2026.06.09   # or specify version
+# Inspect the generated release entry without changing anything
+bash scripts/release.sh v2026.06.09 --dry-run
 
-# Or manually
-git tag v2026.06.09
-git push origin v2026.06.09
-gh release create v2026.06.09 --title "tGD v2026.06.09" --notes "Release notes..."
+# Prepare, commit, and push without an interactive prompt
+bash scripts/release.sh v2026.06.09 --yes
 ```
+
+`tgd --release [version]` delegates to the same script. If you prepare on a
+feature branch, merge its PR into `main`; CI tags and publishes only after the
+release commit reaches `main`.
 
 ---
 
@@ -799,9 +809,11 @@ Apache 2.0 - use these skills in your projects, teams, and tools.
 
 ## 📎 Appendix: Manual Configuration
 
-> **Note:** Only needed if `tgd` fails or you prefer manual linking.
-
-These commands mirror what `setup.sh` does — symlinks from the agent's config directory into the cloned repo. Run them from the repo root.
+> **Note:** These emergency commands create links only. They bypass tGD's
+> ownership manifest, collision checks, hook reconciliation, and final
+> verification, so `tgd --uninstall` will not manage them. Prefer
+> `bash setup.sh`; run the commands below only when intentionally maintaining
+> the links yourself.
 
 ### Claude Code
 ```bash

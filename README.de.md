@@ -57,27 +57,43 @@ Map → Define → Plan → Develop → Verify → Review → Release
 git clone https://github.com/openclawyhwang-hub/tGD.git && cd tGD
 bash setup.sh
 ```
-> Erkennt installierte CLIs automatisch. tgd-agent-browser-Abhängigkeiten werden automatisch installiert.
+> Erkennt installierte CLIs (Claude, Codex, Gemini, OpenCode, Pi und Hermes)
+> automatisch, installiert die grundlegenden Links/Hooks und erfasst jeden
+> tGD-eigenen Symlink in einem Ownership-Manifest. Derselbe Befehl kann auch
+> für bestehende und ältere Installationen erneut ausgeführt werden: Erkannte
+> tGD-Links werden direkt migriert, fremde Dateien und Einstellungen bleiben
+> erhalten.
 >
-> Dies installiert auch die `tgd` CLI in Ihren PATH für zukünftige Verwendung.
+> Globale Werkzeuge von Drittanbietern sind opt-in. Der Installer verlinkt
+> `tgd` unter `~/.local/bin/tgd` und weist darauf hin, falls dieses Verzeichnis
+> noch nicht in `PATH` enthalten ist.
 
 ### Installationsoptionen
 
 | Befehl | Beschreibung |
 |--------|-------------|
-| `bash setup.sh` | Erstinstallation (aus dem geklonten Repository ausführen) |
-| `tgd` | tGD installieren oder aktualisieren (nach der Erstinstallation) |
-| `tgd --version` (`-v`) | Aktuelle Version anzeigen (CalVer: YYYY.M.D) |
-| `tgd --upgrade` (`-u`) | Erneuern: ungültige Symlinks bereinigen und alle Links/Hooks neu erstellen |
-| `tgd --uninstall` | Alle tGD-Installation entfernen, ohne andere Dateien zu beeinträchtigen |
+| `bash setup.sh` | tGD installieren, aktualisieren oder eine bestehende Installation sicher migrieren |
+| `bash setup.sh --with-tools` | Fest versionierte CodeGraph-/pnpm-Abhängigkeiten installieren, falls sie fehlen |
+| `bash setup.sh --with-browser` | Den fest versionierten Agent Browser installieren/konfigurieren (schließt `--with-tools` ein) |
+| `bash setup.sh --no-deps` | Grundlegende Links/Hooks ohne Downloads von Abhängigkeiten installieren (Offline-/CI-Modus) |
+| `tgd` | Nach dem ersten Setup dieselbe sichere Installation/Aktualisierung ausführen |
+| `tgd --version` (`-v`) | Aktuelle Version anzeigen (CalVer: YYYY.MM.DD) |
+| `tgd --upgrade` (`-u`) | Eine verwaltete Aktualisierung erzwingen und erkannte ältere Links migrieren |
+| `tgd --uninstall` | Im Manifest erfasste Links und tGD-Hooks entfernen; Benutzerdateien und Abhängigkeiten beibehalten |
 
 ### Auf neueste Version aktualisieren
 
 ```bash
-cd ~/tGD && git pull && tgd --upgrade
+cd ~/tGD
+git pull
+bash setup.sh
 ```
 
-Lädt den neuesten Source von GitHub und erneuert alle symlinks/hooks. Deine bestehenden Features in `$TGD_DIR/<feature>/` bleiben erhalten.
+Der normale Setup-Befehl funktioniert sowohl für neue als auch für bereits
+installierte Kopien. Er erkennt die installierte Version, aktualisiert
+Links/Hooks und migriert erkannte ältere Links, ohne dass eine
+Deinstallation/Neuinstallation nötig ist. `tgd --upgrade` bleibt verfügbar,
+wenn Sie die Aktualisierung ausdrücklich anfordern möchten.
 
 ### 2. Agent starten
 ```bash
@@ -265,14 +281,12 @@ Die `tgd` CLI verwaltet Installation, Updates und Diagnose:
 
 | Befehl | Beschreibung |
 |--------|-------------|
-| `bash setup.sh` | Erstinstallation (aus dem geklonten Repository ausführen) |
+| `bash setup.sh` | tGD sicher installieren, aktualisieren oder migrieren |
 | `tgd` | tGD installieren oder aktualisieren (nach der Erstinstallation) |
-| `tgd --version` (`-v`) | Version anzeigen (CalVer) |
-| `tgd --upgrade` (`-u`) | Links und Hooks erneuern |
-| `tgd --release` | GitHub-Release erstellt (liest VERSION) |
-| `tgd --uninstall` | Alle tGD-Installationen entfernen |
-
-**Auf neueste Version aktualisieren:** `cd ~/tGD && git pull && tgd --upgrade` — einzeiler.
+| `tgd --version` (`-v`) | Version anzeigen (CalVer: YYYY.MM.DD) |
+| `tgd --upgrade` (`-u`) | Eine verwaltete Aktualisierung von Links und Hooks erzwingen |
+| `tgd --release [version]` | VERSION + CHANGELOG vorbereiten, committen und pushen; CI veröffentlicht |
+| `tgd --uninstall` | Nur von tGD verwaltete Links und Hooks entfernen |
 
 ### Slash Commands
 
@@ -523,7 +537,10 @@ Jeder Skill folgt einer konsistenten Anatomie:
 ## ❓ FAQ
 
 **Q: Muss ich etwas außer dem Agent installieren?**
-A: Repository klonen und `bash setup.sh` ausführen. Erkennt Ihren CLI automatisch und installiert die `tgd` CLI mit.
+A: Repository klonen und `bash setup.sh` ausführen. Grundlegende Skills,
+Commands, Hooks und die `tgd` CLI werden ohne globale Paketinstallationen
+konfiguriert. CodeGraph, pnpm und Agent Browser bleiben über die oben
+beschriebenen Setup-Optionen ausdrücklich opt-in.
 
 **Q: Was wenn mein Agent keine Slash Commands unterstützt?**
 A: Sagen Sie "Plane dieses Feature" – tGD mappt Intent automatisch.
@@ -784,26 +801,26 @@ Möchten Sie einen Skill hinzufügen oder tGD verbessern? Siehe [CONTRIBUTING.md
 
 ## 🏷️ Release
 
-### Automatisiert (empfohlen)
-Wenn `VERSION` aktualisiert und auf `main` gepusht wird, erstellt GitHub Actions automatisch einen Tag und Release mit Changelog.
+### Vorbereiten und veröffentlichen (empfohlen)
 
-**So erstellen Sie ein neues Release:**
-1. `VERSION` mit der neuen Version aktualisieren (z.B. `v2026.06.09`)
-2. `TGD_VERSION` in `setup.sh` aktualisieren (CalVer-Format, z.B. `2026-06-09`)
-3. Committen und auf `main` pushen
-4. GitHub Actions erstellt das Release automatisch
+Das Release-Script berechnet den Changelog-Eintrag, aktualisiert `VERSION` und
+`CHANGELOG.md`, committet diese beiden Dateien und pusht den aktuellen Branch.
+Sobald dieser Commit auf `main` landet, erstellt CI den Tag und veröffentlicht
+das GitHub-Release. Das Script selbst bereitet das Release ausschließlich vor;
+es erstellt weder den Tag noch das GitHub-Release.
 
-### Manuell
 ```bash
-# Mit dem Release-Script
-bash scripts/release.sh          # liest Version aus VERSION
-bash scripts/release.sh v2026.06.09   # oder Version angeben
+# Den erzeugten Release-Eintrag prüfen, ohne etwas zu ändern
+bash scripts/release.sh v2026.06.09 --dry-run
 
-# Oder manuell
-git tag v2026.06.09
-git push origin v2026.06.09
-gh release create v2026.06.09 --title "tGD v2026.06.09" --notes "Release-Notizen..."
+# Ohne interaktive Rückfrage vorbereiten, committen und pushen
+bash scripts/release.sh v2026.06.09 --yes
 ```
+
+`tgd --release [version]` delegiert an dasselbe Script. Wenn Sie das Release
+auf einem Feature-Branch vorbereiten, mergen Sie dessen PR nach `main`; CI
+erstellt den Tag und veröffentlicht erst, nachdem der Release-Commit `main`
+erreicht hat.
 
 ---
 
@@ -815,9 +832,11 @@ Apache 2.0 – Nutzen Sie diese Skills in Ihren Projekten, Teams und Tools.
 
 ## 📎 Anhang: Manuelle Konfiguration
 
-> **Hinweis:** Nur nötig wenn `tgd` fehlschlägt oder Sie manuelles Linking bevorzugen.
-
-Diese Befehle spiegeln, was `setup.sh` tut — Symlinks vom Konfigurationsverzeichnis des Agenten in das geklonte Repository. Im Repo-Root ausführen.
+> **Hinweis:** Diese Notfallbefehle erstellen ausschließlich Links. Sie umgehen
+> das Ownership-Manifest, die Kollisionsprüfungen, den Hook-Abgleich und die
+> abschließende Verifikation von tGD; `tgd --uninstall` verwaltet sie daher
+> nicht. Bevorzugen Sie `bash setup.sh` und führen Sie die folgenden Befehle
+> nur aus, wenn Sie die Links bewusst selbst verwalten.
 
 ### Claude Code
 ```bash

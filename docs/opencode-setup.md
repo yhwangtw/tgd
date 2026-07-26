@@ -14,13 +14,14 @@ Instead, we achieve parity through:
 
 This creates an **agent-driven workflow** where skills are selected and executed automatically.
 
-While it is possible to recreate `/spec`, `/plan`, and other commands in OpenCode, this integration intentionally uses an agent-driven approach instead:
+The setup also installs 7 slash commands for explicit lifecycle control. You
+can use either style:
 
 - Skills are selected automatically based on intent
 - Workflows are enforced via `AGENTS.md`
-- No manual command invocation is required
+- `/tgd-*` commands let you select a lifecycle entry point directly
 
-This more closely matches how Claude Code behaves in practice, where skills are triggered automatically rather than manually.
+Natural-language routing remains available when no slash command is used.
 
 ---
 
@@ -34,12 +35,12 @@ git clone https://github.com/openclawyhwang-hub/tGD.git
 
 2. Open the project in OpenCode.
 
-3. Ensure the following files are present in your workspace:
+3. Install the shared skills, commands, and session plugin:
 
-- `AGENTS.md` (root)
-- `skills/` directory
-
-No additional installation is required.
+```bash
+cd tGD
+bash setup.sh
+```
 
 ---
 
@@ -72,7 +73,7 @@ Examples:
 
 The user does **not** need to explicitly request skills.
 
-### 3. Lifecycle Mapping (Implicit Commands)
+### 3. Lifecycle Mapping
 
 The development lifecycle is encoded implicitly:
 
@@ -83,7 +84,9 @@ The development lifecycle is encoded implicitly:
 - REVIEW → `tgd-code-review-and-quality`
 - SHIP → `tgd-shipping-and-launch`
 
-This replaces slash commands like `/spec`, `/plan`, etc.
+The same mappings are available explicitly as `/tgd-define`, `/tgd-plan`,
+`/tgd-develop`, `/tgd-verify`, `/tgd-review`, and `/tgd-release`, with
+`/tgd-map` for project initialization.
 
 ---
 
@@ -145,21 +148,19 @@ These rules are enforced via `AGENTS.md`.
 
 ## Limitations
 
-- No native slash commands (handled via intent mapping instead)
 - Skill invocation depends on model compliance
 
-Despite these, the workflow closely matches Claude Code in practice.
+Use a `/tgd-*` command when you want deterministic lifecycle routing.
 
 ---
 
 ## Plugins (Hooks)
 
-OpenCode supports lifecycle hooks via TypeScript plugins. tGD ships three plugins in `.opencode/plugins/`:
+OpenCode supports lifecycle hooks via TypeScript plugins. tGD ships one plugin in `.opencode/plugins/`:
 
 | Plugin | Hook | Purpose |
 |--------|------|---------|
 | `session-start.ts` | `session.created` | Injects `tgd-router` meta-skill at session start |
-| `sdd-cache.ts` | `tool.execute.before/after` | HTTP cache for `tgd-source-driven-development` doc fetching |
 
 ### Installation
 
@@ -179,10 +180,6 @@ ln -sf "$(pwd)/.opencode/plugins"/* ~/.config/opencode/plugins/
 ### How It Works
 
 **session-start** — Injects the `tgd-router` meta-skill into the agent's context at session start so the router skill is always available.
-
-**safe-edit** — Protects code regions marked with `@safe-edit begin/end` markers in long files.
-
-**sdd-cache** — Caches WebFetch responses with HTTP validator revalidation. Same behavior as the Claude Code hook: only serves from cache when the origin responds `304 Not Modified`.
 
 ---
 
@@ -208,4 +205,5 @@ OpenCode integration works by combining:
 - Strong agent rules (`AGENTS.md`)
 - Automatic skill invocation via reasoning
 
-This results in a **fully agent-driven, production-grade engineering workflow** without requiring plugins or manual commands.
+This results in a production-grade workflow with both automatic skill routing
+and explicit lifecycle commands.

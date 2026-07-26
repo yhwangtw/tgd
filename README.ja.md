@@ -57,27 +57,32 @@ Map → Define → Plan → Develop → Verify → Review → Release
 git clone https://github.com/openclawyhwang-hub/tGD.git && cd tGD
 bash setup.sh
 ```
-> インストール済みCLI（Claude、Codex、Gemini、OpenCode、Pi、Hermes）を自動検出。tgd-agent-browserの依存関係も自動インストール。
+> インストール済みの CLI（Claude、Codex、Gemini、OpenCode、Pi、Hermes）を自動検出し、コアのリンクとフックを設定して、tGD が所有するすべての symlink を ownership manifest に記録します。既存インストールや旧バージョンからの移行でも同じコマンドを再実行できます。認識済みの tGD リンクはその場で移行し、ユーザーのファイルや設定は保持します。
 >
-> これにより `tgd` CLI もPATHにインストールされ、次回から簡単に使えます。
+> サードパーティ製のグローバルツールは opt-in です。インストーラーは `tgd` を `~/.local/bin/tgd` にリンクし、このディレクトリがまだ `PATH` に含まれていない場合は案内を表示します。
 
 ### インストールオプション
 
 | コマンド | 説明 |
 |--------|------|
-| `bash setup.sh` | 初回インストール（クローンしたリポジトリから実行） |
-| `tgd` | tGDのインストールまたは更新（初回インストール後に使用） |
-| `tgd --version` (`-v`) | 現在のバージョンを表示（CalVer：YYYY.M.D） |
-| `tgd --upgrade` (`-u`) | 強制更新：無効なシンボリックリンクをクリーンアップし、すべてのリンク/フックを再構築 |
-| `tgd --uninstall` | すべてのtGD配備を削除（他のファイルには影響しない） |
+| `bash setup.sh` | 新規インストール、再実行による安全な更新、既存環境の移行 |
+| `bash setup.sh --with-tools` | 不足している場合に固定バージョンの CodeGraph／pnpm 依存関係をインストール |
+| `bash setup.sh --with-browser` | 固定バージョンの Agent Browser をインストール／設定（`--with-tools` を含む） |
+| `bash setup.sh --no-deps` | 依存関係をダウンロードせず、コアのリンク／フックのみを設定（オフライン／CI 用） |
+| `tgd` | 初回セットアップ後に同じ安全なインストール／更新を実行 |
+| `tgd --version` (`-v`) | 現在のバージョンを表示（CalVer：YYYY.MM.DD） |
+| `tgd --upgrade` (`-u`) | 管理対象を強制更新し、認識済みの旧リンクを移行 |
+| `tgd --uninstall` | manifest が所有するリンクと tGD hooks のみを削除し、ユーザーファイルと依存関係は保持 |
 
 ### 最新バージョンへの更新
 
 ```bash
-cd ~/tGD && git pull && tgd --upgrade
+cd ~/tGD
+git pull
+bash setup.sh
 ```
 
-GitHub から最新のソースを取得し、すべての symlinks/hooks を再構築します。`$TGD_DIR/<feature>/` 内の既存の機能は保持されます。
+通常の setup コマンドは、新規環境にも既存のインストール済み環境にも使えます。インストール済みバージョンを検出してリンク／フックを更新し、uninstall／reinstall を必要とせずに認識済みの旧リンクを移行します。明示的に更新を要求したい場合は `tgd --upgrade` も利用できます。
 
 ### 2. エージェントを起動
 ```bash
@@ -265,14 +270,12 @@ Jira への同期時、tGD はやみくもに課題を作成しません：
 
 | コマンド | 説明 |
 |--------|------|
-| `bash setup.sh` | 初回インストール（クローンしたリポジトリから実行） |
+| `bash setup.sh` | tGD を安全にインストール、更新、または移行 |
 | `tgd` | tGD のインストールまたは更新（初回インストール後に使用） |
 | `tgd --version` (`-v`) | バージョン表示（CalVer形式） |
-| `tgd --upgrade` (`-u`) | リンクとフックの強制再構築 |
-| `tgd --release` | GitHub リリースを作成（VERSION を読み取り） |
-| `tgd --uninstall` | すべてのtGD配備を削除 |
-
-**最新バージョンへ更新：** `cd ~/tGD && git pull && tgd --upgrade` — ワンライナー。
+| `tgd --upgrade` (`-u`) | 管理対象のリンクとフックを強制更新 |
+| `tgd --release [version]` | VERSION + CHANGELOG を準備して commit／push。公開は CI が実行 |
+| `tgd --uninstall` | tGD が管理するリンクとフックのみを削除 |
 
 ### スラッシュコマンド
 
@@ -523,7 +526,7 @@ tGD には4つの人間ロールがあります。各ロールは共有アーテ
 ## ❓ よくある質問
 
 **Q：エージェント以外にインストールが必要？**
-A：リポジトリをクローンして `bash setup.sh` を実行するだけ。CLI を自動検出し、`tgd` CLI も自動インストールされます。
+A：リポジトリをクローンして `bash setup.sh` を実行してください。コアの skills、commands、hooks、`tgd` CLI はグローバルパッケージを追加せずに設定されます。CodeGraph、pnpm、Agent Browser は上記 setup flags による明示的な opt-in です。
 
 **Q：スラッシュコマンド非対応のエージェントは？**
 A：「この機能を計画して」と自然言語で言うと自動マッピング。
@@ -784,26 +787,19 @@ tGD/
 
 ## 🏷️ リリース
 
-### 自動（推奨）
-`VERSION` を更新して `main` にプッシュすると、GitHub Actions が自動的にタグとリリースを作成します。
+### 準備と公開（推奨）
 
-**新しいバージョンをリリースするには：**
-1. `VERSION` を新しいバージョンに更新（例：`v2026.06.09`）
-2. `setup.sh` の `TGD_VERSION` を更新（CalVer形式、例：`2026-06-09`）
-3. コミットして `main` にプッシュ
-4. GitHub Actions が自動的にリリースを作成
+release script は changelog entry を生成し、`VERSION` と `CHANGELOG.md` を更新して、その2ファイルを commit し、現在の branch に push します。その commit が `main` に到達すると、CI が tag を作成して GitHub release を公開します。
 
-### 手動
 ```bash
-# リリーススクリプトを使用
-bash scripts/release.sh          # VERSION からバージョンを読み取り
-bash scripts/release.sh v2026.06.09   # またはバージョンを指定
+# 変更せずに生成予定の release entry を確認
+bash scripts/release.sh v2026.06.09 --dry-run
 
-# または手動で
-git tag v2026.06.09
-git push origin v2026.06.09
-gh release create v2026.06.09 --title "tGD v2026.06.09" --notes "リリースノート..."
+# 対話プロンプトなしで準備、commit、push
+bash scripts/release.sh v2026.06.09 --yes
 ```
+
+`tgd --release [version]` も同じ script に委譲します。feature branch で準備した場合は PR を `main` に merge してください。CI は release commit が `main` に到達した後にのみ tag と release を公開します。
 
 ---
 
@@ -815,9 +811,7 @@ Apache 2.0 - あなたのプロジェクト、チーム、ツールでこれら�
 
 ## 📎 付録：手動設定
 
-> **注意：** `tgd` が失敗した場合、または手動リンクを希望する場合のみ必要です。
-
-以下のコマンドは `setup.sh` の動作と同じ — 各エージェントの設定ディレクトリからクローンしたリポジトリへのシンボリックリンクを作成します。リポジトリのルートで実行してください。
+> **注意：** 以下は緊急時にリンクだけを作成するコマンドです。tGD の ownership manifest、collision checks、hook reconciliation、final verification を迂回するため、`tgd --uninstall` の管理対象にはなりません。`bash setup.sh` を優先し、リンクを自分で保守する場合にのみ、リポジトリのルートから実行してください。
 
 ### Claude Code
 ```bash

@@ -91,12 +91,11 @@ To enable these, ensure you have the relevant MCP extensions installed in your G
 
 ### Session Hooks
 
-Gemini CLI supports session lifecycle hooks. tGD ships a complete hook configuration in `.gemini/settings.json` with five hooks:
+Gemini CLI supports session lifecycle hooks. tGD installs one `SessionStart` hook and preserves unrelated hooks already present in your settings:
 
 | Hook | Event | Purpose |
 |------|-------|---------|
 | `session-start.sh` | `SessionStart` | Injects `tgd-router` meta-skill |
-| `sdd-cache-pre/post.sh` | `BeforeTool/AfterTool` (WebFetch) | HTTP cache for doc fetching |
 
 #### Installation
 
@@ -104,22 +103,22 @@ Gemini CLI supports session lifecycle hooks. tGD ships a complete hook configura
 bash setup.sh
 ```
 
-Setup auto-detects Gemini CLI and symlinks `settings.json` to `~/.gemini/settings.json`.
+Setup auto-detects Gemini CLI and atomically merges the canonical tGD hook into
+`~/.gemini/settings.json`. It does not replace the settings file or remove
+foreign hooks.
 
 #### Manual Installation
 
 ```bash
-mkdir -p ~/.gemini
-ln -sf "$(pwd)/.gemini/settings.json" ~/.gemini/settings.json
+python3 scripts/merge-agent-hooks.py install \
+  --platform gemini \
+  --repo-root "$(pwd)" \
+  --destination "$HOME/.gemini/settings.json"
 ```
 
 #### How It Works
 
 **session-start** — Injects the `tgd-router` meta-skill into the agent's context at session start so the router skill is always available.
-
-**safe-edit** — Protects code regions marked with `@safe-edit begin/end` markers in long files.
-
-**sdd-cache** — Caches WebFetch responses with HTTP `ETag`/`Last-Modified` revalidation. Only serves from cache when the origin responds `304 Not Modified`.
 
 ### Explicit Context Loading
 
@@ -133,7 +132,7 @@ This is useful when you want to ensure a specific workflow is followed without w
 
 ## Slash Commands
 
-The repo ships 8 slash commands under `.gemini/commands/` that map to the development lifecycle. Gemini CLI auto-discovers them when you run from the project root.
+The repo ships 7 slash commands under `.gemini/commands/` that map to the development lifecycle. `bash setup.sh` links them into the user-level Gemini commands directory.
 
 | Command | What it does |
 |---------|--------------|

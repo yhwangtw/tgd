@@ -52,32 +52,43 @@ Map → Define → Plan → Develop → Verify → Review → Release
 
 ## 🚀 快速開始
 
-### 1. Clone & 安装
+### 1. Clone & 安裝
 ```bash
 git clone https://github.com/openclawyhwang-hub/tGD.git && cd tGD
 bash setup.sh
 ```
-> 自動偵測已安裝的 CLI（Claude、Codex、Gemini、OpenCode、Pi、Hermes）並完成設定。agent-browser 依賴自動安裝。
+> 自動偵測已安裝的 CLI（Claude、Codex、Gemini、OpenCode、Pi、Hermes），
+> 安裝核心連結與 hooks，並將每個由 tGD 管理的 symlink 記錄在 ownership manifest。
+> 既有安裝與舊版安裝可直接重跑同一個指令：已辨識的 tGD 連結
+> 會原地遷移，其他檔案與設定則會保留。
 >
-> 這也會將 `tgd` CLI 安裝到你的 PATH，方便後續使用。
+> 第三方全域工具改為明確 opt-in。安裝器會將 `tgd` 連結到
+> `~/.local/bin/tgd`；若該目錄尚未加入 `PATH`，會顯示提示。
 
 ### 安裝選項
 
 | 指令 | 說明 |
 |------|------|
-| `bash setup.sh` | 首次安裝（從 clone 的 repo 執行） |
-| `tgd` | 安裝或更新 tGD（首次安裝後使用） |
-| `tgd --version` (`-v`) | 顯示當前版本（CalVer：YYYY.M.D） |
-| `tgd --upgrade` (`-u`) | 強制重建：清除無效 symlink 並重新建立所有連結和 hooks |
-| `tgd --uninstall` | 移除所有 tGD 部署，不影響其他設定 |
+| `bash setup.sh` | 安裝、刷新，或安全遷移既有安裝 |
+| `bash setup.sh --with-tools` | 缺少時安裝固定版本的 CodeGraph／pnpm 相依工具 |
+| `bash setup.sh --with-browser` | 安裝並設定固定版本的 Agent Browser（同時啟用 `--with-tools`） |
+| `bash setup.sh --no-deps` | 安裝核心連結與 hooks，但不下載相依套件（offline／CI 模式） |
+| `tgd` | 首次 setup 後執行相同的安全安裝／刷新流程 |
+| `tgd --version` (`-v`) | 顯示當前版本（CalVer：YYYY.MM.DD） |
+| `tgd --upgrade` (`-u`) | 強制執行受管理的刷新，並遷移已辨識的舊版連結 |
+| `tgd --uninstall` | 只移除 manifest 管理的連結與 tGD hooks；保留使用者檔案及相依套件 |
 
 ### 更新到最新版本
 
 ```bash
-cd ~/tGD && git pull && tgd --upgrade
+cd ~/tGD
+git pull
+bash setup.sh
 ```
 
-從 GitHub 拉最新原始碼並重建所有 symlinks/hooks。`$TGD_DIR/<feature>/` 裡的現有功能不受影響。
+一般的 setup 指令同時適用於全新與既有安裝。它會偵測已安裝版本、刷新
+連結與 hooks，並遷移已辨識的舊版連結，不需要先解除安裝再重裝。
+若要明確要求刷新，也可使用 `tgd --upgrade`。
 
 ### 2. 啟動你的 Agent
 ```bash
@@ -289,14 +300,12 @@ flowchart LR
 
 | 指令 | 說明 |
 |------|------|
-| `bash setup.sh` | 首次安裝（從 clone 的 repo 執行） |
+| `bash setup.sh` | 安全地安裝、刷新或遷移 tGD |
 | `tgd` | 安裝或更新 tGD（首次安裝後使用） |
 | `tgd --version` (`-v`) | 顯示版本（CalVer 格式） |
-| `tgd --upgrade` (`-u`) | 強制重建連結和 hooks |
-| `tgd --release` | 建立 GitHub release（讀取 VERSION） |
-| `tgd --uninstall` | 移除所有 tGD 部署 |
-
-**更新到最新版本：** `cd ~/tGD && git pull && tgd --upgrade` — 一行搞定。
+| `tgd --upgrade` (`-u`) | 強制刷新受管理的連結與 hooks |
+| `tgd --release [version]` | 準備 VERSION + CHANGELOG、commit 並 push；由 CI 發布 |
+| `tgd --uninstall` | 只移除由 tGD 管理的連結與 hooks |
 
 ### Slash 指令
 
@@ -547,7 +556,9 @@ Skills 使用**漸進式揭露**——agent 只在需要時載入細節，保持
 ## ❓ 常見問題
 
 **Q：除了 agent 之外還需要裝什麼嗎？**
-A：Clone repo 後執行 `bash setup.sh`。它自動偵測你的 CLI 並完成設定。`tgd` CLI 也會自動安裝。
+A：Clone repo 後執行 `bash setup.sh`。核心 skills、commands、hooks 與
+`tgd` CLI 都不需要安裝全域套件即可完成設定。CodeGraph、pnpm 和 Agent
+Browser 仍需透過上方的 setup flags 明確 opt-in。
 
 **Q：我的 agent 不支援 slash command 怎麼辦？**
 A：用自然語言說「規劃這個功能」——tGD 自動將意圖映射到對應的 skill。
@@ -785,26 +796,24 @@ tGD/
 
 ## 🏷️ Release
 
-### 自動化（推薦）
-當 `VERSION` 更新並推送到 `main` 時，GitHub Actions 會自動建立 tag 和附帶 changelog 的 release。
+### 準備與發布（推薦）
 
-**發布新版本：**
-1. 更新 `VERSION` 為新版本（例如 `v2026.06.09`）
-2. 更新 `setup.sh` 裡的 `TGD_VERSION`（CalVer 格式，例如 `2026-06-09`）
-3. Commit 並推送到 `main`
-4. GitHub Actions 自動建立 release
+`release.sh` 只負責 prepare，不直接建立 tag 或 GitHub release。它會計算
+changelog 條目、更新 `VERSION` 與 `CHANGELOG.md`、commit 這兩個檔案，
+再 push 當前 branch。當該 commit 進入 `main` 後，CI 才會建立 tag 並發布
+GitHub release。
 
-### 手動
 ```bash
-# 使用 release 腳本
-bash scripts/release.sh          # 從 VERSION 讀取版本
-bash scripts/release.sh v2026.06.09   # 或指定版本
+# 預覽產生的 release 條目，不修改任何內容
+bash scripts/release.sh v2026.06.09 --dry-run
 
-# 或手動操作
-git tag v2026.06.09
-git push origin v2026.06.09
-gh release create v2026.06.09 --title "tGD v2026.06.09" --notes "Release notes..."
+# 不顯示互動提示，直接準備、commit 並 push
+bash scripts/release.sh v2026.06.09 --yes
 ```
+
+`tgd --release [version]` 會轉交給同一支腳本。若在 feature branch 上準備，
+請將 PR merge 到 `main`；只有 release commit 進入 `main` 後，CI 才會建立
+tag 並發布。
 
 ---
 
@@ -816,9 +825,10 @@ Apache 2.0 - 在你的專案、團隊和工具中使用這些 skills。
 
 ## 📎 附錄：手動設定
 
-> **注意：** 只在 `tgd` 失敗或你偏好手動連結時才需要。
-
-以下指令與 `setup.sh` 的做法一致——從各 agent 的設定目錄建立 symlink 指向 clone 下來的 repo。請在 repo 根目錄執行。
+> **注意：** 以下緊急指令只會建立連結，會繞過 tGD 的 ownership
+> manifest、collision checks、hook reconciliation 與 final verification，
+> 因此 `tgd --uninstall` 不會管理它們。請優先使用 `bash setup.sh`；只有
+> 在你打算自行維護這些連結時，才於 repo 根目錄執行下列指令。
 
 ### Claude Code
 ```bash

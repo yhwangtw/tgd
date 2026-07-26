@@ -6,7 +6,7 @@
   },
   "homepage": "https://github.com/openclawyhwang-hub/tGD",
   "repository": "https://github.com/openclawyhwang-hub/tGD",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "commands": "./.claude/commands",
   "skills": "./skills",
   "agents": [
