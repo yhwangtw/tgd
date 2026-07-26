@@ -223,6 +223,13 @@ class SetupContractDocumentationTest(unittest.TestCase):
         self.assertNotIn("Remove all tGD deployments", cli)
         self.assertNotIn("Installed to /usr/local/bin/tgd", cli)
 
+    def test_setup_completion_message_uses_platform_native_invocation(self) -> None:
+        setup = (ROOT / "setup.sh").read_text(encoding="utf-8")
+
+        self.assertIn("Codex: \\$tgd-map", setup)
+        self.assertIn("Claude/Gemini/OpenCode/Pi/Hermes: /tgd-map", setup)
+        self.assertNotIn("Then type '/tgd-map' to initialize.", setup)
+
     def test_setup_ci_covers_supported_platforms_and_round_trip(self) -> None:
         workflow = (
             ROOT / ".github" / "workflows" / "test-plugin-install.yml"
