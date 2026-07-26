@@ -114,7 +114,9 @@ MCP settings in `~/.gemini/settings.json`.
 
 ### Session Hooks
 
-Gemini CLI supports session lifecycle hooks. tGD installs one `SessionStart` hook and preserves unrelated hooks already present in your settings:
+Gemini CLI supports session lifecycle hooks. tGD can install one `SessionStart`
+hook as an explicit opt-in and preserves unrelated hooks already present in
+your settings:
 
 | Hook | Event | Purpose |
 |------|-------|---------|
@@ -123,11 +125,12 @@ Gemini CLI supports session lifecycle hooks. tGD installs one `SessionStart` hoo
 #### Installation
 
 ```bash
-bash setup.sh
+bash setup.sh --with-session-preamble
 ```
 
-Setup auto-detects Gemini CLI and atomically merges the canonical tGD hook into
-`~/.gemini/settings.json`. It does not replace the settings file or remove
+The opt-in setup atomically merges the canonical tGD hook into
+`~/.gemini/settings.json`. Plain `bash setup.sh` removes only a managed or
+verified legacy tGD hook; it does not replace the settings file or remove
 foreign hooks.
 
 #### Manual Installation

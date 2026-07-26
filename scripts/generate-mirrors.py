@@ -5,7 +5,7 @@ single source of truth: .claude/commands/*.md
 
 Outputs (committed to the repo — platforms read them at install time):
 
-    .codex/prompts/<name>.md            # /<name> header + same body
+    .codex/skills/<name>/SKILL.md       # on-demand Codex skill ($<name>)
     .opencode/commands/<name>.md        YAML frontmatter + same body
     .gemini/commands/<name>.toml        description + prompt=\"\"\"body\"\"\"
     .pi/prompts/<name>.md               # frontmatter description + same body
@@ -34,17 +34,15 @@ from typing import List, Tuple
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SOURCE_DIR = REPO_ROOT / ".claude" / "commands"
-CODEX_DIR = REPO_ROOT / ".codex" / "prompts"
+CODEX_DIR = REPO_ROOT / ".codex" / "skills"
 OPENCODE_DIR = REPO_ROOT / ".opencode" / "commands"
 GEMINI_DIR = REPO_ROOT / ".gemini" / "commands"
 PI_PROMPTS_DIR = REPO_ROOT / ".pi" / "prompts"
 
-# Always-on layer: one canonical preamble → the per-platform always-load files.
-# Claude, Codex, and Gemini inject the same bounded preamble through command
-# hooks. OpenCode's plugin is logging-only and does not inject model context.
+# Optional session layer: one canonical preamble → hooks or supported
+# platform-specific append files. Plain setup leaves this layer disabled.
 PREAMBLE_SRC = REPO_ROOT / "hooks" / "session-preamble.md"
-PI_INSTRUCTIONS = REPO_ROOT / ".pi" / "instructions.md"
-HERMES_AGENTS = REPO_ROOT / ".hermes" / "AGENTS.md"
+PI_APPEND_SYSTEM = REPO_ROOT / ".pi" / "APPEND_SYSTEM.md"
 
 # Session integrations have intentionally different contracts.
 PREAMBLE_HOOKS = [
@@ -52,7 +50,6 @@ PREAMBLE_HOOKS = [
     "hooks/codex/session-start.sh",
     "hooks/gemini/session-start.sh",
 ]
-OPENCODE_SESSION_PLUGIN = ".opencode/plugins/session-start.ts"
 
 # The 7 lifecycle commands, in pipeline order (drives pi registration order).
 COMMANDS = [
@@ -115,7 +112,13 @@ def check_pi_safe(name: str, body: str) -> None:
 
 
 def gen_codex(name: str, description: str, body: str) -> str:
-    return f"# /{name}\n\n{description}\n{body}"
+    return (
+        "---\n"
+        f"name: {name}\n"
+        f"description: {description}\n"
+        "---\n"
+        f"{body}"
+    )
 
 
 def gen_opencode(name: str, description: str, body: str) -> str:
@@ -166,11 +169,7 @@ def read_preamble() -> str:
     return text.strip() + "\n"
 
 
-def gen_pi_instructions(preamble: str) -> str:
-    return preamble
-
-
-def gen_hermes_agents(preamble: str) -> str:
+def gen_pi_append_system(preamble: str) -> str:
     return preamble
 
 
@@ -181,16 +180,6 @@ def check_session_integrations() -> None:
             die(f"session-start hook missing: {rel_path}")
         if "session-preamble.md" not in hook.read_text(encoding="utf-8"):
             die(f"{rel_path}: does not load hooks/session-preamble.md")
-
-    plugin = REPO_ROOT / OPENCODE_SESSION_PLUGIN
-    if not plugin.is_file():
-        die(f"session-start plugin missing: {OPENCODE_SESSION_PLUGIN}")
-    plugin_text = plugin.read_text(encoding="utf-8")
-    if "client.app.log" not in plugin_text:
-        die(f"{OPENCODE_SESSION_PLUGIN}: expected availability logging")
-    if "additionalContext" in plugin_text:
-        die(f"{OPENCODE_SESSION_PLUGIN}: logging plugin must not claim context injection")
-
 
 def write_if_changed(path: Path, content: str, changed: List[str]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -212,16 +201,23 @@ def main() -> int:
 
     changed: List[str] = []
     for name, description, body in entries:
-        write_if_changed(CODEX_DIR / f"{name}.md", gen_codex(name, description, body), changed)
+        write_if_changed(
+            CODEX_DIR / name / "SKILL.md",
+            gen_codex(name, description, body),
+            changed,
+        )
         write_if_changed(OPENCODE_DIR / f"{name}.md", gen_opencode(name, description, body), changed)
         write_if_changed(GEMINI_DIR / f"{name}.toml", gen_gemini(name, description, body), changed)
         write_if_changed(PI_PROMPTS_DIR / f"{name}.md", gen_pi_prompt(name, description, body), changed)
 
-    # Always-on layer: regenerate the Pi/Hermes always-load files from the
-    # single canonical preamble so they can't drift by hand.
+    # Optional layer: regenerate Pi's documented system-append file from the
+    # canonical preamble. setup.sh only links it when explicitly requested.
     preamble = read_preamble()
-    write_if_changed(PI_INSTRUCTIONS, gen_pi_instructions(preamble), changed)
-    write_if_changed(HERMES_AGENTS, gen_hermes_agents(preamble), changed)
+    write_if_changed(
+        PI_APPEND_SYSTEM,
+        gen_pi_append_system(preamble),
+        changed,
+    )
 
     if changed:
         print(f"[generate-mirrors] Updated {len(changed)} file(s):")

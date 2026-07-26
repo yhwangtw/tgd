@@ -58,11 +58,12 @@ git clone https://github.com/openclawyhwang-hub/tGD.git && cd tGD
 bash setup.sh
 ```
 > Erkennt installierte CLIs (Claude, Codex, Gemini, OpenCode, Pi und Hermes)
-> automatisch, installiert die grundlegenden Links/Hooks und erfasst jeden
+> automatisch, installiert Commands und on demand Skills und erfasst jeden
 > tGD-eigenen Symlink in einem Ownership-Manifest. Derselbe Befehl kann auch
 > für bestehende und ältere Installationen erneut ausgeführt werden: Erkannte
 > tGD-Links werden direkt migriert, fremde Dateien und Einstellungen bleiben
-> erhalten. Das Setup benötigt Python 3.9 oder neuer.
+> erhalten. Standardmäßig wird kein Session-Kontext injiziert. Das Setup
+> benötigt Python 3.9 oder neuer.
 >
 > Das normale Setup führt kein `npm install -g` aus; globale Werkzeuge von
 > Drittanbietern sind ausdrücklich opt-in. Wenn das gebündelte
@@ -75,7 +76,7 @@ bash setup.sh
 > dürfen die Node-Anforderung überspringen. Jeder UA-Skill wird unter
 > `~/.agents/skills/<name>` und das Plugin-Root unter
 > `~/.understand-anything-plugin` verlinkt. Bei einer älteren oder fehlenden
-> Node-Laufzeit installiert setup weiterhin die Kern-Links und Hooks und
+> Node-Laufzeit installiert setup weiterhin die on demand Einstiegspunkte und
 > meldet den UA-Status als degraded. Mit `--no-deps` werden alle Downloads und
 > Builds von Abhängigkeiten übersprungen. Der Installer verlinkt `tgd` unter
 > `~/.local/bin/tgd` und weist darauf hin, falls dieses Verzeichnis noch nicht
@@ -88,15 +89,16 @@ bash setup.sh
 | `bash setup.sh` | tGD installieren, aktualisieren oder eine bestehende Installation sicher migrieren |
 | `bash setup.sh --with-tools` | Globale npm-Installationen der fest versionierten Werkzeuge CodeGraph und Fallback-pnpm ausdrücklich erlauben |
 | `bash setup.sh --with-browser` | Den fest versionierten Agent Browser installieren/konfigurieren (schließt `--with-tools` ein) |
-| `bash setup.sh --no-deps` | Nur grundlegende Links/Hooks installieren und alle Downloads von Abhängigkeiten sowie den bundled-UA-Build überspringen (Offline-/CI-Modus) |
+| `bash setup.sh --with-session-preamble` | Einen begrenzten tGD Session-Preamble auf unterstützten Plattformen explizit aktivieren |
+| `bash setup.sh --no-deps` | Commands und on demand Skills installieren und alle Downloads von Abhängigkeiten sowie den bundled-UA-Build überspringen (Offline-/CI-Modus) |
 | `tgd` | Nach dem ersten Setup dieselbe sichere Installation/Aktualisierung ausführen |
 | `tgd --version` (`-v`) | Aktuelle Version anzeigen (CalVer: YYYY.MM.DD) |
 | `tgd --upgrade` (`-u`) | Eine verwaltete Aktualisierung erzwingen und erkannte ältere Links migrieren |
 | `tgd --uninstall` | Im Manifest erfasste Links und tGD-Hooks entfernen; Benutzerdateien und Abhängigkeiten beibehalten |
 
-Codex verlangt eine einmalige Prüfung neuer oder geänderter User-Hooks. Wenn
-nach dem Setup ein ausstehender Hook gemeldet wird, öffnen Sie `/hooks` in
-Codex und vertrauen Sie der tGD-Definition.
+Mit `--with-session-preamble` kann Codex eine einmalige Prüfung des User-Hooks
+verlangen. Wenn ein ausstehender Hook gemeldet wird, öffnen Sie `/hooks` und
+vertrauen Sie der tGD-Definition.
 
 ### Auf neueste Version aktualisieren
 
@@ -126,6 +128,9 @@ hermes   # Hermes Agent
 ```
 /tgd-map
 ```
+> Bei Claude, Gemini, OpenCode, Pi und Hermes verwenden Sie `/tgd-map`; bei
+> Codex `$tgd-map`. Natürlichsprachige Anfragen werden ebenfalls on demand
+> passenden Skills zugeordnet.
 > Der Agent scannt die Codebasis und erstellt `CONTEXT.md`; bei Frontend-Code enthält es eine UI Landscape mit Verweisen auf das echte Design-System, Tokens, Styles und Komponenten.
 
 ### 4. Erstes Feature bauen
@@ -698,7 +703,7 @@ tGD/
 ├── .claude/commands/           # Claude Code Slash Commands
 ├── .gemini/commands/           # Gemini CLI Commands
 ├── .opencode/commands/         # OpenCode Commands
-├── .codex/prompts/             # Codex CLI Prompts
+├── .codex/skills/              # Codex Lifecycle Skills
 ├── scripts/                    # Setup & Validierung
 └── docs/                       # Plattformspezifische Guides
 ```
@@ -879,16 +884,16 @@ ln -sf "$(pwd)/.gemini/commands"/* ~/.gemini/commands/
 ```
 
 ### Codex CLI
-Codex verlässt sich auf **Skill-Autoerkennung** statt auf Slash Commands.
+Codex verwendet on demand Skills statt Custom Prompts.
 ```bash
-ln -sf "$(pwd)/skills" ~/.codex/skills/tGD
-ln -sf "$(pwd)/.codex/prompts"/* ~/.codex/prompts/
+mkdir -p ~/.agents/skills
+for s in skills/*/ .codex/skills/*/; do ln -sf "$(pwd)/$s" ~/.agents/skills/"$(basename "$s")"; done
 ```
-*Auslöser:* Sagen Sie „Plane dieses Feature" – Codex ruft den Skill automatisch auf.
+*Auslöser:* `$tgd-plan` eingeben oder „Plane dieses Feature" sagen.
 
 ### OpenCode
 ```bash
-ln -sf "$(pwd)/skills" ~/.config/opencode/skills/tGD
+for s in skills/*/; do ln -sf "$(pwd)/$s" ~/.config/opencode/skills/"$(basename "$s")"; done
 ln -sf "$(pwd)/.opencode/commands"/* ~/.config/opencode/commands/
 ```
 

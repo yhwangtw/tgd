@@ -57,9 +57,9 @@ Map → Define → Plan → Develop → Verify → Review → Release
 git clone https://github.com/openclawyhwang-hub/tGD.git && cd tGD
 bash setup.sh
 ```
-> インストール済みの CLI（Claude、Codex、Gemini、OpenCode、Pi、Hermes）を自動検出し、コアのリンクとフックを設定して、tGD が所有するすべての symlink を ownership manifest に記録します。既存インストールや旧バージョンからの移行でも同じコマンドを再実行できます。認識済みの tGD リンクはその場で移行し、ユーザーのファイルや設定は保持します。setup の実行には Python 3.9 以降が必要です。
+> インストール済みの CLI（Claude、Codex、Gemini、OpenCode、Pi、Hermes）を自動検出し、commands と on demand skills を設定して、tGD が所有するすべての symlink を ownership manifest に記録します。既存インストールや旧バージョンからの移行でも同じコマンドを再実行できます。認識済みの tGD リンクはその場で移行し、ユーザーのファイルや設定は保持します。session context はデフォルトでは注入されません。setup の実行には Python 3.9 以降が必要です。
 >
-> 通常の setup は `npm install -g` を実行せず、サードパーティ製のグローバルツールは明示的な opt-in です。bundled Understand-Anything が未ビルドの場合、リポジトリで固定された pnpm を Corepack 経由（または既にインストール済みの同一バージョンの pnpm）で使用し、`vendor/understand-anything/` 内にローカル依存関係をインストールしてビルドすることがあります。UA のビルドには Node.js 22.12 以降が必要です。source と lockfile の fingerprint が変わると再ビルドし、一致する既存 artifact だけが Node 要件を回避できます。すべての UA skill は `~/.agents/skills/<name>` に、plugin root は `~/.understand-anything-plugin` にリンクされます。Node が古い、または存在しない場合でも、setup はコアのリンクと hooks をインストールし、UA の状態を degraded として報告します。すべての依存関係のダウンロードとビルドを省略するには `--no-deps` を使用してください。インストーラーは `tgd` を `~/.local/bin/tgd` にリンクし、このディレクトリがまだ `PATH` に含まれていない場合は案内を表示します。
+> 通常の setup は `npm install -g` を実行せず、サードパーティ製のグローバルツールは明示的な opt-in です。bundled Understand-Anything が未ビルドの場合、リポジトリで固定された pnpm を Corepack 経由（または既にインストール済みの同一バージョンの pnpm）で使用し、`vendor/understand-anything/` 内にローカル依存関係をインストールしてビルドすることがあります。UA のビルドには Node.js 22.12 以降が必要です。source と lockfile の fingerprint が変わると再ビルドし、一致する既存 artifact だけが Node 要件を回避できます。すべての UA skill は `~/.agents/skills/<name>` に、plugin root は `~/.understand-anything-plugin` にリンクされます。Node が古い、または存在しない場合でも、setup は on demand entries をインストールし、UA の状態を degraded として報告します。すべての依存関係のダウンロードとビルドを省略するには `--no-deps` を使用してください。インストーラーは `tgd` を `~/.local/bin/tgd` にリンクし、このディレクトリがまだ `PATH` に含まれていない場合は案内を表示します。
 
 ### インストールオプション
 
@@ -68,14 +68,15 @@ bash setup.sh
 | `bash setup.sh` | 新規インストール、再実行による安全な更新、既存環境の移行 |
 | `bash setup.sh --with-tools` | 不足している CodeGraph とフォールバック pnpm の固定バージョンを npm でグローバルインストールすることを明示的に許可 |
 | `bash setup.sh --with-browser` | 固定バージョンの Agent Browser をインストール／設定（`--with-tools` を含む） |
-| `bash setup.sh --no-deps` | すべての依存関係のダウンロードと bundled UA のビルドをスキップし、コアのリンク／フックのみを設定（オフライン／CI 用） |
+| `bash setup.sh --with-session-preamble` | 対応プラットフォームで限定的な tGD session preamble を明示的に有効化 |
+| `bash setup.sh --no-deps` | すべての依存関係のダウンロードと bundled UA のビルドをスキップし、commands と on demand skills のみを設定（オフライン／CI 用） |
 | `tgd` | 初回セットアップ後に同じ安全なインストール／更新を実行 |
 | `tgd --version` (`-v`) | 現在のバージョンを表示（CalVer：YYYY.MM.DD） |
 | `tgd --upgrade` (`-u`) | 管理対象を強制更新し、認識済みの旧リンクを移行 |
 | `tgd --uninstall` | manifest が所有するリンクと tGD hooks のみを削除し、ユーザーファイルと依存関係は保持 |
 
-Codex では、新規または変更された user hook を一度レビューする必要が
-あります。setup 後に保留中の hook が表示された場合は、Codex で
+`--with-session-preamble` を使用した場合、Codex では user hook の
+レビューが必要になることがあります。保留中の hook が表示されたら
 `/hooks` を開き、tGD の定義を確認して信頼してください。
 
 ### 最新バージョンへの更新
@@ -102,6 +103,8 @@ hermes   # Hermes Agent
 ```
 /tgd-map
 ```
+> Claude、Gemini、OpenCode、Pi、Hermes では `/tgd-map`、Codex では
+> `$tgd-map` を使用します。自然言語の依頼も on demand skill にマッチします。
 > エージェントがコードベースをスキャンし、フロントエンドがある場合は実際のデザインシステム、トークン、スタイル、コンポーネントを指す UI Landscape を含む `CONTEXT.md` を作成します。
 
 ### 4. 最初の機能を構築
@@ -666,7 +669,7 @@ tGD/
 ├── .claude/commands/           # Claude Code スラッシュコマンド
 ├── .gemini/commands/           # Gemini CLI コマンド
 ├── .opencode/commands/         # OpenCode コマンド
-├── .codex/prompts/             # Codex CLI プロンプト
+├── .codex/skills/              # Codex lifecycle skills
 ├── scripts/                    # セットアップ & 検証
 └── docs/                       # プラットフォーム別ガイド
 ```
@@ -834,16 +837,16 @@ ln -sf "$(pwd)/.gemini/commands"/* ~/.gemini/commands/
 ```
 
 ### Codex CLI
-Codexはスラッシュコマンドではなく**スキル自動検出**に依存します。
+Codex は custom prompts ではなく on demand Skills を使用します。
 ```bash
-ln -sf "$(pwd)/skills" ~/.codex/skills/tGD
-ln -sf "$(pwd)/.codex/prompts"/* ~/.codex/prompts/
+mkdir -p ~/.agents/skills
+for s in skills/*/ .codex/skills/*/; do ln -sf "$(pwd)/$s" ~/.agents/skills/"$(basename "$s")"; done
 ```
-*トリガー：*「この機能を計画して」と言うと、Codexが自動的にスキルを呼び出します。
+*トリガー：* `$tgd-plan` を入力するか、「この機能を計画して」と伝えます。
 
 ### OpenCode
 ```bash
-ln -sf "$(pwd)/skills" ~/.config/opencode/skills/tGD
+for s in skills/*/; do ln -sf "$(pwd)/$s" ~/.config/opencode/skills/"$(basename "$s")"; done
 ln -sf "$(pwd)/.opencode/commands"/* ~/.config/opencode/commands/
 ```
 

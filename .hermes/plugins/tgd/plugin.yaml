@@ -1,8 +1,9 @@
 name: tgd
 version: "1.0.0"
-description: "tGD — Agentic PDLC pipeline. 7 lifecycle commands + session-start meta-skill injection."
+description: "tGD — Agentic PDLC pipeline. 7 lifecycle commands + opt-in bounded session preamble."
 provides_hooks:
-  - on_session_start
+  - pre_llm_call
+  - on_session_end
 provides_commands:
   - tgd-map
   - tgd-define

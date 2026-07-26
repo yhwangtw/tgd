@@ -1,188 +1,113 @@
 # Hermes Agent Setup
 
-This guide explains how to use tGD with [Hermes Agent](https://github.com/NousResearch/hermes-agent) by Nous Research.
+This guide explains how to use tGD with [Hermes Agent](https://github.com/NousResearch/hermes-agent).
 
 ## Overview
 
-Hermes Agent is an open-source AI agent framework that runs in your terminal, messaging platforms (Telegram, Discord, Slack, and 15+ others), and IDEs. It supports a full plugin system with custom tools, hooks, and slash commands.
+tGD integrates with Hermes through its native Python plugin and skill systems:
 
-tGD integrates with Hermes via a **Python plugin** that provides:
+- 7 explicit slash commands (`/tgd-map` through `/tgd-release`)
+- Directly discovered tGD skills
+- An optional bounded session preamble
 
-- **7 slash commands** (`/tgd-map` → `/tgd-release`)
-- **Session-start hook** (auto-injects the tgd-router meta-skill)
-- **29 skills** (symlinked into `~/.hermes/skills/`)
-
-This gives Hermes the same lifecycle entry points as the command-hook
-platforms, using Hermes's own direct context-injection mechanism.
-
----
+Plain `bash setup.sh` installs the commands and skills only. It does not install
+a global `AGENTS.md` and does not inject tGD into every session.
 
 ## Installation
 
-### Prerequisites
-
-- [Hermes Agent](https://hermes-agent.nousresearch.com/docs/) installed (`hermes` on PATH)
-
-### Setup
-
-1. Clone the repository:
-
 ```bash
-git clone https://github.com/openclawyhwang-hub/tGD.git && cd tGD
-```
-
-2. Run the installer:
-
-```bash
+git clone https://github.com/openclawyhwang-hub/tGD.git
+cd tGD
 bash setup.sh
 ```
 
-The installer auto-detects Hermes and configures:
-- Skills → `~/.hermes/skills/tgd-*` (individual symlinks)
-- Plugin → `~/.hermes/plugins/tgd/` (symlink to `.hermes/plugins/tgd/`)
-- AGENTS.md → `~/.hermes/AGENTS.md`
+Setup links each skill and the tGD command plugin into the default Hermes home
+and every existing Hermes profile. Start Hermes and inspect `/plugins`; the
+`tgd` plugin should report seven registered commands.
 
-3. Start Hermes:
+To opt in to a bounded context reminder at the first LLM call of each session:
 
 ```bash
-hermes
+bash setup.sh --with-session-preamble
 ```
 
-4. Verify the plugin is loaded:
+Running plain `bash setup.sh` again disables that optional preamble without
+removing the commands or skills.
 
-```
-/plugins
-```
-
-You should see `tgd` with 7 commands registered.
-
----
-
-## How It Works
-
-### 1. Slash Commands
-
-tGD registers 7 slash commands available in both CLI and gateway sessions:
+## Lifecycle Commands
 
 | Command | Description |
 |---------|-------------|
 | `/tgd-map` | Scan and understand the existing project context |
-| `/tgd-define` | Create spec, PRD, and acceptance criteria |
-| `/tgd-plan` | Break the spec into ordered implementation tasks |
-| `/tgd-develop` | Implement tasks incrementally with TDD |
+| `/tgd-define` | Create the PRD, conditional design artifacts, and SPEC |
+| `/tgd-plan` | Break the approved specification into implementation tasks |
+| `/tgd-develop` | Implement incrementally with TDD |
 | `/tgd-verify` | Run tests and validate completion claims |
-| `/tgd-review` | Multi-axis code review before merge |
-| `/tgd-release` | Create version tag and changelog |
+| `/tgd-review` | Run the multi-axis review gate |
+| `/tgd-release` | Complete the release workflow |
 
-Command prompts are sourced from `.claude/commands/*.md` — single source of truth shared with Claude Code, Codex CLI, and OpenCode.
+The plugin reads the canonical command bodies from `.claude/commands/*.md`, so
+Hermes does not maintain a second copy of the workflow text. Trailing command
+text is appended as additional context:
 
-### 2. Session-Start Hook
-
-The `on_session_start` hook automatically injects the `tgd-router` meta-skill
-into every new Hermes session. Claude, Codex, and Gemini instead inject the
-smaller bounded session preamble, which tells the agent to load the router on
-demand.
-
-The hook uses Hermes's context injection mechanism: the meta-skill content is appended to the first user message (not the system prompt), preserving prompt caching.
-
-### 3. Skills
-
-All 28 tGD skills are symlinked into `~/.hermes/skills/` and auto-discovered by Hermes's skill system. Skills follow the standard SKILL.md format with YAML frontmatter.
-
----
-
-## Usage
-
-### CLI
-
-```bash
-hermes
-# In session:
-/tgd-map
-```
-
-### Messaging Gateway (Telegram, Discord, etc.)
-
-If Hermes is running as a gateway, the same slash commands are available:
-
-```
-/tgd-map
-```
-
-### Passing Arguments
-
-All commands accept trailing text as additional context:
-
-```
+```text
 /tgd-develop add user authentication with OAuth2
 ```
 
----
+## Optional Session Preamble
+
+Hermes only uses return values from `pre_llm_call` for context injection.
+Accordingly, the tGD plugin registers `pre_llm_call`, not
+`on_session_start`. The hook remains dormant unless setup creates the explicit
+opt-in marker at `~/.tgd/session-preamble.enabled`.
+
+When enabled, the plugin reads `hooks/session-preamble.md` and returns it once
+per session as `{"context": "..."}`. The full `tgd-router` skill is still
+loaded on demand rather than being copied into every session.
+
+## Skills
+
+Setup links each `skills/<name>/SKILL.md` directory directly into:
+
+```text
+~/.hermes/skills/<name>/
+```
+
+The same links are installed under each existing
+`~/.hermes/profiles/<profile>/skills/` directory.
 
 ## Troubleshooting
 
-### Plugin not showing
+Check that the plugin and skills are visible:
 
-```bash
-# Check plugin status
+```text
 /plugins
-
-# Verbose plugin discovery
-HERMES_PLUGINS_DEBUG=1 hermes
-
-# Check logs
-hermes logs --level WARNING | grep -i plugin
-```
-
-### Skills not discovered
-
-```bash
-# List installed skills
-hermes skills list
-
-# Reload skills
 /reload-skills
 ```
 
-### Session-start hook not firing
-
-The hook fires on new sessions only. Start a fresh session:
-
-```
-/new
-```
-
-Or restart Hermes:
+For CLI diagnostics:
 
 ```bash
-hermes gateway restart
+HERMES_PLUGINS_DEBUG=1 hermes
+hermes skills list
+hermes logs --level WARNING
 ```
 
----
+If commands work but the optional preamble does not, verify that you ran
+`bash setup.sh --with-session-preamble`, start a fresh session, and check that
+`~/.tgd/session-preamble.enabled` is a tGD-managed symlink.
 
 ## File Structure
 
-```
+```text
 tGD/
 ├── .hermes/
-│   ├── AGENTS.md              # Agent instructions (Verification Iron Law)
 │   └── plugins/
 │       └── tgd/
-│           ├── plugin.yaml    # Plugin manifest
-│           └── __init__.py    # register(ctx): 7 commands + on_session_start hook
-└── ...
+│           ├── plugin.yaml
+│           └── __init__.py    # 7 commands + optional pre_llm_call hook
+├── hooks/
+│   └── session-preamble.md
+└── skills/
+    └── <name>/SKILL.md
 ```
-
----
-
-## Differences from Claude Code
-
-| Feature | Claude Code | Hermes Agent |
-|---------|-------------|--------------|
-| Skills | `~/.claude/skills/` symlinks | `~/.hermes/skills/` symlinks |
-| Commands | `.claude/commands/*.md` | Plugin `register_command()` |
-| Session hook | `hooks/hooks.json` (JSON) | Plugin `on_session_start` (Python) |
-| Hook format | `{priority, message}` JSON | `ctx.register_command()` + `ctx.register_hook()`; session hook returns a `{"context": ...}` dict |
-| Prompt source | `.claude/commands/*.md` | Same files, read by plugin |
-
-Both platforms share the exact same command prompt files and skill content — only the delivery mechanism differs.

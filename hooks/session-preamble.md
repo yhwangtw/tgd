@@ -1,16 +1,15 @@
 # tGD — Session Preamble
 
 <!--
-CANONICAL SOURCE for the tGD always-on layer.
-Edit THIS file only. The per-platform always-load files are generated from it:
-  .pi/instructions.md      (→ ~/.pi/agent/instructions.md)
-  .hermes/AGENTS.md        (→ each Hermes profile home)
+CANONICAL SOURCE for the optional tGD session layer.
+Edit THIS file only. Pi's supported append file is generated from it:
+  .pi/APPEND_SYSTEM.md      (→ ~/.pi/agent/APPEND_SYSTEM.md)
 Run: python3 scripts/generate-mirrors.py   (CI "Mirror sync" fails on drift)
-The command-hook platforms (Claude, Codex, Gemini) inject this bounded
-preamble at session start. The preamble tells the agent to load tgd-router on
-demand; it does not inject the full router into every session. OpenCode's
-plugin only logs session availability, so its routing comes from installed
-skills, AGENTS.md, and commands.
+With explicit setup opt-in, Claude, Codex, and Gemini inject this bounded
+preamble at session start, Pi appends it to the system prompt, and Hermes
+injects it once per session via pre_llm_call. It tells the agent to load
+tgd-router on demand; it does not inject the full router. OpenCode has no tGD
+session plugin and routes through installed skills and commands.
 
 NOT generated from this file (deliberately): .claude/CLAUDE.md. That file is
 instructions for agents developing tGD ITSELF — setup.sh never installs it
@@ -44,6 +43,6 @@ Never use "should", "probably", "seems to" when describing code state.
 
 ## How tGD Works
 
-- Run the lifecycle in order: `/tgd-map` → `/tgd-define` → `/tgd-plan` → `/tgd-develop` → `/tgd-verify` → `/tgd-review` → `/tgd-release`. Each command has pre-flight checks; do not skip phases.
+- Run the lifecycle in order: `tgd-map` → `tgd-define` → `tgd-plan` → `tgd-develop` → `tgd-verify` → `tgd-review` → `tgd-release`. Use the platform's explicit entry syntax (`/tgd-*` where custom commands are supported, `$tgd-*` in Codex) or request the workflow by name. Each entry has pre-flight checks; do not skip phases.
 - **Load the `tgd-rules` skill** for the full core rules (Iron Law, tone per phase, the Command Closing Report, human sign-off). It governs every phase.
 - **Load the `tgd-router` skill** when you are not already inside a `/tgd-*` command and need to discover which skill applies to a task.

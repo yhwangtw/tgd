@@ -34,7 +34,7 @@ of truth: **`.claude/commands/*.md`**. The other four are generated mirrors:
 | Path | Role |
 |---|---|
 | `.claude/commands/*.md` | ✏️ Source — edit here |
-| `.codex/prompts/*.md` | 🤖 Generated — do not edit |
+| `.codex/skills/*/SKILL.md` | 🤖 Generated — do not edit |
 | `.opencode/commands/*.md` | 🤖 Generated — do not edit |
 | `.gemini/commands/*.toml` | 🤖 Generated — do not edit |
 | `.pi/prompts/*.md` | 🤖 Generated — do not edit |

@@ -645,6 +645,23 @@ def remove_path(manifest_path: Path, path: Path) -> None:
         _remove_path_unlocked(manifest_path, path)
 
 
+def retire_owned_link(
+    manifest_path: Path,
+    path: Path,
+    expected_target: Path,
+) -> bool:
+    """Remove an owned exact-target link even when its source was retired."""
+    with manifest_lock(manifest_path):
+        manifest = load_manifest(manifest_path)
+        entry = entry_for(manifest, path)
+        if entry is None:
+            return False
+        if normalize_path(entry["target"]) != expected_target:
+            return False
+        _remove_path_unlocked(manifest_path, path)
+        return True
+
+
 def _remove_all_unlocked(manifest_path: Path) -> Dict[str, int]:
     manifest = load_manifest(manifest_path)
     removed = 0
@@ -953,6 +970,14 @@ def build_parser() -> argparse.ArgumentParser:
     add_manifest_argument(remove_parser)
     remove_parser.add_argument("--path", required=True, help="Managed symlink path")
 
+    retire_parser = commands.add_parser(
+        "retire-owned-link",
+        help="Remove an exact managed link whose source may no longer exist",
+    )
+    add_manifest_argument(retire_parser)
+    retire_parser.add_argument("--path", required=True)
+    retire_parser.add_argument("--target", required=True)
+
     remove_all_parser = commands.add_parser(
         "remove-all",
         help="Remove all matching managed symlinks and clear the manifest",
@@ -1036,6 +1061,20 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
             path = normalize_path(args.path)
             remove_path(manifest_path, path)
             print("removed path={}".format(path))
+        elif args.command == "retire-owned-link":
+            path = normalize_path(args.path)
+            target = normalize_path(args.target)
+            removed = retire_owned_link(
+                manifest_path,
+                path,
+                target,
+            )
+            print(
+                "{} path={}".format(
+                    "removed" if removed else "preserved",
+                    path,
+                )
+            )
         elif args.command == "remove-all":
             result = remove_all(manifest_path)
             print("removed={removed} kept={kept}".format(**result))

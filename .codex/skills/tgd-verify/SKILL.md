@@ -1,6 +1,7 @@
-# /tgd-verify
-
-Verify — prove it works with debugging and test pyramid
+---
+name: tgd-verify
+description: Verify — prove it works with debugging and test pyramid
+---
 
 **🛑 Pre-flight: Environment Check**
 - [ ] `$TGD_DIR/CONTEXT.md` exists. No substitutes — `/tgd-map` produces it unconditionally (Tier 1).

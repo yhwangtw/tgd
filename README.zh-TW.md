@@ -58,9 +58,10 @@ git clone https://github.com/openclawyhwang-hub/tGD.git && cd tGD
 bash setup.sh
 ```
 > 自動偵測已安裝的 CLI（Claude、Codex、Gemini、OpenCode、Pi、Hermes），
-> 安裝核心連結與 hooks，並將每個由 tGD 管理的 symlink 記錄在 ownership manifest。
+> 安裝指令與 on demand skills，並將每個由 tGD 管理的 symlink 記錄在 ownership manifest。
 > 既有安裝與舊版安裝可直接重跑同一個指令：已辨識的 tGD 連結
-> 會原地遷移，其他檔案與設定則會保留。執行 setup 需要 Python 3.9 以上。
+> 會原地遷移，其他檔案與設定則會保留。預設不注入 session context。
+> 執行 setup 需要 Python 3.9 以上。
 >
 > 一般 setup 不會執行 `npm install -g`；第三方全域工具必須明確
 > opt-in。若 bundled Understand-Anything 尚未建置，一般 setup 可能透過
@@ -71,7 +72,7 @@ bash setup.sh
 > Node 版本要求。每個 UA skill 的 canonical link 都位於
 > `~/.agents/skills/<name>`，plugin root 則位於
 > `~/.understand-anything-plugin`。若 Node 版本較舊或不存在，setup 仍會
-> 安裝核心連結與 hooks，並如實回報 UA 為 degraded。使用 `--no-deps`
+> 安裝核心按需入口，並如實回報 UA 為 degraded。使用 `--no-deps`
 > 可跳過所有相依套件下載與建置。安裝器會將 `tgd` 連結到
 > `~/.local/bin/tgd`；若該目錄尚未加入 `PATH`，會顯示提示。
 
@@ -82,14 +83,15 @@ bash setup.sh
 | `bash setup.sh` | 安裝、刷新，或安全遷移既有安裝 |
 | `bash setup.sh --with-tools` | 明確允許透過 npm 全域安裝固定版本的 CodeGraph 與備援 pnpm |
 | `bash setup.sh --with-browser` | 安裝並設定固定版本的 Agent Browser（同時啟用 `--with-tools`） |
-| `bash setup.sh --no-deps` | 只安裝核心連結與 hooks，跳過所有相依套件下載及 bundled UA 建置（offline／CI 模式） |
+| `bash setup.sh --with-session-preamble` | 明確啟用受支援平台的精簡 tGD session preamble |
+| `bash setup.sh --no-deps` | 只安裝指令與 on demand skills，跳過所有相依套件下載及 bundled UA 建置（offline／CI 模式） |
 | `tgd` | 首次 setup 後執行相同的安全安裝／刷新流程 |
 | `tgd --version` (`-v`) | 顯示當前版本（CalVer：YYYY.MM.DD） |
 | `tgd --upgrade` (`-u`) | 強制執行受管理的刷新，並遷移已辨識的舊版連結 |
 | `tgd --uninstall` | 只移除 manifest 管理的連結與 tGD hooks；保留使用者檔案及相依套件 |
 
-Codex 會要求一次性審查新增或變更的 user hook。若 setup 後顯示待審查
-hook，請在 Codex 開啟 `/hooks`，確認並信任 tGD 定義。
+使用 `--with-session-preamble` 時，Codex 可能要求一次性審查 user hook。
+若顯示待審查 hook，請在 Codex 開啟 `/hooks`，確認並信任 tGD 定義。
 
 ### 更新到最新版本
 
@@ -128,6 +130,8 @@ hermes
 ```
 /tgd-map
 ```
+> Claude、Gemini、OpenCode、Pi、Hermes 使用 `/tgd-map`；Codex 使用
+> `$tgd-map`。自然語言請求也會按需匹配 skills。
 > Agent 掃描你的程式碼庫並建立 `CONTEXT.md`；若有前端，會附上 UI Landscape，指向真正的 design system、tokens、styles 與元件來源。
 
 ### 4. 建造你的第一個功能
@@ -711,7 +715,7 @@ tGD/
 ├── .claude/commands/                  # Claude Code 指令
 ├── .gemini/commands/                  # Gemini CLI 指令
 ├── .opencode/commands/                # OpenCode 指令
-├── .codex/prompts/                    # Codex CLI prompts
+├── .codex/skills/                     # Codex lifecycle skills
 ├── .pi/prompts/                       # Pi Coding Agent 指令
 ├── scripts/                           # 安裝 & 驗證
 └── docs/                              # 平台指南
@@ -865,16 +869,16 @@ ln -sf "$(pwd)/.gemini/commands"/* ~/.gemini/commands/
 ```
 
 ### Codex CLI
-Codex 依賴 **skill 自動偵測**而非 slash command。
+Codex 使用 on demand Skills，而不是 custom prompts。
 ```bash
-ln -sf "$(pwd)/skills" ~/.codex/skills/tGD
-ln -sf "$(pwd)/.codex/prompts"/* ~/.codex/prompts/
+mkdir -p ~/.agents/skills
+for s in skills/*/ .codex/skills/*/; do ln -sf "$(pwd)/$s" ~/.agents/skills/"$(basename "$s")"; done
 ```
-*觸發方式：* 說「規劃這個功能」或「開始 tgd plan」——Codex 會自動呼叫 skill。
+*觸發方式：* 輸入 `$tgd-plan`，或直接說「規劃這個功能」。
 
 ### OpenCode
 ```bash
-ln -sf "$(pwd)/skills" ~/.config/opencode/skills/tGD
+for s in skills/*/; do ln -sf "$(pwd)/$s" ~/.config/opencode/skills/"$(basename "$s")"; done
 ln -sf "$(pwd)/.opencode/commands"/* ~/.config/opencode/commands/
 ```
 

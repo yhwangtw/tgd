@@ -60,7 +60,9 @@ class SetupContractDocumentationTest(unittest.TestCase):
                 readme = (ROOT / filename).read_text(encoding="utf-8")
                 self.assertIn("bash setup.sh --with-tools", readme)
                 self.assertIn("bash setup.sh --with-browser", readme)
+                self.assertIn("bash setup.sh --with-session-preamble", readme)
                 self.assertIn("bash setup.sh --no-deps", readme)
+                self.assertIn("on demand", readme)
                 self.assertIn("npm install -g", readme)
                 self.assertIn("Corepack", readme)
                 self.assertIn("Node.js 22.12", readme)
@@ -90,7 +92,9 @@ class SetupContractDocumentationTest(unittest.TestCase):
             encoding="utf-8"
         )
 
-        self.assertIn("one `SessionStart` hook", guide)
+        self.assertIn("one `SessionStart`", guide)
+        self.assertIn("explicit opt-in", guide)
+        self.assertIn("bash setup.sh --with-session-preamble", guide)
         self.assertIn("merges", guide)
         self.assertIn("7 slash commands", guide)
         self.assertIn("`~/.gemini/settings.json`", guide)
@@ -160,17 +164,12 @@ class SetupContractDocumentationTest(unittest.TestCase):
         guide = (ROOT / "docs" / "opencode-setup.md").read_text(
             encoding="utf-8"
         )
-        plugin = (
-            ROOT / ".opencode" / "plugins" / "session-start.ts"
-        ).read_text(encoding="utf-8")
 
         self.assertIn("7 slash commands", guide)
-        self.assertIn("one native plugin", guide)
         self.assertIn("native TypeScript plugins", guide)
-        self.assertIn("structured availability log via `client.app.log`", guide)
+        self.assertIn("does not install a session plugin", guide)
         self.assertIn("does not install a global `AGENTS.md`", guide)
         self.assertIn("model compliance", guide)
-        self.assertIn("not a UI notification", guide)
         self.assertIn("does not inject model context", guide)
         self.assertNotIn("session-availability log/notification", guide)
         self.assertNotIn("Workflows are enforced via `AGENTS.md`", guide)
@@ -181,19 +180,32 @@ class SetupContractDocumentationTest(unittest.TestCase):
         self.assertNotIn("three plugins", guide)
         self.assertNotIn("**safe-edit**", guide)
         self.assertNotIn("**sdd-cache**", guide)
-        self.assertIn("client.app.log", plugin)
-        self.assertNotIn("readFileSync", plugin)
-        self.assertNotIn("additionalContext", plugin)
+        self.assertNotIn("client.app.log", guide)
 
     def test_session_preamble_describes_bounded_hook_context(self) -> None:
         preamble = (ROOT / "hooks" / "session-preamble.md").read_text(
             encoding="utf-8"
         )
 
-        self.assertIn("The command-hook platforms", preamble)
+        self.assertIn("explicit setup opt-in", preamble)
         self.assertIn("preamble at session start", preamble)
         self.assertIn("does not inject the full router", preamble)
-        self.assertIn("plugin only logs session availability", preamble)
+        self.assertIn("OpenCode has no tGD", preamble)
+
+    def test_platform_adapters_use_supported_activation_surfaces(self) -> None:
+        generator = (ROOT / "scripts" / "generate-mirrors.py").read_text(
+            encoding="utf-8"
+        )
+        hermes_plugin = (
+            ROOT / ".hermes" / "plugins" / "tgd" / "__init__.py"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn('.codex" / "skills"', generator)
+        self.assertNotIn('.codex" / "prompts"', generator)
+        self.assertIn("APPEND_SYSTEM.md", generator)
+        self.assertNotIn("PI_INSTRUCTIONS", generator)
+        self.assertIn('register_hook("pre_llm_call"', hermes_plugin)
+        self.assertNotIn('register_hook("on_session_start"', hermes_plugin)
 
     def test_plugin_manifest_matches_repository_license(self) -> None:
         manifest = (ROOT / ".claude-plugin" / "plugin.json").read_text(

@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import json
+import importlib.util
 from pathlib import Path
 import subprocess
 import unittest
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -56,6 +58,26 @@ class HookOutputContractTests(unittest.TestCase):
         payload = self.run_hook("hooks/gemini/session-start.sh")
         self.assert_bounded_preamble(payload)
         self.assertNotIn("hookEventName", payload["hookSpecificOutput"])
+
+    def test_hermes_preamble_is_dormant_by_default_and_once_per_session(self) -> None:
+        plugin_path = ROOT / ".hermes" / "plugins" / "tgd" / "__init__.py"
+        spec = importlib.util.spec_from_file_location("tgd_hermes_test", plugin_path)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        module.TGD_DIR = ROOT
+        module._INJECTED_SESSIONS.clear()
+
+        with mock.patch.object(module, "_session_preamble_enabled", return_value=False):
+            self.assertIsNone(module._pre_llm_call(session_id="default"))
+
+        with mock.patch.object(module, "_session_preamble_enabled", return_value=True):
+            first = module._pre_llm_call(session_id="enabled")
+            self.assertIn("Verification Iron Law", first["context"])
+            self.assertIsNone(module._pre_llm_call(session_id="enabled"))
+            module._on_session_end(session_id="enabled")
+            self.assertIsNotNone(module._pre_llm_call(session_id="enabled"))
 
 
 if __name__ == "__main__":

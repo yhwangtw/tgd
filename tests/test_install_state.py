@@ -412,6 +412,50 @@ class InstallStateCliTests(unittest.TestCase):
         self.assertFalse(os.path.lexists(destination))
         self.assertEqual(self.read_manifest()["managed_paths"], {})
 
+    def test_retire_owned_link_allows_a_deleted_source_target(self) -> None:
+        target = self.repo / "retired" / "instructions.md"
+        target.parent.mkdir()
+        target.write_text("old tGD integration\n", encoding="utf-8")
+        destination = self.home / ".pi" / "agent" / "instructions.md"
+        self.assertEqual(self.link(destination, target).returncode, 0)
+        target.unlink()
+
+        result = self.run_cli(
+            "retire-owned-link",
+            "--manifest",
+            str(self.manifest),
+            "--path",
+            str(destination),
+            "--target",
+            str(target),
+        )
+
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertFalse(os.path.lexists(destination))
+        self.assertEqual({}, self.read_manifest()["managed_paths"])
+
+    def test_retire_owned_link_preserves_a_different_recorded_target(self) -> None:
+        target = self.repo / "installed"
+        other = self.repo / "expected"
+        target.mkdir()
+        other.mkdir()
+        destination = self.home / ".config" / "tool" / "tgd"
+        self.assertEqual(self.link(destination, target).returncode, 0)
+
+        result = self.run_cli(
+            "retire-owned-link",
+            "--manifest",
+            str(self.manifest),
+            "--path",
+            str(destination),
+            "--target",
+            str(other),
+        )
+
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertTrue(destination.is_symlink())
+        self.assertIn(str(destination), self.read_manifest()["managed_paths"])
+
     def test_remove_preserves_foreign_replacement_swapped_at_quarantine(
         self,
     ) -> None:

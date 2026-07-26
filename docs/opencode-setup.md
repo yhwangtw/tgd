@@ -5,8 +5,8 @@ This guide explains how to use tGD skills and lifecycle commands with OpenCode.
 ## Overview
 
 OpenCode supports native TypeScript plugins, custom `/commands`, and skill
-discovery through its built-in `skill` tool. Setup installs the skills,
-commands, and a logging plugin; it does not install a global `AGENTS.md`.
+discovery through its built-in `skill` tool. tGD setup installs skills and
+commands; it does not install a session plugin and does not install a global `AGENTS.md`.
 
 tGD routing comes from:
 
@@ -18,9 +18,7 @@ Repository-local instructions such as `AGENTS.md` may still apply when they are
 part of the project opened in OpenCode, but setup does not install them
 globally or rely on them for routing.
 
-Setup also installs 7 slash commands and one native plugin that emits a tGD
-structured availability log via `client.app.log`. The log is operational only:
-it is not a UI notification and does not inject model context. You can use
+Setup installs 7 slash commands. It does not inject model context. You can use
 either routing style:
 
 - Ask naturally and let the model select a discovered skill based on intent
@@ -41,7 +39,7 @@ git clone https://github.com/openclawyhwang-hub/tGD.git
 
 2. Open the project in OpenCode.
 
-3. Install the shared skills, commands, and session plugin:
+3. Install the shared skills and commands:
 
 ```bash
 cd tGD
@@ -168,36 +166,12 @@ Use a `/tgd-*` command when you want deterministic lifecycle routing.
 
 ---
 
-## Plugins (Hooks)
+## Session Context
 
-OpenCode supports lifecycle hooks via TypeScript plugins. tGD ships one plugin in `.opencode/plugins/`:
-
-| Plugin | Hook | Purpose |
-|--------|------|---------|
-| `session-start.ts` | `session.created` | Emits a structured availability log through `client.app.log` |
-
-### Installation
-
-```bash
-bash setup.sh
-```
-
-Setup auto-detects OpenCode and symlinks plugins to `~/.config/opencode/plugins/`.
-
-### Manual Installation
-
-```bash
-mkdir -p ~/.config/opencode/plugins
-ln -sf "$(pwd)/.opencode/plugins"/* ~/.config/opencode/plugins/
-```
-
-### How It Works
-
-**session-start** — Calls `client.app.log` with a structured availability
-message when OpenCode creates a session. This is diagnostic logging, not a UI
-notification, and it does not inject model context. Natural-language routing
-comes from discovered skills plus model compliance; `/tgd-*` commands provide
-explicit lifecycle entry points.
+Although OpenCode supports native TypeScript plugins, tGD deliberately does
+not install a session plugin. Plain setup and `--with-session-preamble` both
+leave OpenCode context unchanged; routing comes from direct skill discovery
+and the explicit `/tgd-*` commands.
 
 ---
 
@@ -224,8 +198,7 @@ OpenCode integration works by combining:
 - Structured skills (this repo)
 - Model-driven skill selection from OpenCode's discovered skills
 - Explicit lifecycle commands
-- A native plugin for structured session-availability logging
 
 This provides both natural-language skill routing (subject to model compliance)
 and explicit lifecycle commands, without installing global agent instructions
-or injecting context from the plugin.
+or injecting session context.

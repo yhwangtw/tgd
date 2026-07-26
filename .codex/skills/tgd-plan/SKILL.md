@@ -1,6 +1,7 @@
-# /tgd-plan
-
-Plan — decompose specs into small, verifiable tasks with acceptance criteria
+---
+name: tgd-plan
+description: Plan — decompose specs into small, verifiable tasks with acceptance criteria
+---
 
 **🛑 Pre-flight: Environment Check**
 - [ ] `$TGD_DIR/CONTEXT.md` exists. No substitutes — `/tgd-map` produces it unconditionally (Tier 1).

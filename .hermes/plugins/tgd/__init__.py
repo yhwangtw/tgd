@@ -1,8 +1,9 @@
 """
 tGD Plugin for Hermes Agent.
 
-Registers 7 lifecycle slash commands (/tgd-map ... /tgd-release) and an
-on_session_start hook that injects the tgd-router meta-skill.
+Registers 7 lifecycle slash commands (/tgd-map ... /tgd-release). An optional
+pre_llm_call hook injects the bounded session preamble only when setup created
+the explicit opt-in marker.
 
 Command prompts are sourced from ~/tGD/.claude/commands/*.md — single source
 of truth, shared with Claude Code / Codex / OpenCode.
@@ -11,7 +12,7 @@ of truth, shared with Claude Code / Codex / OpenCode.
 import os
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Set
 
 logger = logging.getLogger(__name__)
 
@@ -83,34 +84,50 @@ def _make_handler(cmd_name: str):
 
 
 # ---------------------------------------------------------------------------
-# Session-start hook — inject tgd-router meta-skill
+# Optional pre-LLM hook — inject the bounded preamble once per session
 # ---------------------------------------------------------------------------
 
-def _on_session_start(session_id: str = "", **kwargs):
-    """Inject tgd-router meta-skill content at session start.
+_INJECTED_SESSIONS: Set[str] = set()
 
-    Equivalent to Claude Code's SessionStart hook (hooks/session-start.sh).
-    Uses pre_llm_call-style context injection: returns a string that gets
-    appended to the first user message.
-    """
-    del kwargs  # model, platform, etc.
 
-    if TGD_DIR is None:
-        logger.debug("tGD: TGD_DIR not found, skipping session-start injection")
-        return None
-
-    meta_skill_path = TGD_DIR / "skills" / "tgd-router" / "SKILL.md"
-    if not meta_skill_path.exists():
-        logger.debug("tGD: tgd-router SKILL.md not found at %s", meta_skill_path)
-        return None
-
-    content = meta_skill_path.read_text(encoding="utf-8")
-    return {
-        "context": (
-            "tGD loaded. Use the skill discovery flowchart to find the right "
-            "skill for your task.\n\n" + content
+def _session_preamble_enabled() -> bool:
+    """Return true only after explicit setup opt-in."""
+    if os.environ.get("TGD_SESSION_PREAMBLE") == "1":
+        return True
+    state_dir = Path(
+        os.environ.get(
+            "TGD_STATE_DIR",
+            os.path.expanduser("~/.tgd"),
         )
-    }
+    )
+    return (state_dir / "session-preamble.enabled").is_file()
+
+
+def _pre_llm_call(session_id: str = "", **kwargs):
+    """Inject bounded tGD guidance once per session when explicitly enabled."""
+    del kwargs
+
+    if not _session_preamble_enabled() or TGD_DIR is None:
+        return None
+
+    session_key = session_id or "__unknown_session__"
+    if session_key in _INJECTED_SESSIONS:
+        return None
+
+    preamble_path = TGD_DIR / "hooks" / "session-preamble.md"
+    if not preamble_path.exists():
+        logger.debug("tGD: session preamble not found at %s", preamble_path)
+        return None
+
+    _INJECTED_SESSIONS.add(session_key)
+    return {"context": preamble_path.read_text(encoding="utf-8")}
+
+
+def _on_session_end(session_id: str = "", **kwargs):
+    """Release the once-per-session bookkeeping when Hermes closes a session."""
+    del kwargs
+    if session_id:
+        _INJECTED_SESSIONS.discard(session_id)
 
 
 # ---------------------------------------------------------------------------
@@ -139,7 +156,7 @@ _COMMAND_DESCRIPTIONS = {
 
 
 def register(ctx):
-    """Register all tGD commands and hooks with Hermes."""
+    """Register all tGD commands and the dormant optional context hook."""
     # Register slash commands
     for cmd in _TGD_COMMANDS:
         ctx.register_command(
@@ -149,8 +166,8 @@ def register(ctx):
         )
         logger.debug("tGD: registered command /%s", cmd)
 
-    # Register session-start hook for meta-skill injection
-    ctx.register_hook("on_session_start", _on_session_start)
-    logger.debug("tGD: registered on_session_start hook")
+    ctx.register_hook("pre_llm_call", _pre_llm_call)
+    ctx.register_hook("on_session_end", _on_session_end)
+    logger.debug("tGD: registered optional pre_llm_call hook")
 
-    logger.info("tGD plugin registered: %d commands + session-start hook", len(_TGD_COMMANDS))
+    logger.info("tGD plugin registered: %d commands", len(_TGD_COMMANDS))

@@ -112,6 +112,12 @@ exec /bin/ln "$@"
                 self.repo / "scripts" / script_name,
             )
 
+        (self.repo / "hooks").mkdir()
+        shutil.copy2(
+            SOURCE_ROOT / "hooks" / "session-preamble.enabled",
+            self.repo / "hooks" / "session-preamble.enabled",
+        )
+
         skill_dir = self.repo / "skills" / "tgd-rules"
         skill_dir.mkdir(parents=True)
         shutil.copy2(
@@ -391,10 +397,7 @@ exec /bin/ln "$@"
         self.assertFalse(os.path.lexists(installed_cli))
         self.assertFalse((self.home / ".tgd-installed-version").exists())
 
-    def test_exact_historical_pi_instructions_migrate_idempotently(self) -> None:
-        source_instructions = self.repo / ".pi" / "instructions.md"
-        source_instructions.parent.mkdir()
-        shutil.copy2(SOURCE_ROOT / ".pi" / "instructions.md", source_instructions)
+    def test_exact_historical_pi_instructions_retire_idempotently(self) -> None:
         installed_instructions = self.home / ".pi" / "agent" / "instructions.md"
         installed_instructions.parent.mkdir(parents=True)
         installed_instructions.write_text(
@@ -411,26 +414,19 @@ exec /bin/ln "$@"
         second = self._run_setup("--no-deps")
         self._assert_success(second)
 
-        self.assertTrue(installed_instructions.is_symlink())
-        self.assertEqual(
-            source_instructions.resolve(),
-            installed_instructions.resolve(),
-        )
+        self.assertFalse(os.path.lexists(installed_instructions))
         manifest = json.loads(
             (self.home / ".tgd" / "install-manifest.json").read_text(
                 encoding="utf-8"
             )
         )
-        self.assertIn(str(installed_instructions), manifest["managed_paths"])
+        self.assertNotIn(str(installed_instructions), manifest["managed_paths"])
 
         uninstalled = self._run_setup("--uninstall")
         self._assert_success(uninstalled)
         self.assertFalse(os.path.lexists(installed_instructions))
 
     def test_historical_cleanup_supports_a_home_path_containing_pipe(self) -> None:
-        source_instructions = self.repo / ".pi" / "instructions.md"
-        source_instructions.parent.mkdir()
-        shutil.copy2(SOURCE_ROOT / ".pi" / "instructions.md", source_instructions)
         pipe_home = self.root / "home|company"
         installed_instructions = pipe_home / ".pi" / "agent" / "instructions.md"
         installed_instructions.parent.mkdir(parents=True)
@@ -444,16 +440,9 @@ exec /bin/ln "$@"
         result = self._run_setup("--no-deps", env=env)
 
         self._assert_success(result)
-        self.assertTrue(installed_instructions.is_symlink())
-        self.assertEqual(
-            source_instructions.resolve(),
-            installed_instructions.resolve(),
-        )
+        self.assertFalse(os.path.lexists(installed_instructions))
 
     def test_modified_historical_pi_instructions_are_preserved(self) -> None:
-        source_instructions = self.repo / ".pi" / "instructions.md"
-        source_instructions.parent.mkdir()
-        shutil.copy2(SOURCE_ROOT / ".pi" / "instructions.md", source_instructions)
         installed_instructions = self.home / ".pi" / "agent" / "instructions.md"
         installed_instructions.parent.mkdir(parents=True)
         modified = LEGACY_PI_INSTRUCTIONS + "\nUser addition.\n"
@@ -463,7 +452,6 @@ exec /bin/ln "$@"
 
         self._assert_success(result)
         self.assertIn("Preserved modified historical-looking file", result.stdout)
-        self.assertIn("Keeping existing user path", result.stdout)
         self.assertFalse(installed_instructions.is_symlink())
         self.assertEqual(modified, installed_instructions.read_text(encoding="utf-8"))
 
@@ -1256,11 +1244,13 @@ exit 1
 
     def test_command_verification_requires_each_canonical_source_target(self) -> None:
         self._write_fake("codex", "exit 0")
-        prompts = self.repo / ".codex" / "prompts"
-        prompts.mkdir(parents=True)
+        skills = self.repo / ".codex" / "skills"
+        skills.mkdir(parents=True)
         for index in range(6):
-            (prompts / f"tgd-{index}.md").write_text(
-                f"# command {index}\n",
+            skill = skills / f"tgd-{index}"
+            skill.mkdir()
+            (skill / "SKILL.md").write_text(
+                f"---\nname: tgd-{index}\ndescription: command {index}\n---\n",
                 encoding="utf-8",
             )
         foreign = self.home / ".codex" / "prompts" / "tgd-custom.md"
@@ -1271,6 +1261,138 @@ exit 1
 
         self.assertNotEqual(0, result.returncode, result.stdout)
         self.assertIn("6/7 canonical commands", result.stdout)
+
+    def test_codex_uses_on_demand_skills_not_deprecated_prompts(self) -> None:
+        self._write_fake("codex", "exit 0")
+        lifecycle_skills = self.repo / ".codex" / "skills"
+        lifecycle_skills.mkdir(parents=True)
+        for name in (
+            "tgd-map",
+            "tgd-define",
+            "tgd-plan",
+            "tgd-develop",
+            "tgd-verify",
+            "tgd-review",
+            "tgd-release",
+        ):
+            skill = lifecycle_skills / name
+            skill.mkdir()
+            (skill / "SKILL.md").write_text(
+                f"---\nname: {name}\ndescription: {name}\n---\n",
+                encoding="utf-8",
+            )
+
+        result = self._run_setup("--no-deps")
+
+        self._assert_success(result)
+        for source in lifecycle_skills.iterdir():
+            installed = self.home / ".agents" / "skills" / source.name
+            self.assertTrue(installed.is_symlink(), str(installed))
+            self.assertEqual(source.resolve(), installed.resolve())
+        self.assertFalse(os.path.lexists(self.home / ".codex" / "skills" / "tGD"))
+        self.assertFalse(os.path.lexists(self.home / ".codex" / "prompts"))
+
+    def test_session_preamble_is_opt_in_and_plain_setup_removes_it(self) -> None:
+        hook = self.repo / "hooks" / "codex" / "session-start.sh"
+        hook.parent.mkdir(parents=True)
+        shutil.copy2(SOURCE_ROOT / "hooks" / "codex" / "session-start.sh", hook)
+        preamble = self.repo / "hooks" / "session-preamble.md"
+        shutil.copy2(SOURCE_ROOT / "hooks" / "session-preamble.md", preamble)
+        codex_config = self.home / ".codex"
+        codex_config.mkdir()
+
+        enabled = self._run_setup("--with-session-preamble", "--no-deps")
+        self._assert_success(enabled)
+        hook_config = codex_config / "hooks.json"
+        self.assertTrue(hook_config.is_file())
+        self.assertIn(
+            str(hook.resolve()),
+            hook_config.read_text(encoding="utf-8"),
+        )
+
+        disabled = self._run_setup("--no-deps")
+        self._assert_success(disabled)
+        if hook_config.exists():
+            self.assertNotIn(
+                str(hook.resolve()),
+                hook_config.read_text(encoding="utf-8"),
+            )
+
+    def test_pi_append_system_is_opt_in_and_legacy_instructions_retire(self) -> None:
+        pi_source = self.repo / ".pi" / "APPEND_SYSTEM.md"
+        pi_source.parent.mkdir()
+        pi_source.write_text("Use tGD on demand.\n", encoding="utf-8")
+        pi_home = self.home / ".pi" / "agent"
+        pi_home.mkdir(parents=True)
+        legacy_source = self.repo / ".pi" / "instructions.md"
+        legacy_source.write_text("legacy\n", encoding="utf-8")
+        legacy_install = pi_home / "instructions.md"
+        legacy_install.symlink_to(legacy_source)
+
+        enabled = self._run_setup("--with-session-preamble", "--no-deps")
+        self._assert_success(enabled)
+        append_system = pi_home / "APPEND_SYSTEM.md"
+        self.assertTrue(append_system.is_symlink())
+        self.assertEqual(pi_source.resolve(), append_system.resolve())
+        self.assertFalse(os.path.lexists(legacy_install))
+
+        disabled = self._run_setup("--no-deps")
+        self._assert_success(disabled)
+        self.assertFalse(os.path.lexists(append_system))
+
+    def test_plain_setup_clears_manifest_for_a_retired_dangling_link(self) -> None:
+        retired_source = self.repo / ".pi" / "instructions.md"
+        retired_source.parent.mkdir()
+        retired_source.write_text("retired tGD source\n", encoding="utf-8")
+        installed = self.home / ".pi" / "agent" / "instructions.md"
+        linked = subprocess.run(
+            [
+                sys.executable,
+                str(self.repo / "scripts" / "install-state.py"),
+                "link",
+                "--manifest",
+                str(self.home / ".tgd" / "install-manifest.json"),
+                "--path",
+                str(installed),
+                "--target",
+                str(retired_source),
+            ],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=False,
+        )
+        self.assertEqual(0, linked.returncode, linked.stdout)
+        retired_source.unlink()
+        self.assertTrue(installed.is_symlink())
+        self.assertFalse(installed.exists())
+
+        result = self._run_setup("--no-deps")
+
+        self._assert_success(result)
+        self.assertFalse(os.path.lexists(installed))
+        manifest = json.loads(
+            (self.home / ".tgd" / "install-manifest.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertNotIn(str(installed), manifest["managed_paths"])
+
+    def test_opencode_skills_are_direct_children(self) -> None:
+        opencode_home = self.home / ".config" / "opencode"
+        opencode_home.mkdir(parents=True)
+        router = self.repo / "skills" / "tgd-router"
+        router.mkdir()
+        (router / "SKILL.md").write_text("# router\n", encoding="utf-8")
+
+        result = self._run_setup("--no-deps")
+
+        self._assert_success(result)
+        for name in ("tgd-rules", "tgd-router"):
+            installed = opencode_home / "skills" / name
+            self.assertTrue(installed.is_symlink(), str(installed))
+            self.assertEqual((self.repo / "skills" / name).resolve(), installed.resolve())
+        self.assertFalse(os.path.lexists(opencode_home / "skills" / "tGD"))
 
 
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
-# /tgd-release
-
-Release to production — faster is safer
+---
+name: tgd-release
+description: Release to production — faster is safer
+---
 
 **🛑 Pre-flight: Environment Check**
 - [ ] `$TGD_DIR/CONTEXT.md` exists. No substitutes — `/tgd-map` produces it unconditionally (Tier 1).

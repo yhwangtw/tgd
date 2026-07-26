@@ -1,6 +1,7 @@
-# /tgd-map
-
-Map — scan and understand the existing project context before making changes
+---
+name: tgd-map
+description: Map — scan and understand the existing project context before making changes
+---
 
 **⚠️ Closing requirement — read this FIRST:** the run's LAST message MUST be the **Step 8 Final Report** (exact format at the end of this command). Plan for it from the start — a run that ends with a free-form summary instead fails the Verification Gate.
 

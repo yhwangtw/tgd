@@ -33,7 +33,10 @@ If none resolves to a directory containing `scripts/generate-mirrors.py`, STOP a
 
 ## Lifecycle Commands
 
-7 commands, each a full pipeline. Commands are defined in `.claude/commands/`, `.gemini/commands/`, `.opencode/commands/`, `.codex/prompts/`, and `.pi/prompts/`.
+7 lifecycle entry points, each a full pipeline. Slash-command platforms use
+the generated files under `.claude/commands/`, `.gemini/commands/`,
+`.opencode/commands/`, and `.pi/prompts/`; Codex uses the generated on-demand
+skills under `.codex/skills/`.
 
 | Command | Phase | Pipeline | Artifacts |
 |---------|-------|----------|-----------|

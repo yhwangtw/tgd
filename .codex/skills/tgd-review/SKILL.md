@@ -1,6 +1,7 @@
-# /tgd-review
-
-Review before merge — improve code health
+---
+name: tgd-review
+description: Review before merge — improve code health
+---
 
 **🛑 Pre-flight: Environment Check**
 - [ ] `$TGD_DIR/CONTEXT.md` exists. No substitutes — `/tgd-map` produces it unconditionally (Tier 1).

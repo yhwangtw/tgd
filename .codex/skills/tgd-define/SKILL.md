@@ -1,6 +1,7 @@
-# /tgd-define
-
-Start spec-driven development — write a structured specification before writing code
+---
+name: tgd-define
+description: Start spec-driven development — write a structured specification before writing code
+---
 
 **🛑 Pre-flight: Environment Check**
 - [ ] `$TGD_DIR/CONTEXT.md` exists. No substitutes — `/tgd-map` produces it unconditionally (Tier 1), and this phase depends on its repo list, Build/Test/Run, and Conventions.

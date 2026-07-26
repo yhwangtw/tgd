@@ -55,10 +55,12 @@ git clone https://github.com/openclawyhwang-hub/tGD.git && cd tGD
 bash setup.sh
 ```
 > Auto-detects installed CLIs (Claude, Codex, Gemini, OpenCode, Pi, and
-> Hermes), installs the core links/hooks, and records every tGD-owned symlink
+> Hermes), installs commands and on-demand skills, and records every tGD-owned symlink
 > in an ownership manifest. Existing and legacy installs can run the same
 > command again: recognized tGD links are migrated in place, while foreign
-> files and settings are preserved. Running setup requires Python 3.9 or newer.
+> files and settings are preserved. Skills load on demand, and no session
+> context is injected by default.
+> Running setup requires Python 3.9 or newer.
 >
 > Plain setup never runs `npm install -g`; third-party global tools are
 > opt-in. When the bundled Understand-Anything workspace is not built yet,
@@ -69,7 +71,7 @@ bash setup.sh
 > only matching artifacts may bypass that Node requirement. Every UA skill is
 > linked at `~/.agents/skills/<name>`, and the plugin root is linked at
 > `~/.understand-anything-plugin`. With an older or missing Node runtime, setup
-> still installs the core links/hooks and reports degraded UA readiness.
+> still installs the core on-demand entries and reports degraded UA readiness.
 > Use `--no-deps` to skip all dependency downloads and builds. The installer links `tgd` at
 > `~/.local/bin/tgd` and tells you if that directory is not yet on `PATH`.
 
@@ -80,14 +82,16 @@ bash setup.sh
 | `bash setup.sh` | Install, refresh, or safely migrate an existing installation |
 | `bash setup.sh --with-tools` | Opt in to pinned global npm installs for missing CodeGraph and the pnpm fallback |
 | `bash setup.sh --with-browser` | Install/configure pinned Agent Browser (implies `--with-tools`) |
-| `bash setup.sh --no-deps` | Install core links/hooks while skipping all dependency downloads and bundled UA builds (offline/CI mode) |
+| `bash setup.sh --with-session-preamble` | Opt in to a bounded tGD session preamble on supported platforms |
+| `bash setup.sh --no-deps` | Install commands and on-demand skills while skipping all dependency downloads and bundled UA builds (offline/CI mode) |
 | `tgd` | Run the same safe install/refresh after the first setup |
 | `tgd --version` (`-v`) | Show current version (CalVer: YYYY.MM.DD) |
 | `tgd --upgrade` (`-u`) | Force a managed refresh and migrate recognized legacy links |
 | `tgd --uninstall` | Remove manifest-owned links and tGD hooks; preserve user files and dependencies |
 
-Codex requires one-time review of new or changed user hooks. If it reports a
-pending hook after setup, open `/hooks` in Codex and trust the tGD definition.
+When `--with-session-preamble` is used, Codex may require one-time review of
+the user hook. If it reports a pending hook, open `/hooks` and trust the tGD
+definition.
 
 ### Updating to Latest
 
@@ -127,6 +131,8 @@ hermes
 ```
 /tgd-map
 ```
+> On Claude, Gemini, OpenCode, Pi, and Hermes use `/tgd-map`; on Codex use
+> `$tgd-map`. Natural-language requests are also matched to skills on demand.
 > Agent scans your codebase and creates `CONTEXT.md`, including a UI Landscape that points to the real design-system, token, style, and component sources when frontend code exists.
 
 ### 4. Build Your First Feature
@@ -699,7 +705,7 @@ tGD/
 ├── .claude/commands/           # Claude Code slash commands
 ├── .gemini/commands/           # Gemini CLI commands
 ├── .opencode/commands/         # OpenCode commands
-├── .codex/prompts/             # Codex CLI prompts
+├── .codex/skills/              # Codex lifecycle skills
 ├── scripts/                    # Setup & validation
 └── docs/                       # Platform-specific guides
 ```
@@ -853,16 +859,16 @@ ln -sf "$(pwd)/.gemini/commands"/* ~/.gemini/commands/
 ```
 
 ### Codex CLI
-Codex relies on **skill auto-detection** rather than slash commands.
+Codex uses on-demand Skills instead of custom prompts.
 ```bash
-ln -sf "$(pwd)/skills" ~/.codex/skills/tGD
-ln -sf "$(pwd)/.codex/prompts"/* ~/.codex/prompts/
+mkdir -p ~/.agents/skills
+for s in skills/*/ .codex/skills/*/; do ln -sf "$(pwd)/$s" ~/.agents/skills/"$(basename "$s")"; done
 ```
-*Trigger:* Say "Plan this feature" or "Start tgd plan" — Codex invokes the skill automatically.
+*Trigger:* Enter `$tgd-plan`, or say "Plan this feature" for implicit matching.
 
 ### OpenCode
 ```bash
-ln -sf "$(pwd)/skills" ~/.config/opencode/skills/tGD
+for s in skills/*/; do ln -sf "$(pwd)/$s" ~/.config/opencode/skills/"$(basename "$s")"; done
 ln -sf "$(pwd)/.opencode/commands"/* ~/.config/opencode/commands/
 ```
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # tGD One-Click Installer
-# Usage: bash setup.sh [--upgrade|--uninstall|--version] [--with-tools] [--with-browser] [--no-deps]
+# Usage: bash setup.sh [--upgrade|--uninstall|--version] [--with-session-preamble] [--with-tools] [--with-browser] [--no-deps]
 #
 # --upgrade:  遷移可確認為舊版 tGD 的 symlink，並刷新受管理的 links/hooks。
 #             適合 tGD clone 執行 git pull 後使用，不會清除不明路徑。
@@ -19,7 +19,9 @@ Options:
   -v, --version        Print the repository version
       --with-tools     Install pinned third-party CLI dependencies when missing
       --with-browser   Configure Agent Browser (implies --with-tools)
-      --no-deps        Skip dependency downloads (links and hooks still install)
+      --with-session-preamble
+                       Opt in to bounded tGD context at session start
+      --no-deps        Skip dependency downloads
   -h, --help           Show this help
 EOF
 }
@@ -29,6 +31,7 @@ MODE="install"
 INSTALL_TOOLS=0
 CONFIGURE_BROWSER=0
 SKIP_DEPS=0
+WITH_SESSION_PREAMBLE=0
 SETUP_DEGRADED=0
 CODEGRAPH_VERSION="0.9.8"
 AGENT_BROWSER_VERSION="11.5.1"
@@ -56,6 +59,9 @@ while [[ "$#" -gt 0 ]]; do
             INSTALL_TOOLS=1
             CONFIGURE_BROWSER=1
             ;;
+        --with-session-preamble)
+            WITH_SESSION_PREAMBLE=1
+            ;;
         --no-deps)
             SKIP_DEPS=1
             ;;
@@ -79,8 +85,8 @@ if [[ "$SKIP_DEPS" -eq 1 && "$INSTALL_TOOLS" -eq 1 ]]; then
 fi
 
 if [[ "$MODE" == "uninstall" || "$MODE" == "version" ]] \
-    && [[ "$INSTALL_TOOLS" -eq 1 || "$CONFIGURE_BROWSER" -eq 1 || "$SKIP_DEPS" -eq 1 ]]; then
-    echo "❌ Dependency options are only valid for install or upgrade." >&2
+    && [[ "$INSTALL_TOOLS" -eq 1 || "$CONFIGURE_BROWSER" -eq 1 || "$SKIP_DEPS" -eq 1 || "$WITH_SESSION_PREAMBLE" -eq 1 ]]; then
+    echo "❌ Install options are only valid for install or upgrade." >&2
     usage >&2
     exit 2
 fi
@@ -309,13 +315,6 @@ link_hermes_plugin_to_home() {
     fi
 }
 
-link_hermes_agents_to_home() {
-    local hermes_home="$1"
-    if [[ -f "$TGD_REPO_ROOT/.hermes/AGENTS.md" ]]; then
-        managed_link "$TGD_REPO_ROOT/.hermes/AGENTS.md" "$hermes_home/AGENTS.md"
-    fi
-}
-
 link_skill_folder_to_hermes_homes() {
     local source_dir="$1"
     local link_name="$2"
@@ -532,13 +531,21 @@ remove_verified_legacy_link() {
     local destination="$1"
     local source_relative="$2"
     local label="$3"
-    local target
+    local target result
 
     [[ -L "$destination" ]] || return 0
     target=$(absolute_symlink_target "$destination")
     if is_recognized_legacy_target "$target" "$source_relative"; then
-        echo "   🗑️  Removing verified legacy $label: $destination"
-        remove_exact_symlink_safely "$destination" "$target"
+        result=$(python3 "$INSTALL_STATE_HELPER" retire-owned-link \
+            --manifest "$INSTALL_MANIFEST" \
+            --path "$destination" \
+            --target "$target")
+        if [[ "$result" == removed* ]]; then
+            echo "   🗑️  Retired managed legacy $label: $destination"
+        else
+            echo "   🗑️  Removing verified unowned legacy $label: $destination"
+            remove_exact_symlink_safely "$destination" "$target"
+        fi
     fi
 }
 
@@ -569,13 +576,12 @@ retire_exact_managed_link() {
     local destination="$2"
     local label="$3"
 
-    if python3 "$INSTALL_STATE_HELPER" verify \
+    local result=""
+    result=$(python3 "$INSTALL_STATE_HELPER" retire-owned-link \
         --manifest "$INSTALL_MANIFEST" \
         --path "$destination" \
-        --target "$source" >/dev/null 2>&1; then
-        python3 "$INSTALL_STATE_HELPER" remove \
-            --manifest "$INSTALL_MANIFEST" \
-            --path "$destination" >/dev/null
+        --target "$source")
+    if [[ "$result" == removed* ]]; then
         echo "   🗑️  Retired managed $label: $destination"
     fi
 }
@@ -592,6 +598,49 @@ remove_verified_legacy_link \
     ".pi/extensions/tgd-commands.ts" \
     "Pi command extension"
 
+# Retire integrations that older tGD releases treated as global context.
+# Exact managed/verified tGD links are removed; foreign files are preserved.
+remove_verified_legacy_link \
+    "$HOME/.pi/agent/instructions.md" \
+    ".pi/instructions.md" \
+    "Pi instructions link"
+retire_exact_managed_link \
+    "$TGD_REPO_ROOT/.pi/instructions.md" \
+    "$HOME/.pi/agent/instructions.md" \
+    "Pi instructions link"
+remove_verified_legacy_link \
+    "$HOME/.config/opencode/plugins/session-start.ts" \
+    ".opencode/plugins/session-start.ts" \
+    "OpenCode session plugin"
+retire_exact_managed_link \
+    "$TGD_REPO_ROOT/.opencode/plugins/session-start.ts" \
+    "$HOME/.config/opencode/plugins/session-start.ts" \
+    "OpenCode session plugin"
+while IFS= read -r hermes_home; do
+    [[ -n "$hermes_home" ]] || continue
+    remove_verified_legacy_link \
+        "$hermes_home/AGENTS.md" \
+        ".hermes/AGENTS.md" \
+        "Hermes AGENTS.md"
+    retire_exact_managed_link \
+        "$TGD_REPO_ROOT/.hermes/AGENTS.md" \
+        "$hermes_home/AGENTS.md" \
+        "Hermes AGENTS.md"
+done < <(hermes_homes)
+
+if [[ "$WITH_SESSION_PREAMBLE" -eq 1 ]]; then
+    managed_link \
+        "$TGD_REPO_ROOT/hooks/session-preamble.enabled" \
+        "$TGD_STATE_DIR/session-preamble.enabled"
+    echo "   ✅ Optional session preamble enabled."
+else
+    retire_exact_managed_link \
+        "$TGD_REPO_ROOT/hooks/session-preamble.enabled" \
+        "$TGD_STATE_DIR/session-preamble.enabled" \
+        "session preamble marker"
+    echo "   ℹ️  Session preamble disabled; skills and commands load on demand."
+fi
+
 # Configure Agents
 echo "🤖 Configuring Agents..."
 
@@ -601,24 +650,27 @@ if command -v opencode &> /dev/null || [[ -d "$HOME/.config/opencode" ]]; then
     # Create global commands link (individual files, not subdirectory)
     mkdir -p ~/.config/opencode/commands
     for cmd in "$TGD_REPO_ROOT"/.opencode/commands/*.md; do
+        [[ -e "$cmd" ]] || continue
         cmd_name=$(basename "$cmd")
         managed_link "$cmd" "$HOME/.config/opencode/commands/$cmd_name"
     done
     echo "   ✅ Commands linked (7 tgd-* commands)."
-    # Link skills for auto-detection (agent can find skills by name)
+    # OpenCode discovers one skill per direct child directory.
     if [ -d "$TGD_REPO_ROOT/skills" ]; then
         mkdir -p ~/.config/opencode/skills
-        managed_link "$TGD_REPO_ROOT/skills" "$HOME/.config/opencode/skills/tGD"
-        echo "   ✅ Skills linked for auto-detection."
-    fi
-    # Install plugins (hooks)
-    if [ -d "$TGD_REPO_ROOT/.opencode/plugins" ]; then
-        mkdir -p ~/.config/opencode/plugins
-        for plugin in "$TGD_REPO_ROOT"/.opencode/plugins/*; do
-            [[ -e "$plugin" ]] || continue
-            managed_link "$plugin" "$HOME/.config/opencode/plugins/$(basename "$plugin")"
+        retire_verified_legacy_bundle \
+            "$HOME/.config/opencode/skills/tGD" \
+            "$TGD_REPO_ROOT/skills" \
+            "skills" \
+            "OpenCode aggregate skill link"
+        for skill in "$TGD_REPO_ROOT"/skills/*/; do
+            skill="${skill%/}"
+            [[ ! -L "$skill" && -d "$skill" ]] || continue
+            skill_name=$(basename "$skill")
+            [[ "$skill_name" != "skills" ]] || continue
+            managed_link "$skill" "$HOME/.config/opencode/skills/$skill_name"
         done
-        echo "   ✅ Plugins installed (session-start)."
+        echo "   ✅ Skills linked directly for on-demand loading."
     fi
 fi
 
@@ -648,8 +700,15 @@ if command -v claude &> /dev/null || [[ -d "$HOME/.claude" ]]; then
             echo "   ✅ Commands linked (7 tgd-* slash commands)."
         fi
 
-        if [ -f "$TGD_REPO_ROOT/hooks/session-start.sh" ]; then
+        if [[ "$WITH_SESSION_PREAMBLE" -eq 1 ]] \
+            && [ -f "$TGD_REPO_ROOT/hooks/session-start.sh" ]; then
             python3 "$HOOK_MERGE_HELPER" install \
+                --platform claude \
+                --repo-root "$TGD_REPO_ROOT" \
+                --destination "$HOME/.claude/settings.json" \
+                --state "$HOOK_STATE_FILE"
+        else
+            python3 "$HOOK_MERGE_HELPER" remove \
                 --platform claude \
                 --repo-root "$TGD_REPO_ROOT" \
                 --destination "$HOME/.claude/settings.json" \
@@ -689,8 +748,15 @@ if command -v gemini &> /dev/null || [[ -d "$HOME/.gemini" ]]; then
         done
         echo "   ✅ Gemini skills linked directly ($gemini_skill_count skills)."
     fi
-    if [ -f "$TGD_REPO_ROOT/hooks/gemini/session-start.sh" ]; then
+    if [[ "$WITH_SESSION_PREAMBLE" -eq 1 ]] \
+        && [ -f "$TGD_REPO_ROOT/hooks/gemini/session-start.sh" ]; then
         python3 "$HOOK_MERGE_HELPER" install \
+            --platform gemini \
+            --repo-root "$TGD_REPO_ROOT" \
+            --destination "$HOME/.gemini/settings.json" \
+            --state "$HOOK_STATE_FILE"
+    else
+        python3 "$HOOK_MERGE_HELPER" remove \
             --platform gemini \
             --repo-root "$TGD_REPO_ROOT" \
             --destination "$HOME/.gemini/settings.json" \
@@ -701,33 +767,64 @@ fi
 # Codex CLI
 if command -v codex &> /dev/null || [[ -d "$HOME/.codex" ]]; then
     echo "   📂 Codex CLI detected or existing config found."
-    mkdir -p ~/.codex
+    mkdir -p "$HOME/.codex" "$HOME/.agents/skills"
     if [ -d "$TGD_REPO_ROOT/skills" ]; then
-        managed_link "$TGD_REPO_ROOT/skills" "$HOME/.codex/skills/tGD"
-        echo "   ✅ Skills linked for auto-detection."
-    fi
-    if [ -d "$TGD_REPO_ROOT/.codex/prompts" ]; then
-        mkdir -p ~/.codex/prompts
-        for prompt in "$TGD_REPO_ROOT"/.codex/prompts/*; do
-            [[ -e "$prompt" ]] || continue
-            managed_link "$prompt" "$HOME/.codex/prompts/$(basename "$prompt")"
+        mkdir -p "$HOME/.codex/skills"
+        retire_verified_legacy_bundle \
+            "$HOME/.codex/skills/tGD" \
+            "$TGD_REPO_ROOT/skills" \
+            "skills" \
+            "Codex legacy aggregate skill link"
+        for skill in "$TGD_REPO_ROOT"/skills/*/; do
+            skill="${skill%/}"
+            [[ ! -L "$skill" && -d "$skill" ]] || continue
+            skill_name=$(basename "$skill")
+            [[ "$skill_name" != "skills" ]] || continue
+            managed_link "$skill" "$HOME/.agents/skills/$skill_name"
         done
-        echo "   ✅ Prompts linked (7 tgd-* commands)."
+        echo "   ✅ Codex skills linked to ~/.agents/skills for on-demand loading."
     fi
-    if [ -f "$TGD_REPO_ROOT/hooks/codex/session-start.sh" ]; then
+    if [ -d "$TGD_REPO_ROOT/.codex/skills" ]; then
+        for lifecycle_skill in "$TGD_REPO_ROOT"/.codex/skills/*/; do
+            lifecycle_skill="${lifecycle_skill%/}"
+            [[ -d "$lifecycle_skill" ]] || continue
+            managed_link \
+                "$lifecycle_skill" \
+                "$HOME/.agents/skills/$(basename "$lifecycle_skill")"
+        done
+        echo "   ✅ Lifecycle skills linked (use \$tgd-map … \$tgd-release)."
+    fi
+    for command_name in tgd-map tgd-define tgd-plan tgd-develop tgd-verify tgd-review tgd-release; do
+        remove_verified_legacy_link \
+            "$HOME/.codex/prompts/$command_name.md" \
+            ".codex/prompts/$command_name.md" \
+            "Codex deprecated prompt"
+        retire_exact_managed_link \
+            "$TGD_REPO_ROOT/.codex/prompts/$command_name.md" \
+            "$HOME/.codex/prompts/$command_name.md" \
+            "Codex deprecated prompt"
+    done
+    if [[ "$WITH_SESSION_PREAMBLE" -eq 1 ]] \
+        && [ -f "$TGD_REPO_ROOT/hooks/codex/session-start.sh" ]; then
         python3 "$HOOK_MERGE_HELPER" install \
             --platform codex \
             --repo-root "$TGD_REPO_ROOT" \
             --destination "$HOME/.codex/hooks.json" \
             --state "$HOOK_STATE_FILE"
         echo "   ℹ️  Codex reviews user hooks by exact definition. If Codex warns, open /hooks and trust this hook."
+    else
+        python3 "$HOOK_MERGE_HELPER" remove \
+            --platform codex \
+            --repo-root "$TGD_REPO_ROOT" \
+            --destination "$HOME/.codex/hooks.json" \
+            --state "$HOOK_STATE_FILE"
     fi
 fi
 
 # Pi Coding Agent
 if command -v pi &> /dev/null || [[ -d "$HOME/.pi/agent" ]]; then
     echo "   📂 Pi Coding Agent detected or existing config found."
-    # Install prompt templates + instructions to ~/.pi/agent/. tGD commands are
+    # Install prompt templates to ~/.pi/agent/. tGD commands are
     # native pi prompt templates (.pi/prompts/*.md → /tgd-map etc.), NOT a
     # TypeScript extension — an extension had to call pi.sendUserMessage(body),
     # which injected each command as a wall of user-authored text.
@@ -739,12 +836,24 @@ if command -v pi &> /dev/null || [[ -d "$HOME/.pi/agent" ]]; then
         done
         echo "   ✅ Prompt templates installed to ~/.pi/agent/prompts/ (/tgd-* commands)."
     fi
-    if [ -f "$TGD_REPO_ROOT/.pi/instructions.md" ]; then
+    if [[ "$WITH_SESSION_PREAMBLE" -eq 1 ]] \
+        && [ -f "$TGD_REPO_ROOT/.pi/APPEND_SYSTEM.md" ]; then
         managed_link \
-            "$TGD_REPO_ROOT/.pi/instructions.md" \
-            "$HOME/.pi/agent/instructions.md" \
+            "$TGD_REPO_ROOT/.pi/APPEND_SYSTEM.md" \
+            "$HOME/.pi/agent/APPEND_SYSTEM.md" \
             optional
-        echo "   ✅ Instructions installed to ~/.pi/agent/instructions.md"
+        if [[ -L "$HOME/.pi/agent/APPEND_SYSTEM.md" ]] \
+            && [[ "$(absolute_symlink_target "$HOME/.pi/agent/APPEND_SYSTEM.md")" \
+                == "$TGD_REPO_ROOT/.pi/APPEND_SYSTEM.md" ]]; then
+            echo "   ✅ Optional preamble installed to ~/.pi/agent/APPEND_SYSTEM.md"
+        else
+            echo "   ℹ️  Existing Pi APPEND_SYSTEM.md remains authoritative."
+        fi
+    else
+        retire_exact_managed_link \
+            "$TGD_REPO_ROOT/.pi/APPEND_SYSTEM.md" \
+            "$HOME/.pi/agent/APPEND_SYSTEM.md" \
+            "Pi APPEND_SYSTEM preamble"
     fi
     # Link skills for auto-detection
     if [ -d "$TGD_REPO_ROOT/skills" ]; then
@@ -773,13 +882,7 @@ if command -v hermes &> /dev/null || [[ -d "$HOME/.hermes" ]]; then
         done < <(hermes_homes)
     fi
 
-    if [ -f "$TGD_REPO_ROOT/.hermes/AGENTS.md" ]; then
-        while IFS= read -r hermes_home; do
-            [[ -n "$hermes_home" ]] || continue
-            link_hermes_agents_to_home "$hermes_home"
-        done < <(hermes_homes)
-        echo "   ✅ Hermes AGENTS.md linked across profiles."
-    fi
+    echo "   ✅ Hermes commands and skills installed; optional preamble follows the setup flag."
 else
     echo "   ℹ️  Hermes Agent not detected — skip plugin install."
 fi
@@ -998,16 +1101,6 @@ if [ -d "$UA_SKILLS_DIR" ]; then
         done
         echo "   ✅ Claude: Understand-Anything skills linked."
     fi
-    # Codex: folder symlink in ~/.codex/skills/
-    if [ -d "$HOME/.codex" ] || [ -L "$HOME/.codex" ]; then
-        mkdir -p "$HOME/.codex/skills"
-        managed_link "$UA_SKILLS_DIR" "$HOME/.codex/skills/understand-anything" optional
-    fi
-    # OpenCode: folder symlink in ~/.config/opencode/skills/
-    if [ -d "$HOME/.config/opencode" ] || [ -L "$HOME/.config/opencode" ]; then
-        mkdir -p "$HOME/.config/opencode/skills"
-        managed_link "$UA_SKILLS_DIR" "$HOME/.config/opencode/skills/understand-anything" optional
-    fi
     # Gemini uses the universal links above. A direct child fallback is created
     # only for a canonical name blocked by an existing ~/.agents path.
     # Pi: folder symlink in ~/.pi/agent/skills/
@@ -1168,11 +1261,11 @@ echo ""
 # If you need rules in a specific project, add to .claude/CLAUDE.md:
 #   "Load tgd-rules skill for tGD workflow enforcement."
 
-# Codex CLI: ~/.codex/skills/tgd-rules (auto-discovered)
+# Codex CLI: official shared user-skill path
 if command -v codex &> /dev/null || [[ "$CI_ACTIVE" -eq 1 ]]; then
-    mkdir -p "$HOME/.codex/skills"
-    managed_link "$TGD_REPO_ROOT/skills/tgd-rules" "$HOME/.codex/skills/tgd-rules"
-    echo "   ✅ Codex CLI: ~/.codex/skills/tgd-rules → symlink"
+    mkdir -p "$HOME/.agents/skills"
+    managed_link "$TGD_REPO_ROOT/skills/tgd-rules" "$HOME/.agents/skills/tgd-rules"
+    echo "   ✅ Codex CLI: ~/.agents/skills/tgd-rules → symlink"
 fi
 
 # OpenCode: ~/.config/opencode/skills/tgd-rules
@@ -1275,7 +1368,7 @@ command -v gemini &> /dev/null \
     && verify_cmd_links "Gemini CLI" "$HOME/.gemini/commands" "$TGD_REPO_ROOT/.gemini/commands" "tgd-*.toml" \
     || echo "   ⏭️  Gemini CLI not detected — skipped"
 command -v codex &> /dev/null \
-    && verify_cmd_links "Codex CLI" "$HOME/.codex/prompts" "$TGD_REPO_ROOT/.codex/prompts" "tgd-*.md" \
+    && verify_cmd_links "Codex CLI" "$HOME/.agents/skills" "$TGD_REPO_ROOT/.codex/skills" "tgd-*" \
     || echo "   ⏭️  Codex CLI not detected — skipped"
 command -v pi &> /dev/null \
     && verify_cmd_links "Pi" "$HOME/.pi/agent/prompts" "$TGD_REPO_ROOT/.pi/prompts" "tgd-*.md" \
