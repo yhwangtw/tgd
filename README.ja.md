@@ -11,6 +11,10 @@
 <p align="center">
   <a href="README.md">English</a> | <a href="README.zh-TW.md">繁體中文</a> | <a href="README.ja.md">日本語</a> | <a href="README.de.md">Deutsch</a>
 </p>
+<p align="center">
+  <a href="https://yhwangtw.github.io/tgd/">🌐 GitHub Pages</a> &nbsp;|&nbsp; <a href="https://yhwangtw.github.io/tgd/tGD-intro.html">🎬 Intro</a>
+</p>
+
 **あなたのPDLCは人間のために設計された。今ではエージェントが仕事をする。**
 
 tGDはClaude Code、Codex、Gemini CLI、OpenCode、Pi、Hermes対応のオープンソース **skill pack**。製品開発ライフサイクル（PDLC）を、チームがすでに信頼しているゲートで包みます — コードの前に仕様、主張の前にテスト、リリースの前に人間のサインオフ。

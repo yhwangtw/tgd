@@ -10,6 +10,10 @@
 <p align="center">
   <a href="README.md">English</a> | <a href="README.zh-TW.md">繁體中文</a> | <a href="README.ja.md">日本語</a> | <a href="README.de.md">Deutsch</a>
 </p>
+<p align="center">
+  <a href="https://yhwangtw.github.io/tgd/">🌐 GitHub Pages</a> &nbsp;|&nbsp; <a href="https://yhwangtw.github.io/tgd/tGD-intro.html">🎬 Intro</a>
+</p>
+
 **Your PDLC was built for humans. Now agents do the work.**
 
 tGD is an open-source **skill pack** for Claude Code, Codex, Gemini CLI, OpenCode, Pi, and Hermes. It wraps your product development lifecycle (PDLC) in the gates your team already trusts — spec before code, tests before claims, human sign-off before release.
