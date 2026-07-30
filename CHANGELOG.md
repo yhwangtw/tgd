@@ -4,6 +4,14 @@ All notable changes to tGD will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/). Versions follow [CalVer](https://calver.org/) (YYYY.MM.DD).
 
+## v2026.07.31
+
+### 📝 Documentation
+- update README repository links (`438ee97`)
+
+### ✅ Tests
+- make Linux inode replacement checks deterministic (`6bd24e3`)
+
 ## v2026.07.26
 
 ### ✨ Features
