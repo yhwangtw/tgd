@@ -1,9 +1,9 @@
 # tGD
 
 <p align="center">
-  <img src="https://img.shields.io/github/stars/openclawyhwang-hub/tGD?style=for-the-badge&logo=github&label=Stars&color=gold" alt="GitHub Stars">
-  <img src="https://img.shields.io/github/license/openclawyhwang-hub/tGD?style=for-the-badge&color=blue" alt="License">
-  <img src="https://img.shields.io/github/last-commit/openclawyhwang-hub/tGD?style=for-the-badge&logo=github&label=Last%20Commit&color=green" alt="Last Commit">
+  <img src="https://img.shields.io/github/stars/yhwangtw/tgd?style=for-the-badge&logo=github&label=Stars&color=gold" alt="GitHub Stars">
+  <img src="https://img.shields.io/github/license/yhwangtw/tgd?style=for-the-badge&color=blue" alt="License">
+  <img src="https://img.shields.io/github/last-commit/yhwangtw/tgd?style=for-the-badge&logo=github&label=Last%20Commit&color=green" alt="Last Commit">
   <img src="https://img.shields.io/badge/platforms-Claude%20Code%20%7C%20Codex%20%7C%20Gemini%20%7C%20OpenCode%20%7C%20Pi%20%7C%20Hermes-8A2BE2?style=for-the-badge" alt="Platforms">
   <img src="https://img.shields.io/badge/version-CalVer-2ea44f?style=for-the-badge" alt="Version">
 </p>
@@ -12,7 +12,7 @@
   <a href="README.md">English</a> | <a href="README.zh-TW.md">繁體中文</a> | <a href="README.ja.md">日本語</a> | <a href="README.de.md">Deutsch</a>
 </p>
 <p align="center">
-  <a href="https://openclawyhwang-hub.github.io/tGD/">🌐 GitHub Pages</a> &nbsp;|&nbsp; <a href="https://openclawyhwang-hub.github.io/tGD/tGD-intro.html">🎬 Intro</a>
+  <a href="https://yhwangtw.github.io/tgd/">🌐 GitHub Pages</a> &nbsp;|&nbsp; <a href="https://yhwangtw.github.io/tgd/tGD-intro.html">🎬 Intro</a>
 </p>
 
 **你的 PDLC 是為人類設計的。現在 agent 來做事。**
@@ -54,7 +54,7 @@ Map → Define → Plan → Develop → Verify → Review → Release
 
 ### 1. Clone & 安裝
 ```bash
-git clone https://github.com/openclawyhwang-hub/tGD.git && cd tGD
+git clone https://github.com/yhwangtw/tgd.git && cd tgd
 bash setup.sh
 ```
 > 自動偵測已安裝的 CLI（Claude、Codex、Gemini、OpenCode、Pi、Hermes），
