@@ -940,14 +940,17 @@ class InstallStateCliTests(unittest.TestCase):
         marker = self.home / ".tgd-installed-version"
         original_content = b"v2026.07.23\n"
         marker.write_bytes(original_content)
+        original_inode = marker.stat().st_ino
         original_writer = module.write_bytes_atomic
         replacement_inode = None
 
         def replace_before_initial_write(*args, **kwargs):
             nonlocal replacement_inode
-            marker.unlink()
-            marker.write_bytes(original_content)
-            replacement_inode = marker.stat().st_ino
+            replacement = marker.with_name(".tgd-installed-version.replacement")
+            replacement.write_bytes(original_content)
+            replacement_inode = replacement.stat().st_ino
+            self.assertNotEqual(original_inode, replacement_inode)
+            os.replace(replacement, marker)
             return original_writer(*args, **kwargs)
 
         with mock.patch.object(

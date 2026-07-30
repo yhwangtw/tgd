@@ -667,12 +667,14 @@ class MergeAgentHooksTests(unittest.TestCase):
         self.write_json(destination, {"theme": "before"})
         _config, mode, original, identity = module._load_destination(destination)
 
-        destination.unlink()
-        self.write_json(destination, {"theme": "before"})
+        replacement = destination.with_name("settings.replacement.json")
+        self.write_json(replacement, {"theme": "before"})
         replacement_identity = (
-            destination.stat().st_dev,
-            destination.stat().st_ino,
+            replacement.stat().st_dev,
+            replacement.stat().st_ino,
         )
+        self.assertNotEqual(identity, replacement_identity)
+        os.replace(replacement, destination)
 
         with self.assertRaises(module.HookConfigError):
             module._write_atomic(
@@ -776,9 +778,11 @@ class MergeAgentHooksTests(unittest.TestCase):
         self.write_json(state, {"version": 1, "managed_hooks": {}})
         _config, _mode, original, identity = module._load_destination(state)
 
-        state.unlink()
-        self.write_json(state, {"version": 1, "managed_hooks": {}})
-        replacement_identity = (state.stat().st_dev, state.stat().st_ino)
+        replacement = state.with_name("hook-ownership.replacement.json")
+        self.write_json(replacement, {"version": 1, "managed_hooks": {}})
+        replacement_identity = (replacement.stat().st_dev, replacement.stat().st_ino)
+        self.assertNotEqual(identity, replacement_identity)
+        os.replace(replacement, state)
 
         with self.assertRaises(module.HookConfigError):
             module._remove_atomic(state, original, identity)
