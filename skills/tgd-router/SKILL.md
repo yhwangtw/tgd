@@ -23,7 +23,7 @@ Task arrives
     ├── New project/feature/change? ──→ tgd-spec-driven-development
     │   └── UI feature? Mock variants → tgd-sketch
     ├── Have a spec, need tasks? ──────→ tgd-planning-and-task-breakdown
-    │   └── Want Jira tickets from TASKS.md? → tgd-jira-auto-sync
+    │   └── Want to preview Jira sync from TASKS.md? → tgd-jira-auto-sync
     ├── Implementing code? ────────────→ tgd-incremental-implementation
     │   ├── Multi-task plan / high-stakes path? → tgd-subagent-driven-development
     │   ├── UI work? ─────────────────→ tgd-frontend-ui-engineering
@@ -173,7 +173,7 @@ Not every task needs every skill. A bug fix might only need: `tgd-debugging-and-
 | Define | tgd-spec-driven-development | Requirements and acceptance criteria before code |
 | Define | tgd-sketch | Context-grounded HTML mockups — 0/2/3 variants by UI design mode |
 | Plan | tgd-planning-and-task-breakdown | Decompose into small, verifiable tasks |
-| Plan | tgd-jira-auto-sync | Auto-create Jira issues from TASKS.md (opt-in, after /tgd-plan) |
+| Plan | tgd-jira-auto-sync | Preview, confirm, and verify Jira issue sync from TASKS.md (opt-in, after /tgd-plan) |
 | Build | tgd-incremental-implementation | Thin vertical slices, test each before expanding |
 | Build | tgd-subagent-driven-development | Fresh subagent per task with two-stage review |
 | Build | tgd-verification-before-completion | Evidence before completion claims, always |

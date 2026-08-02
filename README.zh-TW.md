@@ -301,11 +301,14 @@ flowchart LR
 ### 🎯 3 選 1 功能命名
 執行 `/tgd-define` 時，Agent 會提出 **3 個 kebab-case 名稱候選**，等老大挑選或自訂。不盲猜，名稱從第一天就由你掌控。
 
-### 🔄 智能 Jira 整合
-同步 Jira 時，tGD 不會無腦開單。它會：
-- **自動掃描** 你專案的必填欄位（`createmeta` API）。
-- **讓你選擇** Issue Type（Story, Task, Bug...）。
-- **統一格式** 每張單據都是 `As a...` 摘要 + `Given/When/Then` 驗收標準。
+### 🔄 安全的 Jira 整合
+每次同步都先預覽、再確認。tGD 會：
+- **列出所有可存取的 Jira 專案**，要求從清單選定一個精確的 Project key。
+- **找出 Jira 的每個必填欄位**，在規劃前詢問欄位值或讓使用者從 Jira 回傳的選項中選擇；共用預設值與各 Task 覆寫值都會納入 digest。
+- **產生 dry-run 計畫**，顯示 digest 與預定的建立、更新、略過及衝突項目。
+- **取得明確確認後才套用**，逐筆驗證遠端 issue，再把 Jira key 與穩定 sync ID 回寫 `TASKS.md`。
+
+Sprint 跟其他 Jira 欄位相同：只有 Jira 標示為必填時，tGD 才會詢問。流程不使用任何 Sprint 專屬的 Jira Agile API 行為。請設定 `JIRA_URL`，PAT 只從 `JIRA_TOKEN` 環境變數讀取，tGD 不會保存。穩定 sync ID 可讓一般重試維持冪等，但 Jira 無法對多個並行 client 保證 exactly-once；結果不明時必須先對帳。
 
 ---
 
@@ -332,7 +335,7 @@ flowchart LR
 |---|---|---|---|
 | 了解專案 | `/tgd-map` | 先有 context 再動手 + 即時 dashboard | `tgd-context-engineering` + `codegraph init` + `understand-dashboard` |
 | 定義要做什麼 | `/tgd-define` | PRD → 條件式 0/2/3 設計 → 最終 SPEC | `tgd-interview-me` → `tgd-idea-refine` → `tgd-spec-driven-development` + `tgd-sketch`（需要時） |
-| 規劃怎麼做 | `/tgd-plan` | 讀 CONTEXT + PRD + SPEC + 核准設計 → 原子任務 | `tgd-planning-and-task-breakdown` → `tgd-jira-auto-sync` |
+| 規劃怎麼做 | `/tgd-plan` | 讀 CONTEXT + PRD + SPEC + 核准設計 → 原子任務 | `tgd-planning-and-task-breakdown` → `tgd-jira-auto-sync`（僅在選擇 Jira 預覽時） |
 | 沙盒建造 | `/tgd-develop` | **強制 Worktree** + 智能路由 | `tgd-source-driven-development` → (`subagent` OR `incremental`) → `tgd-test-driven-development` |
 | 證明它能跑 | `/tgd-verify` | 測試就是證明 | `tgd-debugging-and-error-recovery` → `tgd-test-driven-development` → **Cross-Feature Regression Gate** |
 | 合併前審查 | `/tgd-review` | 改善程式碼健康 | `tgd-code-review-and-quality` → `tgd-code-simplification` |
@@ -526,9 +529,9 @@ tGD 有四個角色。各角色可只使用自己需要的共享 artifacts，一
 ## 🔗 整合
 
 ### Jira Data Center
-當 `/tgd-plan` 產生 `TASKS.md` 時，**`tgd-jira-auto-sync`** skill 可以自動建立 Jira issue：
+當 `/tgd-plan` 產生 `TASKS.md` 時，**`tgd-jira-auto-sync`** skill 會以明確確認為前提同步 Jira：
 ```
-/tgd-plan → 產生 TASKS.md → 使用者確認 → 建立 Jira issues
+/tgd-plan → TASKS.md → 選擇 Jira 預覽或略過 → 選定 Project key → dry-run + digest → 確認 → 套用 → 驗證 → 回寫
 ```
 
 ---
@@ -751,7 +754,7 @@ tGD/
 | Skill | 用途 |
 |---|---|
 | [tgd-planning-and-task-breakdown](skills/tgd-planning-and-task-breakdown/SKILL.md) | 將規格拆解為 TASKS.md |
-| [tgd-jira-auto-sync](skills/tgd-jira-auto-sync/SKILL.md) | 從 TASKS.md 自動建立 Jira issue |
+| [tgd-jira-auto-sync](skills/tgd-jira-auto-sync/SKILL.md) | 從 TASKS.md 預覽、確認並驗證 Jira issue 同步 |
 
 ### ⚡ Develop
 | Skill | 用途 |

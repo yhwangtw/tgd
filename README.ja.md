@@ -261,11 +261,14 @@ UIモードでは、承認済み `DESIGN.md` と CONTEXT.md が示す実際の�
 ### 🎯 3択機能ネーミング
 `/tgd-define` 実行時、エージェントは**3つの異なるkebab-case名**を提案し、あなたが選ぶ（または独自案を出す）まで待ちます。推測は不要 — 初日からあなたが命名を握ります。
 
-### 🔄 スマート Jira 統合
-Jira への同期時、tGD はやみくもに課題を作成しません：
-- `createmeta` API でプロジェクトの必須フィールドを**自動検出**
-- Issue Type（Story、Task、Bug など）を**選択させてくれる**
-- すべての課題を構造化された `As a... I want...` サマリーと `Given/When/Then` 受け入れ基準で**フォーマット**
+### 🔄 安全な Jira 統合
+Jira への同期は、必ずプレビューと明示的な確認を経て実行されます。tGD は：
+- **アクセス可能な Jira Project をすべて表示**し、一覧から正確な Project key を1つ選択させます。
+- **Jira の必須フィールドをすべて検出**し、計画前に値または Jira が返した選択肢を確認します。共通の既定値とタスク別の上書き値は digest に含まれます。
+- **dry-run 計画を作成**し、digest と作成・更新・スキップ・競合の予定を表示します。
+- **明示的な確認後にのみ適用**し、各リモート issue を検証してから Jira key と安定した sync ID を `TASKS.md` に書き戻します。
+
+Sprint は他の Jira フィールドと同様に扱い、Jira が必須とした場合にのみ確認します。Sprint 固有の Jira Agile API 動作は使用しません。`JIRA_URL` を設定し、PAT は `JIRA_TOKEN` 環境変数からのみ渡します。tGD は PAT を保存しません。安定した sync ID により通常の再試行は冪等になりますが、複数クライアントの同時実行に対して Jira は exactly-once を保証できないため、不明確な結果は照合が必要です。
 
 ---
 
@@ -292,7 +295,7 @@ Jira への同期時、tGD はやみくもに課題を作成しません：
 |---|---|---|---|
 | プロジェクト理解 | `/tgd-map` | 変更前にコンテキスト + ライブダッシュボード | `tgd-context-engineering` + `codegraph init` + `understand-dashboard` |
 | 何を構築するか定義 | `/tgd-define` | PRD → 条件付き0/2/3デザイン → 最終SPEC | `tgd-interview-me` → `tgd-idea-refine` → `tgd-spec-driven-development` + `tgd-sketch`（必要時） |
-| 構築方法を計画 | `/tgd-plan` | CONTEXT + PRD + SPEC + 承認済みデザイン → アトミックタスク | `tgd-planning-and-task-breakdown` → `tgd-jira-auto-sync` |
+| 構築方法を計画 | `/tgd-plan` | CONTEXT + PRD + SPEC + 承認済みデザイン → アトミックタスク | `tgd-planning-and-task-breakdown` → `tgd-jira-auto-sync`（Jira プレビュー選択時のみ） |
 | サンドボックス構築 | `/tgd-develop` | **必須 Worktree** + スマートルーティング | `tgd-source-driven-development` → (`subagent` OR `incremental`) → `tgd-test-driven-development` |
 | 動作を証明 | `/tgd-verify` | テストが証拠 | `tgd-debugging-and-error-recovery` → `tgd-test-driven-development` → **Cross-Feature Regression Gate** |
 | マージ前レビュー | `/tgd-review` | コードの健康改善 | `tgd-code-review-and-quality` → `tgd-code-simplification` |
@@ -486,9 +489,9 @@ tGD には4つの人間ロールがあります。各ロールは共有アーテ
 ## 🔗 統合
 
 ### Jira Data Center
-`/tgd-plan` が `TASKS.md` を生成した際、**`tgd-jira-auto-sync`** スキルが自動で Jira 課題を作成できます：
+`/tgd-plan` が `TASKS.md` を生成すると、**`tgd-jira-auto-sync`** スキルで確認付きの同期を実行できます：
 ```
-/tgd-plan → TASKS.md 生成 → ユーザー確認 → Jira 課題作成
+/tgd-plan → TASKS.md → Jira プレビューまたはスキップを選択 → Project key を選択 → dry-run + digest → 確認 → 適用 → 検証 → 書き戻し
 ```
 
 ---
@@ -715,7 +718,7 @@ tGD/
 | スキル | 用途 |
 |--------|------|
 | [tgd-planning-and-task-breakdown](skills/tgd-planning-and-task-breakdown/SKILL.md) | TASKS.md に分解 |
-| [tgd-jira-auto-sync](skills/tgd-jira-auto-sync/SKILL.md) | Jira issue 自動作成 |
+| [tgd-jira-auto-sync](skills/tgd-jira-auto-sync/SKILL.md) | TASKS.md から Jira issue の同期をプレビュー・確認・検証 |
 </details>
 
 <details>
