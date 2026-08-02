@@ -1,0 +1,13 @@
+# Regression Catalog
+
+> Cumulative catalog of `[R]` regression tests across all shipped features.
+> Every entry must point to an existing, passing test file.
+> Last audited: YYYY-MM-DD
+
+---
+
+### [<feature-name>] Short description
+- **Criterion:** Given X, When Y, Then Z
+- **Test:** `tests/path/to/test.ts`
+- **Repo:** <repo-name>   (multi-repo features ONLY — from the task's `[repo-name]` tag; omit for single-repo. `regression-gate.sh` uses it to run each entry against the right worktree.)
+- **Shipped:** vYYYY.MM.DD

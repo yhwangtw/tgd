@@ -52,43 +52,8 @@ Improve code health before merge. If the change is larger than ~100 lines, split
 
 After completing the review, create `$TGD_DIR/<feature-name>/REVIEW.md` using this template:
  
-```markdown
-# REVIEW: [Feature Name]
- 
-> **Date**: YYYY-MM-DD
- 
-## 1. Code Review Findings
-| # | Severity | File:Line | Issue | Recommendation | Resolution |
-|---|----------|-----------|-------|----------------|------------|
- 
-Severities: 🔴 Critical (must fix before merge) · 🟠 Important (should fix before merge) · 🟡 Nit (optional) · 🟢 FYI (informational)
-Resolution: `fixed` / `deferred — <justification>` / `open`. Every 🔴 row MUST read `fixed` before Sign-off; 🟠 may be `deferred` only with the justification written in the cell. `/tgd-release` reads this column — a row without it is indistinguishable from an unfixed finding.
- 
-## 2. Security Scan
-- **Tool**: [tool or "manual review"]
-- **Findings**: [results or "clean"]
-- **Status**: ✅ Pass / ⚠️ Warnings / 🛑 Fail
- 
-## 3. Performance Analysis
-- **Concerns**: [none / list]
-- **Status**: ✅ Pass / ⚠️ Warnings
- 
-## 4. Simplification
-- **Applied**: [list or "none needed"]
-- **Lines reduced**: [N]
 
-## Design Conformance (if UI)
-- **Approved source**: [DESIGN.md revision / external design revision]
-- **Verified commit**: [SHA from TEST-REPORT.md]
-- **Evidence**: [paths under evidence/ui/ or stable CI artifact URLs]
-- **Deviations**: [none / list, each matched to DESIGN.md Allowed Deviations]
-- **Status**: ✅ Pass / 🛑 Fail
- 
-## Sign-off
-- [ ] **QA**: (pending)
-- [ ] **DEV**: (pending)
-- [ ] **DESIGN**: (pending — UI only; approve as `Implementation Approved` after reviewing the evidence and built UI)
-```
+> Canonical template: `$TGD_REPO_ROOT/templates/REVIEW.md.tmpl`.
  
 **🔁 Re-test after review changes:** if ANY code changed during this phase (finding fixes or simplification), **commit the changes on the feature branch first**, then re-run the capture in the affected worktree BEFORE sign-off — `bash "$TGD_REPO_ROOT/scripts/capture-test-output.sh" "$TGD_DIR/<feature-name>/TEST-REPORT.md"` (multi-repo: repo name as the 3rd arg). If UI-affecting code changed, also re-run `/tgd-verify`'s Design Conformance Gate and replace `## UI Verification` evidence with the new commit SHA. The TEST-REPORT green light was taken against the pre-review code; a sign-off on top of stale evidence certifies code that was never tested. A review fix left uncommitted is invisible to the release merge, while evidence captured before the commit cannot identify the state it certifies.
 

@@ -12,9 +12,11 @@ def read(relative_path: str) -> str:
 class DesignFlowContractTests(unittest.TestCase):
     def test_map_records_frontend_design_context(self) -> None:
         map_command = read(".claude/commands/tgd-map.md")
-        self.assertIn("## UI Landscape", map_command)
-        self.assertIn("Design-system source", map_command)
-        self.assertIn("Token source", map_command)
+        context_template = read("templates/CONTEXT.md.tmpl")
+        self.assertIn("templates/CONTEXT.md.tmpl", map_command)
+        self.assertIn("## UI Landscape", context_template)
+        self.assertIn("Design-system source", context_template)
+        self.assertIn("Token source", context_template)
 
     def test_define_places_design_between_prd_and_spec(self) -> None:
         define_command = read(".claude/commands/tgd-define.md")

@@ -50,6 +50,8 @@ skills under `.codex/skills/`.
 
 All artifacts live under `$TGD_DIR/<feature-name>/`. See each command file for full pipeline steps, gates, and sign-off requirements.
 
+Canonical artifact skeletons live under `$TGD_REPO_ROOT/templates/` and are indexed by `templates/manifest.yaml`. Skills describe how to fill them; validators and capture scripts read the shared templates instead of maintaining duplicate inline copies.
+
 If the user types a command, invoke it. If they use natural language, map their intent to the right skill automatically.
 
 Use these commands in order. Do not skip phases:

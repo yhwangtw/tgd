@@ -1,0 +1,88 @@
+# TASKS.md: [Feature Name]
+
+> **Corresponding PRD**: [PRD.md](PRD.md)
+> **Tech Stack**: [List from SPEC]
+> **Jira-Source-ID**: tgd-source-[generate one lowercase UUID v4 and preserve it forever]
+
+## Overview
+[One paragraph summary of what we're building]
+
+## Architecture Decisions
+- [Key decision 1 and rationale]
+- [Key decision 2 and rationale]
+
+---
+
+## Task 1: [User Story Title] (Story ID: US-01)
+**Status:** pending <!-- pending | in-progress | complete | blocked: <ref>. The ONLY task-state marker: /tgd-develop flips it, resume + re-plan read it. Do not invent checkboxes/emoji variants. -->
+**Spec-Review:** pending <!-- pending | PASS — <one line> | FAIL — <one line>. Flipped by /tgd-develop's two-stage review; /tgd-verify fails closed on a complete task left pending. -->
+**Quality-Review:** pending <!-- same states; flipped after the code-quality review pass. -->
+**Jira:** —
+**Jira-Sync-ID:** —
+
+### 1. Context & Goal
+[What is the goal of this task? Why is it important?]
+- **Priority**: [High/Medium/Low]
+- **Dependencies**: [None / Task N]
+
+### 2. Technical Design
+
+**Database Schema (if any):**
+```[Language]
+// Example: Prisma Schema or SQL
+```
+
+**API Contract:**
+- **Method** `/endpoint`
+- **Input**: `{ ... }`
+- **Output**: `Status Code { ... }`
+
+### 3. Acceptance Criteria (BDD)
+- Every task must use **BDD** (Given/When/Then) format — this ensures all criteria are behavior-level, testable, and consistent with REGRESSION-CATALOG entries.
+- Every criterion carries a **stable ID**: `AC-<task>.<n>` (AC-1.1, AC-1.2, …). The verifying test MUST mention this ID in its name, docstring, or a comment — `ac-trace.py` cross-references them during `/tgd-verify`.
+
+- **AC-1.1** — **Given** [initial context] **When** [event happens] **Then** [expected outcome]
+  - **Regression**: [Yes `[R]` / No]
+  - **Test**: [`tests/path/to/test.ts` — filled during `/tgd-develop`; MANDATORY for `[R]` criteria]
+
+- **Every criterion declares its carrier** — `Test:` for anything with runtime
+  behavior, or `Doc:` for documentation-only criteria (README sections, usage
+  examples — content with no runtime surface):
+  - **Doc**: `README.md` contains "getMonthlySummary("
+  `ac-trace.py` verifies a `Doc:` carrier by checking the named file exists and
+  contains the quoted string — no test reference is required or expected.
+  Without this, doc-only criteria force a workaround (agents paste the AC id
+  into an unrelated test file as a comment just to satisfy the trace).
+  Doc-only criteria can never be `[R]` — the regression catalog replays
+  executable tests only.
+
+- **`[R]` marking rules** — must mark `[R]` if the criterion matches ANY of:
+  - (a) Verifies an acceptance criterion from the PRD's User Stories table (a US-xx row's "Acceptance Criteria" column) or a PRD Success Metric. (Note the namespaces: PRD rows are `US-xx`; the `AC-<task>.<n>` ids exist only in TASKS.md.)
+  - (b) Covers a critical user path (auth, payment, data loss, security boundary)
+  - (c) Catches a previously-fixed bug from `REGRESSION-CATALOG.md`
+  - **SHOULD NOT mark `[R]`** if criterion is: cosmetic, internal refactor, dev-only tooling, single-use migration
+  - **When in doubt**: mark `[R]`. The cost of an extra catalog entry is low; the cost of missing a regression is high.
+  - **If `[R]`**: a corresponding test MUST be created during `/tgd-develop` (TDD) and its path recorded in the criterion's `Test:` field. It will be added to `$TGD_DIR/REGRESSION-CATALOG.md` during `/tgd-release`.
+  - **Enforcement (machine-gated)**: `/tgd-verify` runs `python3 $TGD_REPO_ROOT/scripts/ac-trace.py $TGD_DIR/<feature>/ <client-repo>` — it fails when any AC id is unreferenced by tests (or, for `Doc:` criteria, when the named file is missing or lacks the quoted string), when any `[R]` criterion lacks a `Test:` file, or when that file is missing on disk. A TASKS.md without AC ids fails closed.
+
+### 4. Files Likely Touched
+- `path/to/file.ts`
+- `tests/path/to/test.ts`
+
+---
+
+## Checkpoint: Verification
+✅ All tests pass (`npm test`)
+✅ Build succeeds
+✅ Lint clean
+
+## Risks & Mitigations
+| Risk | Impact | Mitigation |
+|------|--------|------------|
+| [Risk] | High/Med/Low | [Strategy] |
+
+## Open Questions
+- [Question needing human input]
+
+## Sign-off
+- [ ] **DEV**: (pending)

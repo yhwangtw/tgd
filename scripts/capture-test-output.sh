@@ -35,48 +35,21 @@ set -e
 REPORT_PATH="${1:?Usage: bash $0 <test-report-path> [test-cmd] [label]}"
 TEST_CMD="${2:-}"
 LABEL="${3:-}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+TGD_REPO_ROOT="${TGD_REPO_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd -P)}"
+TEMPLATE_PATH="$TGD_REPO_ROOT/templates/TEST-REPORT.md.tmpl"
+
+if [ ! -r "$TEMPLATE_PATH" ]; then
+    echo "❌ TEST-REPORT template missing: $TEMPLATE_PATH"
+    exit 2
+fi
 
 if [ ! -f "$REPORT_PATH" ]; then
     # Create the skeleton so /tgd-verify's "creates the report if needed"
     # is literally true. The agent fills the tables from the meta-comment
     # this script appends — numbers come from the machine, not memory.
     mkdir -p "$(dirname "$REPORT_PATH")"
-    cat > "$REPORT_PATH" <<'SKELETON'
-# TEST-REPORT: [Feature Name]
-
-> **Date**: YYYY-MM-DD
-
-## 1. Test Summary
-| Suite | Passed | Failed | Skipped |
-|-------|--------|--------|---------|
-| Unit | | | |
-| Integration | | | |
-| E2E | | | |
-
-Exit code: `0` (PASS) / `1` (FAIL)
-
-## 2. Coverage
-| Metric | Value |
-|--------|-------|
-| Lines | |
-| Branches | |
-| Functions | |
-
-## 3. Failures & Root Causes
-| Test | Error | Root Cause | Fix Applied |
-|------|-------|------------|-------------|
-
-## 4. Flaky Tests
-| Test | Behavior | Follow-up |
-|------|----------|-----------|
-
-## 5. Regression Status
-- [ ] regression-gate.sh exits 0 (or 3 = no catalog yet)
-- [ ] No cross-feature regressions introduced
-
-## Sign-off
-- [ ] **QA**: (pending)
-SKELETON
+    cp "$TEMPLATE_PATH" "$REPORT_PATH"
     echo "📝 Created TEST-REPORT skeleton: $REPORT_PATH"
 elif ! grep -qF '## Sign-off' "$REPORT_PATH"; then
     # The agent hand-created the report before this script ran, so the skeleton
