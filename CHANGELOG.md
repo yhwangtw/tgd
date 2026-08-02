@@ -4,6 +4,14 @@ All notable changes to tGD will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/). Versions follow [CalVer](https://calver.org/) (YYYY.MM.DD).
 
+## v2026.08.02
+
+### ✨ Features
+- add confirmation-gated Jira sync (#4) (`d2aaf9d`)
+
+### 🔧 Chores
+- prepare Jira sync release notes (`49c69d0`)
+
 ## v2026.07.31
 
 ### 📝 Documentation
