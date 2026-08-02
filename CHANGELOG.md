@@ -4,11 +4,13 @@ All notable changes to tGD will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/). Versions follow [CalVer](https://calver.org/) (YYYY.MM.DD).
 
-## Unreleased
+## v2026.08.02
 
 ### ✨ Features
-- replace automatic Jira writes with an exact-project, dry-run-first, digest-confirmed CLI flow that verifies remote issues before TASKS.md writeback; discover every required field generically (including Sprint), keep Agile API logic out, and keep PATs environment-only
-- migrate legacy `[KEY-123]` task links through an explicit ownership-checked `adopt` action; fail closed on malformed identity responses, preserve unrelated Jira labels, and keep generated task identities stable across safe re-plans
+- add confirmation-gated Jira sync (#4) (`d2aaf9d`)
+
+### 🔧 Chores
+- prepare Jira sync release notes (`49c69d0`)
 
 ## v2026.07.31
 

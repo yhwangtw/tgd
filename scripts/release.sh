@@ -279,4 +279,4 @@ if [ "$START_BRANCH" = "main" ]; then
 else
     echo "   Open a PR and merge to main — CI (release.yml) tags and publishes on merge."
 fi
-echo "   Watch: https://github.com/openclawyhwang-hub/tGD/actions/workflows/release.yml"
+echo "   Watch: https://github.com/yhwangtw/tgd/actions/workflows/release.yml"
