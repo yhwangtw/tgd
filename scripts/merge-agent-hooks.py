@@ -150,7 +150,7 @@ def _is_recognized_tgd_checkout(path: Path) -> bool:
         (path / "setup.sh").is_file()
         and (path / "VERSION").is_file()
         and (
-            (path / "skills" / "tgd-rules" / "SKILL.md").is_file()
+            (path / "skills" / "tgd-core-rules" / "SKILL.md").is_file()
             or (path / "skills" / "rules" / "SKILL.md").is_file()
         )
     )

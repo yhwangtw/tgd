@@ -31,15 +31,15 @@ class DesignFlowContractTests(unittest.TestCase):
         self.assertIn("`not-applicable` for mode 4", define_command)
 
     def test_sketch_uses_context_as_navigation_and_source_files_as_truth(self) -> None:
-        sketch_skill = read("skills/tgd-sketch/SKILL.md")
+        sketch_skill = read("skills/tgd-define-sketch/SKILL.md")
         self.assertIn("CONTEXT.md is navigation, not the visual source of truth", sketch_skill)
         self.assertIn("0 variants", sketch_skill)
         self.assertIn("2 variants", sketch_skill)
         self.assertIn("3 variants", sketch_skill)
 
     def test_design_system_precedence_is_consistent(self) -> None:
-        spec_skill = read("skills/tgd-spec-driven-development/SKILL.md")
-        frontend_skill = read("skills/tgd-frontend-ui-engineering/SKILL.md")
+        spec_skill = read("skills/tgd-define-spec/SKILL.md")
+        frontend_skill = read("skills/tgd-develop-ui/SKILL.md")
         precedence = "Existing design system > approved DESIGN.md additions > tGD fallback defaults"
         self.assertIn(precedence, spec_skill)
         self.assertIn(precedence, frontend_skill)
@@ -57,7 +57,7 @@ class DesignFlowContractTests(unittest.TestCase):
             self.assertIn("PRD UI mode is 1–3", phase)
 
     def test_design_handoff_does_not_add_a_lifecycle_stage(self) -> None:
-        rules = read("skills/tgd-rules/SKILL.md")
+        rules = read("skills/tgd-core-rules/SKILL.md")
         self.assertIn("role handoffs resume the same Define phase", rules)
         self.assertIn("tGD has four human roles", rules)
         self.assertFalse((ROOT / ".claude/commands/tgd-design.md").exists())

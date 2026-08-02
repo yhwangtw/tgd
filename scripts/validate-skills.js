@@ -44,8 +44,8 @@ const REQUIRED_SECTIONS = [
 // cannot bypass the validator by editing their own skill file.
 // Every entry must have a documented reason.
 const SECTION_EXEMPT_SKILLS = {
-  'tgd-router': 'Meta-skill — orchestrates other skills; When-to-Use and Verification are not applicable to a routing document.',
-  'tgd-idea-refine':        'Legacy structure predating skill-anatomy.md — uses How-It-Works/Usage/Anti-patterns instead of standard headings. Tracked for conformance in https://github.com/openclowyhwang-hub/tGD/issues',
+  'tgd-core-router': 'Meta-skill — orchestrates other skills; When-to-Use and Verification are not applicable to a routing document.',
+  'tgd-define-ideate':        'Legacy structure predating skill-anatomy.md — uses How-It-Works/Usage/Anti-patterns instead of standard headings. Tracked for conformance in https://github.com/openclowyhwang-hub/tGD/issues',
 };
 
 // Regex patterns that indicate an explicit cross-skill reference.

@@ -73,10 +73,10 @@ request and maps it to the appropriate skill.
 
 Examples:
 
-- "build a feature" → `tgd-incremental-implementation` + `tgd-test-driven-development`
-- "design a system" → `tgd-spec-driven-development`
-- "fix a bug" → `tgd-debugging-and-error-recovery`
-- "review this code" → `tgd-code-review-and-quality`
+- "build a feature" → `tgd-develop-incremental` + `tgd-develop-tdd`
+- "design a system" → `tgd-define-spec`
+- "fix a bug" → `tgd-verify-debug`
+- "review this code" → `tgd-review-quality`
 
 The user does **not** need to explicitly request skills, although automatic
 selection depends on model compliance. Use a `/tgd-*` command when you want to
@@ -86,12 +86,12 @@ choose the lifecycle entry point explicitly.
 
 The development lifecycle is encoded implicitly:
 
-- DEFINE → `tgd-spec-driven-development`
-- PLAN → `tgd-planning-and-task-breakdown`
-- BUILD → `tgd-incremental-implementation` + `tgd-test-driven-development`
-- VERIFY → `tgd-debugging-and-error-recovery`
-- REVIEW → `tgd-code-review-and-quality`
-- SHIP → `tgd-shipping-and-launch`
+- DEFINE → `tgd-define-spec`
+- PLAN → `tgd-plan-breakdown`
+- BUILD → `tgd-develop-incremental` + `tgd-develop-tdd`
+- VERIFY → `tgd-verify-debug`
+- REVIEW → `tgd-review-quality`
+- SHIP → `tgd-release-ship`
 
 The same mappings are available explicitly as `/tgd-define`, `/tgd-plan`,
 `/tgd-develop`, `/tgd-verify`, `/tgd-review`, and `/tgd-release`, with
@@ -110,7 +110,7 @@ Add authentication to this app
 
 Agent behavior:
 - Detects feature work
-- Invokes `tgd-spec-driven-development`
+- Invokes `tgd-define-spec`
 - Produces a spec before writing code
 - Moves to planning and implementation skills
 
@@ -124,7 +124,7 @@ This endpoint is returning 500 errors
 ```
 
 Agent behavior:
-- Invokes `tgd-debugging-and-error-recovery`
+- Invokes `tgd-verify-debug`
 - Reproduces → localizes → fixes → adds guards
 
 ---
@@ -137,7 +137,7 @@ Review this PR
 ```
 
 Agent behavior:
-- Invokes `tgd-code-review-and-quality`
+- Invokes `tgd-review-quality`
 - Applies structured review (correctness, design, readability, etc.)
 
 ---

@@ -333,13 +333,13 @@ Sprint 跟其他 Jira 欄位相同：只有 Jira 標示為必填時，tGD 才會
 
 | 🎯 做什麼 | ⌨️ 指令 | 💡 核心原則 | 🔧 呼叫的 Skills |
 |---|---|---|---|
-| 了解專案 | `/tgd-map` | 先有 context 再動手 + 即時 dashboard | `tgd-context-engineering` + `codegraph init` + `understand-dashboard` |
-| 定義要做什麼 | `/tgd-define` | PRD → 條件式 0/2/3 設計 → 最終 SPEC | `tgd-interview-me` → `tgd-idea-refine` → `tgd-spec-driven-development` + `tgd-sketch`（需要時） |
-| 規劃怎麼做 | `/tgd-plan` | 讀 CONTEXT + PRD + SPEC + 核准設計 → 原子任務 | `tgd-planning-and-task-breakdown` → `tgd-jira-auto-sync`（僅在選擇 Jira 預覽時） |
-| 沙盒建造 | `/tgd-develop` | **強制 Worktree** + 智能路由 | `tgd-source-driven-development` → (`subagent` OR `incremental`) → `tgd-test-driven-development` |
-| 證明它能跑 | `/tgd-verify` | 測試就是證明 | `tgd-debugging-and-error-recovery` → `tgd-test-driven-development` → **Cross-Feature Regression Gate** |
-| 合併前審查 | `/tgd-review` | 改善程式碼健康 | `tgd-code-review-and-quality` → `tgd-code-simplification` |
-| 部署到生產 | `/tgd-release` | 快就是安全 | `tgd-git-workflow-and-versioning` → `tgd-shipping-and-launch` → **Regression Catalog Update + Audit** → **METRICS.md 交接** |
+| 了解專案 | `/tgd-map` | 先有 context 再動手 + 即時 dashboard | `tgd-core-context` + `codegraph init` + `understand-dashboard` |
+| 定義要做什麼 | `/tgd-define` | PRD → 條件式 0/2/3 設計 → 最終 SPEC | `tgd-define-interview` → `tgd-define-ideate` → `tgd-define-spec` + `tgd-define-sketch`（需要時） |
+| 規劃怎麼做 | `/tgd-plan` | 讀 CONTEXT + PRD + SPEC + 核准設計 → 原子任務 | `tgd-plan-breakdown` → `tgd-plan-jira`（僅在選擇 Jira 預覽時） |
+| 沙盒建造 | `/tgd-develop` | **強制 Worktree** + 智能路由 | `tgd-develop-source` → (`subagent` OR `incremental`) → `tgd-develop-tdd` |
+| 證明它能跑 | `/tgd-verify` | 測試就是證明 | `tgd-verify-debug` → `tgd-develop-tdd` → **Cross-Feature Regression Gate** |
+| 合併前審查 | `/tgd-review` | 改善程式碼健康 | `tgd-review-quality` → `tgd-review-simplify` |
+| 部署到生產 | `/tgd-release` | 快就是安全 | `tgd-core-git` → `tgd-release-ship` → **Regression Catalog Update + Audit** → **METRICS.md 交接** |
 
 ---
 
@@ -398,7 +398,7 @@ Agent 自動從 SPEC.md 的 tech stack 偵測 test runner：
 | Go | `go test` | `//go:build regression` 或 `TestXxxRegression` 命名 |
 | Rust | `cargo test` | 命名慣例 |
 | Java | junit / mvn test | `@Tag("regression")` |
-| E2E (any) | tgd-agent-browser | 獨立 regression suite |
+| E2E (any) | tgd-verify-browser | 獨立 regression suite |
 
 ### 🧪 Verify：跑測試 + 產報告
 
@@ -438,7 +438,7 @@ Command: pytest -v --tb=short
 
 TEST-REPORT.md 是**自動產生**的，不是手寫的。Agent 解析 test runner 輸出（JSON / TAP / plain text）轉成固定格式。
 
-**Frontend 額外要求：** 若 DESIGN.md 存在，Verify 必須跑 `tgd-agent-browser`，並把指定 viewport、runtime state 與 accessibility 的設計一致性證據寫進 TEST-REPORT.md。
+**Frontend 額外要求：** 若 DESIGN.md 存在，Verify 必須跑 `tgd-verify-browser`，並把指定 viewport、runtime state 與 accessibility 的設計一致性證據寫進 TEST-REPORT.md。
 
 ### 🏷️ Regression：安全網
 
@@ -529,7 +529,7 @@ tGD 有四個角色。各角色可只使用自己需要的共享 artifacts，一
 ## 🔗 整合
 
 ### Jira Data Center
-當 `/tgd-plan` 產生 `TASKS.md` 時，**`tgd-jira-auto-sync`** skill 會以明確確認為前提同步 Jira：
+當 `/tgd-plan` 產生 `TASKS.md` 時，**`tgd-plan-jira`** skill 會以明確確認為前提同步 Jira：
 ```
 /tgd-plan → TASKS.md → 選擇 Jira 預覽或略過 → 選定 Project key → dry-run + digest → 確認 → 套用 → 驗證 → 回寫
 ```
@@ -728,68 +728,68 @@ tGD/
 
 ## 📦 全部 29 個 Skills
 
-上面的指令是入口點。這個 pack 包含 29 個 skills——27 個生命週期 skill 加上 `tgd-router` 元 skill 和 `tgd-rules` 核心規則。
+上面的指令是入口點。這個 pack 包含 29 個內部 skill，能綁定生命週期的都採用 lifecycle 命名。既有安裝請參考[skill lifecycle 命名與遷移對照表](docs/skill-lifecycle-naming.md)。
 
 ### 🧭 Meta
 | Skill | 用途 |
 |---|---|
-| [tgd-router](skills/tgd-router/SKILL.md) | 將工作映射到正確的 skill |
-| [tgd-rules](skills/tgd-rules/SKILL.md) | 核心規則——驗證鐵律、反合理化 |
+| [tgd-core-router](skills/tgd-core-router/SKILL.md) | 將工作映射到正確的 skill |
+| [tgd-core-rules](skills/tgd-core-rules/SKILL.md) | 核心規則——驗證鐵律、反合理化 |
 
 ### 🗺️ Map
 | Skill | 用途 |
 |---|---|
-| [tgd-context-engineering](skills/tgd-context-engineering/SKILL.md) | 餵給 agent 正確的資訊 |
-| [tgd-wiki-generation](skills/tgd-wiki-generation/SKILL.md) | DeepWiki 風格的多 repo 文件站——獨立工具，直接呼叫使用；自 v2026.07.09 起不在 `/tgd-map` pipeline 內 |
+| [tgd-core-context](skills/tgd-core-context/SKILL.md) | 餵給 agent 正確的資訊 |
+| [tgd-support-wiki](skills/tgd-support-wiki/SKILL.md) | DeepWiki 風格的多 repo 文件站——獨立工具，直接呼叫使用；自 v2026.07.09 起不在 `/tgd-map` pipeline 內 |
 
 ### 📋 Define
 | Skill | 用途 |
 |---|---|
-| [tgd-interview-me](skills/tgd-interview-me/SKILL.md) | 透過 Q&A 提取使用者意圖 |
-| [tgd-idea-refine](skills/tgd-idea-refine/SKILL.md) | 發散/收斂思考 |
-| [tgd-spec-driven-development](skills/tgd-spec-driven-development/SKILL.md) | PRD → UI 設計路由（0/2/3 變體）→ 最終 SPEC |
-| [tgd-sketch](skills/tgd-sketch/SKILL.md) | 依產品 context 產生 HTML mockup：按模式 0/2/3 個變體 |
+| [tgd-define-interview](skills/tgd-define-interview/SKILL.md) | 透過 Q&A 提取使用者意圖 |
+| [tgd-define-ideate](skills/tgd-define-ideate/SKILL.md) | 發散/收斂思考 |
+| [tgd-define-spec](skills/tgd-define-spec/SKILL.md) | PRD → UI 設計路由（0/2/3 變體）→ 最終 SPEC |
+| [tgd-define-sketch](skills/tgd-define-sketch/SKILL.md) | 依產品 context 產生 HTML mockup：按模式 0/2/3 個變體 |
 
 ### 📐 Plan
 | Skill | 用途 |
 |---|---|
-| [tgd-planning-and-task-breakdown](skills/tgd-planning-and-task-breakdown/SKILL.md) | 將規格拆解為 TASKS.md |
-| [tgd-jira-auto-sync](skills/tgd-jira-auto-sync/SKILL.md) | 從 TASKS.md 預覽、確認並驗證 Jira issue 同步 |
+| [tgd-plan-breakdown](skills/tgd-plan-breakdown/SKILL.md) | 將規格拆解為 TASKS.md |
+| [tgd-plan-jira](skills/tgd-plan-jira/SKILL.md) | 從 TASKS.md 預覽、確認並驗證 Jira issue 同步 |
 
 ### ⚡ Develop
 | Skill | 用途 |
 |---|---|
-| [tgd-subagent-driven-development](skills/tgd-subagent-driven-development/SKILL.md) | 透過新子代理並行處理任務 |
-| [tgd-incremental-implementation](skills/tgd-incremental-implementation/SKILL.md) | 薄的垂直切片 |
-| [tgd-verification-before-completion](skills/tgd-verification-before-completion/SKILL.md) | 聲明完成前必須有證據 |
-| [tgd-test-driven-development](skills/tgd-test-driven-development/SKILL.md) | Red-Green-Refactor |
-| [tgd-source-driven-development](skills/tgd-source-driven-development/SKILL.md) | 以官方文件為依據 |
-| [tgd-doubt-driven-development](skills/tgd-doubt-driven-development/SKILL.md) | 對抗式審查 |
-| [tgd-frontend-ui-engineering](skills/tgd-frontend-ui-engineering/SKILL.md) | UI 架構 & 設計系統 |
-| [tgd-api-and-interface-design](skills/tgd-api-and-interface-design/SKILL.md) | 合約優先的 API 設計 |
+| [tgd-develop-subagents](skills/tgd-develop-subagents/SKILL.md) | 透過新子代理並行處理任務 |
+| [tgd-develop-incremental](skills/tgd-develop-incremental/SKILL.md) | 薄的垂直切片 |
+| [tgd-verify-completion](skills/tgd-verify-completion/SKILL.md) | 聲明完成前必須有證據 |
+| [tgd-develop-tdd](skills/tgd-develop-tdd/SKILL.md) | Red-Green-Refactor |
+| [tgd-develop-source](skills/tgd-develop-source/SKILL.md) | 以官方文件為依據 |
+| [tgd-core-doubt](skills/tgd-core-doubt/SKILL.md) | 對抗式審查 |
+| [tgd-develop-ui](skills/tgd-develop-ui/SKILL.md) | UI 架構 & 設計系統 |
+| [tgd-define-api](skills/tgd-define-api/SKILL.md) | 合約優先的 API 設計 |
 
 ### 🧪 Verify
 | Skill | 用途 |
 |---|---|
-| [tgd-agent-browser](skills/tgd-agent-browser/SKILL.md) | E2E 瀏覽器自動化、CDP 指令工具 |
-| [tgd-debugging-and-error-recovery](skills/tgd-debugging-and-error-recovery/SKILL.md) | 分診、修復、防護 |
+| [tgd-verify-browser](skills/tgd-verify-browser/SKILL.md) | E2E 瀏覽器自動化、CDP 指令工具 |
+| [tgd-verify-debug](skills/tgd-verify-debug/SKILL.md) | 分診、修復、防護 |
 
 ### 🔎 Review
 | Skill | 用途 |
 |---|---|
-| [tgd-code-review-and-quality](skills/tgd-code-review-and-quality/SKILL.md) | 五軸審查 |
-| [tgd-code-simplification](skills/tgd-code-simplification/SKILL.md) | 降低複雜度 |
-| [tgd-security-and-hardening](skills/tgd-security-and-hardening/SKILL.md) | OWASP & 密鑰管理 |
-| [tgd-performance-optimization](skills/tgd-performance-optimization/SKILL.md) | 效能分析 & 反模式 |
+| [tgd-review-quality](skills/tgd-review-quality/SKILL.md) | 五軸審查 |
+| [tgd-review-simplify](skills/tgd-review-simplify/SKILL.md) | 降低複雜度 |
+| [tgd-review-security](skills/tgd-review-security/SKILL.md) | OWASP & 密鑰管理 |
+| [tgd-review-performance](skills/tgd-review-performance/SKILL.md) | 效能分析 & 反模式 |
 
 ### 🚀 Release
 | Skill | 用途 |
 |---|---|
-| [tgd-git-workflow-and-versioning](skills/tgd-git-workflow-and-versioning/SKILL.md) | 原子提交 & 主幹開發 |
-| [tgd-ci-cd-and-automation](skills/tgd-ci-cd-and-automation/SKILL.md) | Shift Left & 功能旗標 |
-| [tgd-deprecation-and-migration](skills/tgd-deprecation-and-migration/SKILL.md) | 遷移模式 |
-| [tgd-documentation-and-adrs](skills/tgd-documentation-and-adrs/SKILL.md) | ADR & API 文件 |
-| [tgd-shipping-and-launch](skills/tgd-shipping-and-launch/SKILL.md) | 漸進式部署 & 監控 |
+| [tgd-core-git](skills/tgd-core-git/SKILL.md) | 原子提交 & 主幹開發 |
+| [tgd-release-ci](skills/tgd-release-ci/SKILL.md) | Shift Left & 功能旗標 |
+| [tgd-release-migration](skills/tgd-release-migration/SKILL.md) | 遷移模式 |
+| [tgd-review-adr](skills/tgd-review-adr/SKILL.md) | ADR & API 文件 |
+| [tgd-release-ship](skills/tgd-release-ship/SKILL.md) | 漸進式部署 & 監控 |
 
 ---
 
@@ -801,7 +801,7 @@ tGD/
 2. 🔧 探索[全部 29 個 Skills](#-全部-29-個-skills)看有什麼可用
 3. 🤖 試試 [Agent Personas](#-agent-personas) 專門化審查
 4. 🔗 設定 [Jira 整合](#jira-data-center) 任務追蹤
-5. 🌐 啟用 [tgd-agent-browser](skills/tgd-agent-browser/SKILL.md) E2E 瀏覽器測試
+5. 🌐 啟用 [tgd-verify-browser](skills/tgd-verify-browser/SKILL.md) E2E 瀏覽器測試
 
 ---
 

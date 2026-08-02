@@ -33,7 +33,7 @@ class HookOutputContractTests(unittest.TestCase):
         self.assertIsInstance(specific, dict)
         context = specific.get("additionalContext")
         self.assertIsInstance(context, str)
-        self.assertIn("Load the `tgd-router` skill", context)
+        self.assertIn("Load the `tgd-core-router` skill", context)
         self.assertLess(len(context), 10_000)
         self.assertNotIn("priority", payload)
         self.assertNotIn("message", payload)

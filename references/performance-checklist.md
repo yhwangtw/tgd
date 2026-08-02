@@ -1,6 +1,6 @@
 # Performance Checklist
 
-Quick reference checklist for web application performance. Use alongside the `tgd-performance-optimization` skill.
+Quick reference checklist for web application performance. Use alongside the `tgd-review-performance` skill.
 
 ## Table of Contents
 

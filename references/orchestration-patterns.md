@@ -32,7 +32,7 @@ user → code-reviewer → report → user
 A slash command that wraps one persona with the project's skills. Saves the user from re-explaining the workflow every time.
 
 ```
-/tgd-review → code-reviewer (with tgd-code-review-and-quality skill) → report
+/tgd-review → code-reviewer (with tgd-review-quality skill) → report
 ```
 
 **Use when:** the same single-persona invocation happens repeatedly with the same setup.

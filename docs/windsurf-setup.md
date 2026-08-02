@@ -8,11 +8,11 @@ Windsurf uses `.windsurfrules` for project-specific agent instructions:
 
 ```bash
 # Create a combined rules file from your most important skills
-cat /path/to/tGD/skills/tgd-test-driven-development/SKILL.md > .windsurfrules
+cat /path/to/tGD/skills/tgd-develop-tdd/SKILL.md > .windsurfrules
 echo "\n---\n" >> .windsurfrules
-cat /path/to/tGD/skills/tgd-incremental-implementation/SKILL.md >> .windsurfrules
+cat /path/to/tGD/skills/tgd-develop-incremental/SKILL.md >> .windsurfrules
 echo "\n---\n" >> .windsurfrules
-cat /path/to/tGD/skills/tgd-code-review-and-quality/SKILL.md >> .windsurfrules
+cat /path/to/tGD/skills/tgd-review-quality/SKILL.md >> .windsurfrules
 ```
 
 ### Global Rules
@@ -44,5 +44,5 @@ Keep `.windsurfrules` focused on 2-3 essential skills to stay within context lim
 ## Usage Tips
 
 1. **Be selective** — Windsurf's context is limited. Choose skills that address your biggest quality gaps.
-2. **Reference in conversation** — Paste additional skill content into the chat when working on specific phases (e.g., paste `tgd-security-and-hardening` when building auth).
+2. **Reference in conversation** — Paste additional skill content into the chat when working on specific phases (e.g., paste `tgd-review-security` when building auth).
 3. **Use references as checklists** — Paste `references/security-checklist.md` and ask Windsurf to verify each item.

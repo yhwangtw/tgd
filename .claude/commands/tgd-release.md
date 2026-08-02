@@ -22,7 +22,7 @@ description: Release to production — faster is safer
 - **If missing:** STOP. Tell user: "Review or tests incomplete. Please run `/tgd-review` first."
 
 **🔏 Pre-flight: Sign-off Gate (HARD GATE)**
-Release is the one phase that blocks on human sign-off (see `tgd-rules` → Human Roles & Sign-off Protocol). Check the `## Sign-off` sections — with the scoped greps below, not by eyeballing. The `awk '/^## Sign-off/,0'` prefix restricts the match to the `## Sign-off` section (it sits at the bottom of each artifact): a file-wide grep would be satisfied by approval-shaped text elsewhere in the document — e.g. a PRD §6 metrics N/A sign-off written in the standard role format would pre-approve the release at define time.
+Release is the one phase that blocks on human sign-off (see `tgd-core-rules` → Human Roles & Sign-off Protocol). Check the `## Sign-off` sections — with the scoped greps below, not by eyeballing. The `awk '/^## Sign-off/,0'` prefix restricts the match to the `## Sign-off` section (it sits at the bottom of each artifact): a file-wide grep would be satisfied by approval-shaped text elsewhere in the document — e.g. a PRD §6 metrics N/A sign-off written in the standard role format would pre-approve the release at define time.
 - [ ] `$TGD_DIR/<feature-name>/TEST-REPORT.md` — **QA** approved:
       `awk '/^## Sign-off/,0' "$TGD_DIR/<feature-name>/TEST-REPORT.md" | grep -qF '[x] **QA**: Approved'`
 - [ ] `$TGD_DIR/<feature-name>/REVIEW.md` — **QA** AND **DEV** approved (run both):
@@ -37,15 +37,15 @@ Release is the one phase that blocks on human sign-off (see `tgd-rules` → Huma
       `awk '/^## Sign-off/,0' "$TGD_DIR/<feature-name>/REVIEW.md" | grep -qF '[x] **DESIGN**: Implementation Approved'`
 - **If any grep exits non-zero** (line unchecked, missing, or `Rejected`): 🛑 STOP. List the pending roles and wait — humans review async. Do NOT proceed "provisionally".
 
-Run the `tgd-shipping-and-launch` skill. This is the Release phase. The full pipeline is:
+Run the `tgd-release-ship` skill. This is the Release phase. The full pipeline is:
 
 **Core flow:**
-1. `tgd-git-workflow-and-versioning` — clean commit history, trunk-based development
+1. `tgd-core-git` — clean commit history, trunk-based development
 2. **🧹 Regression Catalog Audit — BEFORE merging** (MANDATORY if `$TGD_DIR/REGRESSION-CATALOG.md` exists). Run it in the worktree (`../project-<feature-name>`; multi-repo features have one per repo — `../project-<feature-name>-<repo-name>` — audit each), so a failure stops the release before anything lands on `main`:
    1. Read every entry in `$TGD_DIR/REGRESSION-CATALOG.md` (not just the current feature's).
    2. **Test file exists?** If the path is broken (file deleted, moved, or renamed): remove the entry. Log the removal in `$TGD_DIR/CHANGELOG.md` under a `## Catalog Cleanup` subsection.
-   3. **Feature deprecated?** If the feature's code was removed or deprecated in this cycle (`tgd-deprecation-and-migration` ran): remove its entries from the catalog.
-   4. **Every entry still passes?** Run the machine gate — do NOT eyeball it (resolve `$TGD_REPO_ROOT` per `tgd-rules` → **Resolving $TGD_REPO_ROOT**):
+   3. **Feature deprecated?** If the feature's code was removed or deprecated in this cycle (`tgd-release-migration` ran): remove its entries from the catalog.
+   4. **Every entry still passes?** Run the machine gate — do NOT eyeball it (resolve `$TGD_REPO_ROOT` per `tgd-core-rules` → **Resolving $TGD_REPO_ROOT**):
       `bash "$TGD_REPO_ROOT/scripts/regression-gate.sh" ../project-<feature-name> "$TGD_DIR"` (multi-repo: once per worktree — `../project-<feature-name>-<repo-name>` as the first arg AND the repo name as the third, so entries tagged `Repo:` for other repos are skipped there instead of failing as missing)
       Exit 0 = pass. Exit 1 = 🛑 STOP — a shipped behavior regressed; fix before merging. Exit 2 = configuration error — fix the invocation, never treat as pass. Exit 3 = no catalog yet — skip this audit.
    5. After the audit, the catalog contains ONLY entries whose test files exist and pass. This prevents the catalog from becoming a zombie file full of dead references.
@@ -54,12 +54,12 @@ Run the `tgd-shipping-and-launch` skill. This is the Release phase. The full pip
    2. Merge `feature/<feature-name>` into `main` (or open a PR, per team policy — and WAIT for it to land before any cleanup).
    3. **AFTER the merge lands**, remove the worktree: `git worktree remove ../project-<feature-name>` (multi-repo: `../project-<feature-name>-<repo-name>`). Not before — if the PR's CI fails, the worktree is where you fix it.
    4. Then delete the branch: `git branch -d feature/<feature-name>`.
-4. `tgd-shipping-and-launch` — pre-launch checklist, staged rollouts, monitoring setup
+4. `tgd-release-ship` — pre-launch checklist, staged rollouts, monitoring setup
 
 **Conditional (apply when relevant):**
-- CI/CD pipeline work? → `tgd-ci-cd-and-automation`
-- Removing old systems? → `tgd-deprecation-and-migration`
-- New architecture or API? → `tgd-documentation-and-adrs`
+- CI/CD pipeline work? → `tgd-release-ci`
+- Removing old systems? → `tgd-release-migration`
+- New architecture or API? → `tgd-review-adr`
 
 Faster is safer. Deploy in stages, confirm monitoring, and have a rollback plan.
 
@@ -99,4 +99,4 @@ This catalog is cumulative — every shipped feature's `[R]` tests are preserved
 - [ ] `$TGD_DIR/<feature-name>/METRICS.md` created from PRD §6 with Actual left blank (skipped only for signed-off N/A); TRACKING-PLAN entries flipped to `live`
 - [ ] `$TGD_DIR/REGRESSION-CATALOG.md` updated with new `[R]` entries (if any)
 
-End with the closing report per `tgd-rules` → **Command Closing Report**: 📦 產出 (released version + CHANGELOG/METRICS/REGRESSION-CATALOG updates) · 🔎 檢查 (gate as one line) · ➡️ 下一步 確認 monitoring 已啟動、rollback plan 有記錄（發布是終點,不接下一個命令）. Don't paste the raw checklist above.
+End with the closing report per `tgd-core-rules` → **Command Closing Report**: 📦 產出 (released version + CHANGELOG/METRICS/REGRESSION-CATALOG updates) · 🔎 檢查 (gate as one line) · ➡️ 下一步 確認 monitoring 已啟動、rollback plan 有記錄（發布是終點,不接下一個命令）. Don't paste the raw checklist above.

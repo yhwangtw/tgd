@@ -8,7 +8,7 @@ coverage. 100% line coverage can still miss half the acceptance criteria —
 and an agent writing its own tests tends to write the easy ones. This
 script makes the gap visible and machine-enforced.
 
-Convention (defined in skills/tgd-planning-and-task-breakdown/SKILL.md):
+Convention (defined in skills/tgd-plan-breakdown/SKILL.md):
   - Every criterion in TASKS.md carries a stable ID:  **AC-<task>.<n>**
     (e.g. AC-1.1, AC-2.3)
   - Every test that verifies a criterion mentions the ID in its name,
@@ -122,7 +122,7 @@ def main() -> int:
         die(
             f"No AC-<task>.<n> IDs found in {tasks_path}.\n"
             "  Criteria must carry stable IDs (AC-1.1, AC-1.2, ...) — see\n"
-            "  skills/tgd-planning-and-task-breakdown/SKILL.md. A TASKS.md\n"
+            "  skills/tgd-plan-breakdown/SKILL.md. A TASKS.md\n"
             "  without IDs cannot be traced and fails closed."
         )
 

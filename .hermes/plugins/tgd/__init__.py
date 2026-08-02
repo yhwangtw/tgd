@@ -34,7 +34,10 @@ def _find_tgd_dir() -> Optional[Path]:
         Path(__file__).resolve().parent.parent.parent.parent,  # .hermes/plugins/tgd/ → repo root (when installed from tGD repo itself)
     ]
     for c in candidates:
-        if (c / "skills" / "tgd-router" / "SKILL.md").exists():
+        if (
+            (c / "skills" / "tgd-core-router" / "SKILL.md").exists()
+            or (c / "skills" / "tgd-router" / "SKILL.md").exists()
+        ):
             return c
 
     return None

@@ -23,23 +23,23 @@ prompt = """
 
 **🌳 Worktree:** If `../project-<feature-name>` exists (created by `/tgd-develop`), run all commands in this phase inside that worktree — the feature branch is not on `main` yet. Multi-repo features (TASKS.md has `[repo-name]` prefixes) have one worktree PER repo (`../project-<feature-name>-<repo-name>`) — run each repo's tests inside ITS worktree; verifying only one repo is a partial verify, not a pass.
 
-Run the `tgd-debugging-and-error-recovery` skill. This is the VERIFY phase. The full pipeline is:
+Run the `tgd-verify-debug` skill. This is the VERIFY phase. The full pipeline is:
 
 **Core flow:**
-1. `tgd-debugging-and-error-recovery` — five-step triage: reproduce → localize → reduce → fix → guard
-2. `tgd-test-driven-development` — verify with the test pyramid (80% unit, 15% integration, 5% E2E)
+1. `tgd-verify-debug` — five-step triage: reproduce → localize → reduce → fix → guard
+2. `tgd-develop-tdd` — verify with the test pyramid (80% unit, 15% integration, 5% E2E)
    - **If `codegraph` is available** (the `/tgd-map` Step 0.5 probe): use `codegraph affected <changed-files>` to identify which tests to prioritize based on actual dependency paths. If not installed, skip — run the full relevant suite instead; this enrichment is Tier 2, its absence is not a failure.
 
 **Conditional (Frontend Mandatory):**
-- **Frontend/UI/DOM?** → **MUST run `tgd-agent-browser`**. Unit tests are NOT sufficient for UI verification.
-  - Use `tgd-agent-browser` (preferred) to open the browser, perform the user action, and verify the DOM state.
-  - **Verification Gate Failure**: If the feature touches frontend code but `tgd-agent-browser` did not run, the verification is FAILED.
+- **Frontend/UI/DOM?** → **MUST run `tgd-verify-browser`**. Unit tests are NOT sufficient for UI verification.
+  - Use `tgd-verify-browser` (preferred) to open the browser, perform the user action, and verify the DOM state.
+  - **Verification Gate Failure**: If the feature touches frontend code but `tgd-verify-browser` did not run, the verification is FAILED.
 
 Verify that the feature works correctly before proceeding to review. Tests are proof — "seems right" is never sufficient.
 
 Run the test-output capture first — this is the raw evidence that backs the report.
 
-The gate scripts live in the **tGD repo itself** (`$TGD_REPO_ROOT/scripts/`), NOT in `$TGD_DIR` (the artifacts directory contains no scripts). Resolve `$TGD_REPO_ROOT` per `tgd-rules` → **Resolving $TGD_REPO_ROOT** (env var → `~/tGD` → installed-skill symlink).
+The gate scripts live in the **tGD repo itself** (`$TGD_REPO_ROOT/scripts/`), NOT in `$TGD_DIR` (the artifacts directory contains no scripts). Resolve `$TGD_REPO_ROOT` per `tgd-core-rules` → **Resolving $TGD_REPO_ROOT** (env var → `~/tGD` → installed-skill symlink).
 
 ```bash
 # Run from the WORKTREE (../project-<feature-name>/ — that's where the feature
@@ -77,7 +77,7 @@ python3 "$TGD_REPO_ROOT/scripts/ac-trace.py" "$TGD_DIR/<feature-name>/" .
 
 - **Exit 0** = every `AC-<task>.<n>` id in TASKS.md is referenced by at least one test (or, for documentation-only criteria with a `Doc:` carrier, the named file exists and contains the quoted string), and every `[R]` criterion names an existing test file. Proceed.
 - **Exit 1** = untraced criteria or `[R]` entries without valid `Test:` files — the output lists exactly which. 🛑 Write the missing tests (or tag the existing ones with the AC id), re-run, only then proceed.
-- **Exit 2** = TASKS.md missing or carries no AC ids. A plan without AC ids fails closed — fix TASKS.md (see `tgd-planning-and-task-breakdown`).
+- **Exit 2** = TASKS.md missing or carries no AC ids. A plan without AC ids fails closed — fix TASKS.md (see `tgd-plan-breakdown`).
 
 **📡 Event Test Check (only if `$TGD_DIR/TRACKING-PLAN.md` has entries for this feature)**
 
@@ -113,7 +113,7 @@ This is implementation QA against the approved direction, not another design pha
 
 1. Ensure the implementation being inspected is committed, then record `git rev-parse HEAD`. If Verify changes code, commit it and re-run every affected test/gate against the new SHA before reporting success.
 2. Read DESIGN.md and the actual design-system/token/component sources linked by CONTEXT.md. Verify the implemented user flow, information hierarchy, component mapping, token changes, interaction/state matrix, content, accessibility rules, responsive behavior, and allowed deviations.
-3. Exercise the UI at every named viewport with `tgd-agent-browser`. Capture the loading, empty, error, success, and disabled states that apply; verify keyboard traversal, visible focus, labels, and critical screen-reader semantics.
+3. Exercise the UI at every named viewport with `tgd-verify-browser`. Capture the loading, empty, error, success, and disabled states that apply; verify keyboard traversal, visible focus, labels, and critical screen-reader semantics.
 4. Save reproducible evidence under `$TGD_DIR/<feature-name>/evidence/ui/` (screenshots, traces, or concise text evidence) or record stable CI artifact URLs. Evidence MUST identify the tested commit SHA and viewport/state; a statement such as "looks correct" is not evidence.
 5. Append a `## UI Verification` section to TEST-REPORT.md with: commit SHA, source revision, viewports/states checked, evidence links/paths, deviations found, and `Status: Pass` or `Status: Fail`.
 6. Any implementation difference not listed under DESIGN.md `Allowed Deviations` is a failure. Fix the implementation or return to `/tgd-define` for explicit direction approval; do not silently rewrite DESIGN.md during Verify.
@@ -129,5 +129,5 @@ This is implementation QA against the approved direction, not another design pha
 - [ ] If PRD UI mode is 1–3: Design Conformance Gate passed and TEST-REPORT.md contains `## UI Verification` tied to the tested commit SHA, with viewport/state/accessibility evidence and no unapproved deviation
 - [ ] Each worktree is clean at the end of this phase: `git status --porcelain` is empty. Any change made during verify (new tests, AC tagging, fixes) MUST be committed on the feature branch — every gate result above must be reproducible from committed state, and untracked tool residue (coverage output, lockfiles from gate attempts) must be removed, or the release merge ships something other than what was verified.
 
-End with the closing report per `tgd-rules` → **Command Closing Report**: 📦 產出 (TEST-REPORT.md — real passed/failed + coverage) · 🔎 檢查 (gate as one line) · ➡️ 下一步 `/tgd-review` — 檢查程式碼品質. Don't paste the raw checklist above.
+End with the closing report per `tgd-core-rules` → **Command Closing Report**: 📦 產出 (TEST-REPORT.md — real passed/failed + coverage) · 🔎 檢查 (gate as one line) · ➡️ 下一步 `/tgd-review` — 檢查程式碼品質. Don't paste the raw checklist above.
 """

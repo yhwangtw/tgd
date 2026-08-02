@@ -1,6 +1,6 @@
 # Testing Patterns Reference
 
-Quick reference for common testing patterns across the stack. Use alongside the `tgd-test-driven-development` skill.
+Quick reference for common testing patterns across the stack. Use alongside the `tgd-develop-tdd` skill.
 
 ## Table of Contents
 

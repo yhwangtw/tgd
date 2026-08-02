@@ -128,8 +128,8 @@ If a skill does not need runnable helpers, do not create an empty `scripts/` dir
 Reference other skills by name:
 
 ```markdown
-Follow the `tgd-test-driven-development` skill for writing tests.
-If the build breaks, use the `tgd-debugging-and-error-recovery` skill.
+Follow the `tgd-develop-tdd` skill for writing tests.
+If the build breaks, use the `tgd-verify-debug` skill.
 ```
 
 Don't duplicate content between skills — reference and link instead.

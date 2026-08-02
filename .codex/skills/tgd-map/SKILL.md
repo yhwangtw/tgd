@@ -106,11 +106,11 @@ If `$TGD_DIR/CONTEXT.md` **already exists** with a repo list (re-map):
 - If user says "no" or provides nothing, proceed with primary repo only
 - Store results for CONTEXT.md (see structure below)
 
-Note: `tgd-context-engineering`'s "read CONTEXT.md's repo list instead of re-asking" rule applies to **downstream** commands (`/tgd-develop`, `/tgd-verify`, …) — it does NOT apply to `/tgd-map` itself. Map owns this question; downstream consumes the answer.
+Note: `tgd-core-context`'s "read CONTEXT.md's repo list instead of re-asking" rule applies to **downstream** commands (`/tgd-develop`, `/tgd-verify`, …) — it does NOT apply to `/tgd-map` itself. Map owns this question; downstream consumes the answer.
 
 ## Step 2: Context Engineering
 
-Run the `tgd-context-engineering` skill. Analyze the current project: tech stack, architecture, dependencies, code organization, and existing patterns.
+Run the `tgd-core-context` skill. Analyze the current project: tech stack, architecture, dependencies, code organization, and existing patterns.
 
 **⚠️ This is only Step 2. If Tier 2 is available (see Step 0.5), you MUST continue to Step 3 (CodeGraph) and Step 4 (Understand-Anything) before producing CONTEXT.md. If Tier 2 is unavailable, proceed to Step 6 and log the skips under `## Degraded Mode`.**
 

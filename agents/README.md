@@ -14,7 +14,7 @@ Three layers, each with a distinct job:
 
 | Layer | What it is | Example | Composition role |
 |-------|-----------|---------|------------------|
-| **Skill** | A workflow with steps and exit criteria | `tgd-code-review-and-quality` | The *how* — invoked from inside a persona or command |
+| **Skill** | A workflow with steps and exit criteria | `tgd-review-quality` | The *how* — invoked from inside a persona or command |
 | **Persona** | A role with a perspective and an output format | `code-reviewer` | The *who* — adopts a viewpoint, produces a report |
 | **Command** | A user-facing entry point | `/tgd-review`, `/tgd-verify` | The *when* — composes personas and skills |
 

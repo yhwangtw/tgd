@@ -32,7 +32,7 @@
 set -e
 
 # Floors — THIS SCRIPT is the source of truth (the table in
-# skills/tgd-test-driven-development/SKILL.md references these defaults).
+# skills/tgd-develop-tdd/SKILL.md references these defaults).
 # Override per project via env vars, e.g. a legacy codebase ramping up:
 #   COVERAGE_LINE_FLOOR=60 bash scripts/coverage-check.sh
 LINE_FLOOR="${COVERAGE_LINE_FLOOR:-80}"

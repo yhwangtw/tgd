@@ -46,7 +46,7 @@ Evaluate every change across these five dimensions:
 
 ## Output Format
 
-Categorize every finding using the shared review-phase taxonomy (same as `tgd-code-review-and-quality` and REVIEW.md):
+Categorize every finding using the shared review-phase taxonomy (same as `tgd-review-quality` and REVIEW.md):
 
 **Critical** — Must fix before merge (security vulnerability, data loss risk, broken functionality)
 

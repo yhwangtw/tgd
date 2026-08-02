@@ -11,9 +11,9 @@ Cursor supports a `.cursor/rules/` directory for project-specific rules:
 mkdir -p .cursor/rules
 
 # Copy skills you want as rules
-cp /path/to/tGD/skills/tgd-test-driven-development/SKILL.md .cursor/rules/test-driven-development.md
-cp /path/to/tGD/skills/tgd-code-review-and-quality/SKILL.md .cursor/rules/code-review-and-quality.md
-cp /path/to/tGD/skills/tgd-incremental-implementation/SKILL.md .cursor/rules/incremental-implementation.md
+cp /path/to/tGD/skills/tgd-develop-tdd/SKILL.md .cursor/rules/test-driven-development.md
+cp /path/to/tGD/skills/tgd-review-quality/SKILL.md .cursor/rules/code-review-and-quality.md
+cp /path/to/tGD/skills/tgd-develop-incremental/SKILL.md .cursor/rules/incremental-implementation.md
 ```
 
 Rules in this directory are automatically loaded into Cursor's context.
@@ -24,9 +24,9 @@ Create a `.cursorrules` file in your project root with the essential skills inli
 
 ```bash
 # Generate a combined rules file
-cat /path/to/tGD/skills/tgd-test-driven-development/SKILL.md > .cursorrules
+cat /path/to/tGD/skills/tgd-develop-tdd/SKILL.md > .cursorrules
 echo "\n---\n" >> .cursorrules
-cat /path/to/tGD/skills/tgd-code-review-and-quality/SKILL.md >> .cursorrules
+cat /path/to/tGD/skills/tgd-review-quality/SKILL.md >> .cursorrules
 ```
 
 ## Recommended Configuration
@@ -43,10 +43,10 @@ Add these to `.cursor/rules/`:
 
 For phase-specific work, create additional rule files as needed:
 
-- `spec-development.md` -> `tgd-spec-driven-development/SKILL.md`
-- `frontend-ui.md` -> `tgd-frontend-ui-engineering/SKILL.md`
-- `security.md` -> `tgd-security-and-hardening/SKILL.md`
-- `performance.md` -> `tgd-performance-optimization/SKILL.md`
+- `spec-development.md` -> `tgd-define-spec/SKILL.md`
+- `frontend-ui.md` -> `tgd-develop-ui/SKILL.md`
+- `security.md` -> `tgd-review-security/SKILL.md`
+- `performance.md` -> `tgd-review-performance/SKILL.md`
 
 Add these to `.cursor/rules/` when working on relevant tasks, then remove when done to manage context limits.
 

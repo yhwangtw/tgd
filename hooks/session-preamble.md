@@ -8,7 +8,7 @@ Run: python3 scripts/generate-mirrors.py   (CI "Mirror sync" fails on drift)
 With explicit setup opt-in, Claude, Codex, and Gemini inject this bounded
 preamble at session start, Pi appends it to the system prompt, and Hermes
 injects it once per session via pre_llm_call. It tells the agent to load
-tgd-router on demand; it does not inject the full router. OpenCode has no tGD
+tgd-core-router on demand; it does not inject the full router. OpenCode has no tGD
 session plugin and routes through installed skills and commands.
 
 NOT generated from this file (deliberately): .claude/CLAUDE.md. That file is
@@ -44,5 +44,5 @@ Never use "should", "probably", "seems to" when describing code state.
 ## How tGD Works
 
 - Run the lifecycle in order: `tgd-map` → `tgd-define` → `tgd-plan` → `tgd-develop` → `tgd-verify` → `tgd-review` → `tgd-release`. Use the platform's explicit entry syntax (`/tgd-*` where custom commands are supported, `$tgd-*` in Codex) or request the workflow by name. Each entry has pre-flight checks; do not skip phases.
-- **Load the `tgd-rules` skill** for the full core rules (Iron Law, tone per phase, the Command Closing Report, human sign-off). It governs every phase.
-- **Load the `tgd-router` skill** when you are not already inside a `/tgd-*` command and need to discover which skill applies to a task.
+- **Load the `tgd-core-rules` skill** for the full core rules (Iron Law, tone per phase, the Command Closing Report, human sign-off). It governs every phase.
+- **Load the `tgd-core-router` skill** when you are not already inside a `/tgd-*` command and need to discover which skill applies to a task.

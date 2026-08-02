@@ -154,7 +154,7 @@ jobs:
             test "$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$link")" = "$target"
           done <<EOF
           $HOME/.pi/agent/skills/tGD|$GITHUB_WORKSPACE/skills
-          $HOME/.hermes/skills/tgd-rules|$GITHUB_WORKSPACE/skills/tgd-rules
+          $HOME/.hermes/skills/tgd-core-rules|$GITHUB_WORKSPACE/skills/tgd-core-rules
           $HOME/.understand-anything-plugin|$GITHUB_WORKSPACE/vendor/understand-anything/understand-anything-plugin
           $HOME/.local/bin/tgd|$GITHUB_WORKSPACE/bin/tgd
           EOF
@@ -345,7 +345,7 @@ jobs:
           for path in \
             "$HOME/.local/bin/tgd" \
             "$HOME/.pi/agent/skills/tGD" \
-            "$HOME/.hermes/skills/tgd-rules" \
+            "$HOME/.hermes/skills/tgd-core-rules" \
             "$HOME/.understand-anything-plugin"; do
             test ! -e "$path"
             test ! -L "$path"

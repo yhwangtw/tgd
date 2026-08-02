@@ -57,7 +57,7 @@ class InstallStateCliTests(unittest.TestCase):
         return json.loads(self.manifest.read_text(encoding="utf-8"))
 
     def test_link_creates_symlink_records_exact_path_and_verifies_target(self) -> None:
-        target = self.repo / "skills" / "tgd-rules"
+        target = self.repo / "skills" / "tgd-core-rules"
         destination = self.home / ".codex" / "skills" / "tGD rules"
         target.mkdir(parents=True)
 

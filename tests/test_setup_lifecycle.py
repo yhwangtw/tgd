@@ -118,10 +118,10 @@ exec /bin/ln "$@"
             self.repo / "hooks" / "session-preamble.enabled",
         )
 
-        skill_dir = self.repo / "skills" / "tgd-rules"
+        skill_dir = self.repo / "skills" / "tgd-core-rules"
         skill_dir.mkdir(parents=True)
         shutil.copy2(
-            SOURCE_ROOT / "skills" / "tgd-rules" / "SKILL.md",
+            SOURCE_ROOT / "skills" / "tgd-core-rules" / "SKILL.md",
             skill_dir / "SKILL.md",
         )
 
@@ -131,11 +131,12 @@ exec /bin/ln "$@"
         path.chmod(path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
         return path
 
-    def _mark_tgd_checkout(self, checkout: Path) -> None:
+    def _mark_tgd_checkout(self, checkout: Path, *, legacy_rules: bool = False) -> None:
         checkout.mkdir(parents=True, exist_ok=True)
         (checkout / "setup.sh").write_text("#!/usr/bin/env bash\n", encoding="utf-8")
         (checkout / "VERSION").write_text("v2026.01.01\n", encoding="utf-8")
-        rules = checkout / "skills" / "tgd-rules"
+        rules_name = "tgd-rules" if legacy_rules else "tgd-core-rules"
+        rules = checkout / "skills" / rules_name
         rules.mkdir(parents=True, exist_ok=True)
         (rules / "SKILL.md").write_text("# tGD rules\n", encoding="utf-8")
 
@@ -246,7 +247,7 @@ exec /bin/ln "$@"
     def test_gemini_skills_are_direct_children_and_legacy_bundle_is_retired(
         self,
     ) -> None:
-        router = self.repo / "skills" / "tgd-router"
+        router = self.repo / "skills" / "tgd-core-router"
         router.mkdir()
         (router / "SKILL.md").write_text("# router\n", encoding="utf-8")
         gemini_skills = self.home / ".gemini" / "skills"
@@ -261,7 +262,7 @@ exec /bin/ln "$@"
 
         self._assert_success(result)
         self.assertFalse(os.path.lexists(legacy_bundle))
-        for skill_name in ("tgd-rules", "tgd-router"):
+        for skill_name in ("tgd-core-rules", "tgd-core-router"):
             installed = gemini_skills / skill_name
             self.assertTrue(installed.is_symlink())
             self.assertEqual(
@@ -286,8 +287,8 @@ exec /bin/ln "$@"
         )
 
     def test_source_cleanup_removes_only_known_generated_skill_links(self) -> None:
-        skill_dir = self.repo / "skills" / "tgd-rules"
-        self_link = skill_dir / "tgd-rules"
+        skill_dir = self.repo / "skills" / "tgd-core-rules"
+        self_link = skill_dir / "tgd-core-rules"
         self_link.symlink_to(skill_dir.resolve(), target_is_directory=True)
         broken_legacy = skill_dir / "rules"
         broken_legacy.symlink_to(self.repo.resolve() / "skills" / "rules")
@@ -305,7 +306,7 @@ exec /bin/ln "$@"
         self.assertEqual(user_target.resolve(), foreign_link.resolve())
 
     def test_source_cleanup_removes_only_known_router_alias_links(self) -> None:
-        router = self.repo / "skills" / "tgd-router"
+        router = self.repo / "skills" / "tgd-core-router"
         router.mkdir()
         (router / "SKILL.md").write_text("# router\n", encoding="utf-8")
         aliases = []
@@ -329,7 +330,7 @@ exec /bin/ln "$@"
 
     def test_install_preserves_foreign_directory_on_name_collision(self) -> None:
         self._write_fake("hermes", "exit 0")
-        collision = self.home / ".hermes" / "skills" / "tgd-rules"
+        collision = self.home / ".hermes" / "skills" / "tgd-core-rules"
         collision.mkdir(parents=True)
         sentinel = collision / "foreign.txt"
         sentinel.write_text("owned by the user\n", encoding="utf-8")
@@ -386,11 +387,12 @@ exec /bin/ln "$@"
         old_skill.mkdir(parents=True)
         old_cli.parent.mkdir()
         old_cli.write_text("#!/bin/bash\n", encoding="utf-8")
-        self._mark_tgd_checkout(old_repo)
+        self._mark_tgd_checkout(old_repo, legacy_rules=True)
 
-        installed_skill = self.home / ".hermes" / "skills" / "tgd-rules"
-        installed_skill.parent.mkdir(parents=True)
-        installed_skill.symlink_to(old_skill, target_is_directory=True)
+        legacy_installed_skill = self.home / ".hermes" / "skills" / "tgd-rules"
+        legacy_installed_skill.parent.mkdir(parents=True)
+        legacy_installed_skill.symlink_to(old_skill, target_is_directory=True)
+        installed_skill = self.home / ".hermes" / "skills" / "tgd-core-rules"
         installed_cli = self.home / ".local" / "bin" / "tgd"
         installed_cli.parent.mkdir(parents=True)
         installed_cli.symlink_to(old_cli)
@@ -399,9 +401,10 @@ exec /bin/ln "$@"
         self._assert_success(installed)
 
         self.assertEqual(
-            (self.repo / "skills" / "tgd-rules").resolve(),
+            (self.repo / "skills" / "tgd-core-rules").resolve(),
             installed_skill.resolve(),
         )
+        self.assertFalse(os.path.lexists(legacy_installed_skill))
         self.assertEqual(
             (self.repo / "bin" / "tgd").resolve(),
             installed_cli.resolve(),
@@ -417,8 +420,40 @@ exec /bin/ln "$@"
         uninstalled = self._run_setup("--uninstall")
         self._assert_success(uninstalled)
         self.assertFalse(os.path.lexists(installed_skill))
+        self.assertFalse(os.path.lexists(legacy_installed_skill))
         self.assertFalse(os.path.lexists(installed_cli))
         self.assertFalse((self.home / ".tgd-installed-version").exists())
+
+    def test_upgrade_removes_verified_legacy_lifecycle_skill_links(self) -> None:
+        self._write_fake("hermes", "exit 0")
+        old_repo = self.root / "old-tGD-checkout"
+        self._mark_tgd_checkout(old_repo, legacy_rules=True)
+        old_names = (
+            "tgd-agent-browser",
+            "tgd-api-and-interface-design",
+            "tgd-router",
+            "tgd-wiki-generation",
+        )
+        legacy_home = self.home / ".hermes" / "skills"
+        for name in old_names:
+            old_skill = old_repo / "skills" / name
+            old_skill.mkdir(parents=True)
+            destination = legacy_home / name
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.symlink_to(old_skill, target_is_directory=True)
+        (self.home / ".tgd-installed-version").write_text(
+            (self.repo / "VERSION").read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+
+        result = self._run_setup("--no-deps")
+
+        self._assert_success(result)
+        for name in old_names:
+            self.assertFalse(
+                os.path.lexists(legacy_home / name),
+                f"legacy skill link survived: {name}",
+            )
 
     def test_exact_historical_pi_instructions_retire_idempotently(self) -> None:
         installed_instructions = self.home / ".pi" / "agent" / "instructions.md"
@@ -557,7 +592,7 @@ exec /bin/ln "$@"
 
     def test_setup_removes_only_verified_retired_integrations(self) -> None:
         old_repo = self.root / "retired-tGD-checkout"
-        self._mark_tgd_checkout(old_repo)
+        self._mark_tgd_checkout(old_repo, legacy_rules=True)
         old_rule = old_repo / "skills" / "tgd-rules" / "SKILL.md"
         old_extension = old_repo / ".pi" / "extensions" / "tgd-commands.ts"
         old_extension.parent.mkdir(parents=True)
@@ -1026,7 +1061,7 @@ fi
         self.assertTrue((self.home / ".local" / "bin" / "tgd").is_symlink())
 
     def test_default_install_does_not_change_agent_browser_config(self) -> None:
-        browser_skill = self.repo / "skills" / "tgd-agent-browser"
+        browser_skill = self.repo / "skills" / "tgd-verify-browser"
         browser_skill.mkdir()
         (browser_skill / "SKILL.md").write_text(
             "# Agent Browser\n",
@@ -1048,7 +1083,7 @@ fi
         )
 
     def test_with_browser_preserves_existing_config_and_enables_auto_connect(self) -> None:
-        browser_skill = self.repo / "skills" / "tgd-agent-browser"
+        browser_skill = self.repo / "skills" / "tgd-verify-browser"
         browser_skill.mkdir()
         (browser_skill / "SKILL.md").write_text(
             "# Agent Browser\n",
@@ -1404,14 +1439,14 @@ exit 1
     def test_opencode_skills_are_direct_children(self) -> None:
         opencode_home = self.home / ".config" / "opencode"
         opencode_home.mkdir(parents=True)
-        router = self.repo / "skills" / "tgd-router"
+        router = self.repo / "skills" / "tgd-core-router"
         router.mkdir()
         (router / "SKILL.md").write_text("# router\n", encoding="utf-8")
 
         result = self._run_setup("--no-deps")
 
         self._assert_success(result)
-        for name in ("tgd-rules", "tgd-router"):
+        for name in ("tgd-core-rules", "tgd-core-router"):
             installed = opencode_home / "skills" / name
             self.assertTrue(installed.is_symlink(), str(installed))
             self.assertEqual((self.repo / "skills" / name).resolve(), installed.resolve())

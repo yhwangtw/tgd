@@ -25,7 +25,7 @@ class SetupContractDocumentationTest(unittest.TestCase):
         self.assertIn("Use `--no-deps` to skip all", readme)
         self.assertIn("downloads and builds", readme)
         self.assertNotIn(
-            "tgd-agent-browser dependencies installed automatically",
+            "tgd-verify-browser dependencies installed automatically",
             readme,
         )
         self.assertNotIn("clean broken symlinks", readme)
@@ -100,9 +100,9 @@ class SetupContractDocumentationTest(unittest.TestCase):
         self.assertIn("`~/.gemini/settings.json`", guide)
         self.assertIn("`gemini mcp`", guide)
         self.assertIn("bounded tGD session preamble", guide)
-        self.assertIn("load `tgd-router` on demand", guide)
+        self.assertIn("load `tgd-core-router` on demand", guide)
         self.assertNotIn("~/.gemini/config.json", guide)
-        self.assertNotIn("Injects `tgd-router` meta-skill", guide)
+        self.assertNotIn("Injects `tgd-core-router` meta-skill", guide)
         self.assertNotIn("five hooks", guide)
         self.assertNotIn("8 slash commands", guide)
         self.assertNotIn(
@@ -175,7 +175,7 @@ class SetupContractDocumentationTest(unittest.TestCase):
         self.assertNotIn("Workflows are enforced via `AGENTS.md`", guide)
         self.assertNotIn("These rules are enforced via `AGENTS.md`", guide)
         self.assertNotIn("does not have a native plugin system", guide)
-        self.assertNotIn("Injects `tgd-router` meta-skill", guide)
+        self.assertNotIn("Injects `tgd-core-router` meta-skill", guide)
         self.assertNotIn("No native slash commands", guide)
         self.assertNotIn("three plugins", guide)
         self.assertNotIn("**safe-edit**", guide)

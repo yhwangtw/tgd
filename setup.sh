@@ -182,7 +182,8 @@ is_recognized_tgd_checkout() {
     [[ -f "$checkout_root/setup.sh" ]] \
         && [[ -f "$checkout_root/VERSION" ]] \
         && {
-            [[ -f "$checkout_root/skills/tgd-rules/SKILL.md" ]] \
+            [[ -f "$checkout_root/skills/tgd-core-rules/SKILL.md" ]] \
+                || [[ -f "$checkout_root/skills/tgd-rules/SKILL.md" ]] \
                 || [[ -f "$checkout_root/skills/rules/SKILL.md" ]]
         }
 }
@@ -475,7 +476,11 @@ cleanup_generated_source_links() {
                     && "$link_name" == "$legacy_name" \
                     && ! -e "$link" \
                     && "$target" == "$skills_root/$legacy_name" ]] \
-                || [[ "$parent_name" == "tgd-router" \
+                || [[ "$parent_name" == "tgd-core-rules" \
+                    && "$link_name" == "rules" \
+                    && ! -e "$link" \
+                    && "$target" == "$skills_root/rules" ]] \
+                || [[ "$parent_name" == "tgd-core-router" \
                     && ! -e "$link" \
                     && "$canonical_target" == "$canonical_alias_target" \
                     && ( "$link_name" == "using-tgd" \
@@ -532,8 +537,72 @@ purge_old_tgd_symlinks() {
     done
 }
 
+# Skill IDs were reorganized under lifecycle-oriented names in the first
+# release after v2026.08.02.1. Remove only symlinks that can still be proven to
+# point at an older tGD checkout; foreign user skills are never touched.
+LEGACY_SKILL_RENAMES=(
+    "tgd-agent-browser:tgd-verify-browser"
+    "tgd-api-and-interface-design:tgd-define-api"
+    "tgd-ci-cd-and-automation:tgd-release-ci"
+    "tgd-code-review-and-quality:tgd-review-quality"
+    "tgd-code-simplification:tgd-review-simplify"
+    "tgd-context-engineering:tgd-core-context"
+    "tgd-debugging-and-error-recovery:tgd-verify-debug"
+    "tgd-deprecation-and-migration:tgd-release-migration"
+    "tgd-documentation-and-adrs:tgd-review-adr"
+    "tgd-doubt-driven-development:tgd-core-doubt"
+    "tgd-frontend-ui-engineering:tgd-develop-ui"
+    "tgd-git-workflow-and-versioning:tgd-core-git"
+    "tgd-idea-refine:tgd-define-ideate"
+    "tgd-incremental-implementation:tgd-develop-incremental"
+    "tgd-interview-me:tgd-define-interview"
+    "tgd-jira-auto-sync:tgd-plan-jira"
+    "tgd-performance-optimization:tgd-review-performance"
+    "tgd-planning-and-task-breakdown:tgd-plan-breakdown"
+    "tgd-router:tgd-core-router"
+    "tgd-rules:tgd-core-rules"
+    "tgd-security-and-hardening:tgd-review-security"
+    "tgd-shipping-and-launch:tgd-release-ship"
+    "tgd-sketch:tgd-define-sketch"
+    "tgd-source-driven-development:tgd-develop-source"
+    "tgd-spec-driven-development:tgd-define-spec"
+    "tgd-subagent-driven-development:tgd-develop-subagents"
+    "tgd-test-driven-development:tgd-develop-tdd"
+    "tgd-verification-before-completion:tgd-verify-completion"
+    "tgd-wiki-generation:tgd-support-wiki"
+)
+
+purge_renamed_tgd_symlinks() {
+    local dir="$1"
+    local label="$2"
+    local pair old_name new_name link target
+    [[ -d "$dir" ]] || return 0
+    for pair in "${LEGACY_SKILL_RENAMES[@]}"; do
+        old_name="${pair%%:*}"
+        new_name="${pair#*:}"
+        link="$dir/$old_name"
+        [[ -L "$link" ]] || continue
+        target=$(absolute_symlink_target "$link")
+        if is_recognized_legacy_target "$target" "skills/$old_name"; then
+            echo "   🗑️  Removing verified renamed skill ($label): $link → $new_name"
+            remove_exact_symlink_safely "$link" "$target"
+        fi
+    done
+}
+
+echo "🔄 Migrating renamed tGD skills to lifecycle IDs..."
+purge_renamed_tgd_symlinks "$HOME/.claude/skills" "Claude Code"
+purge_renamed_tgd_symlinks "$HOME/.config/opencode/skills" "OpenCode"
+purge_renamed_tgd_symlinks "$HOME/.codex/skills" "Codex CLI"
+purge_renamed_tgd_symlinks "$HOME/.gemini/skills" "Gemini CLI"
+purge_renamed_tgd_symlinks "$HOME/.pi/agent/skills" "Pi"
+while IFS= read -r hermes_home; do
+    [[ -n "$hermes_home" ]] || continue
+    purge_renamed_tgd_symlinks "$hermes_home/skills" "Hermes ($(display_home_path "$hermes_home"))"
+done < <(hermes_homes)
+
 if [[ "$MODE" == "upgrade" ]]; then
-    echo "🔄 Migrating tGD skills to tgd- prefix (v2026.07.x)..."
+    echo "🔄 Removing verified pre-lifecycle skill aliases..."
     purge_old_tgd_symlinks "$HOME/.claude/skills" "Claude Code"
     purge_old_tgd_symlinks "$HOME/.config/opencode/skills" "OpenCode"
     purge_old_tgd_symlinks "$HOME/.codex/skills" "Codex CLI"
@@ -610,8 +679,14 @@ retire_exact_managed_link() {
 retire_legacy_global_rules
 remove_verified_legacy_link \
     "$HOME/.claude/rules/tgd.md" \
-    "skills/tgd-rules/SKILL.md" \
+    "skills/tgd-core-rules/SKILL.md" \
     "Claude global rule"
+# The previous release used tgd-rules; keep this exact legacy target check so
+# the rename does not strand an old global rule symlink.
+remove_verified_legacy_link \
+    "$HOME/.claude/rules/tgd.md" \
+    "skills/tgd-rules/SKILL.md" \
+    "Claude legacy global rule"
 remove_verified_legacy_link \
     "$HOME/.pi/agent/extensions/tgd-commands.ts" \
     ".pi/extensions/tgd-commands.ts" \
@@ -1137,7 +1212,7 @@ fi
 echo "📦 Checking optional dependencies..."
 
 # Agent Browser (E2E browser automation)
-if [ -d "skills/tgd-agent-browser" ]; then
+if [ -d "skills/tgd-verify-browser" ]; then
     echo "   🌐 Agent Browser skill detected."
     if [[ "$CONFIGURE_BROWSER" -eq 1 ]]; then
         if ! command -v agent-browser &> /dev/null; then
@@ -1274,43 +1349,43 @@ echo ""
 echo "📋 Installing tGD rules (project-local only, no global pollution)..."
 echo ""
 
-# Claude Code: NO global rules symlink — tgd-rules stays as a project-local skill.
+# Claude Code: NO global rules symlink — tgd-core-rules stays as a project-local skill.
 # Previously: ln -sf ... "$HOME/.claude/rules/tgd.md" (loaded in ALL conversations)
 # Now: rules are loaded via skill system only when in a tGD project context.
 # If you need rules in a specific project, add to .claude/CLAUDE.md:
-#   "Load tgd-rules skill for tGD workflow enforcement."
+#   "Load tgd-core-rules skill for tGD workflow enforcement."
 
 # Codex CLI: official shared user-skill path
 if command -v codex &> /dev/null || [[ "$CI_ACTIVE" -eq 1 ]]; then
     mkdir -p "$HOME/.agents/skills"
-    managed_link "$TGD_REPO_ROOT/skills/tgd-rules" "$HOME/.agents/skills/tgd-rules"
-    echo "   ✅ Codex CLI: ~/.agents/skills/tgd-rules → symlink"
+    managed_link "$TGD_REPO_ROOT/skills/tgd-core-rules" "$HOME/.agents/skills/tgd-core-rules"
+    echo "   ✅ Codex CLI: ~/.agents/skills/tgd-core-rules → symlink"
 fi
 
-# OpenCode: ~/.config/opencode/skills/tgd-rules
+# OpenCode: ~/.config/opencode/skills/tgd-core-rules
 if command -v opencode &> /dev/null || [[ "$CI_ACTIVE" -eq 1 ]]; then
     mkdir -p "$HOME/.config/opencode/skills"
-    managed_link "$TGD_REPO_ROOT/skills/tgd-rules" "$HOME/.config/opencode/skills/tgd-rules"
-    echo "   ✅ OpenCode: ~/.config/opencode/skills/tgd-rules → symlink"
+    managed_link "$TGD_REPO_ROOT/skills/tgd-core-rules" "$HOME/.config/opencode/skills/tgd-core-rules"
+    echo "   ✅ OpenCode: ~/.config/opencode/skills/tgd-core-rules → symlink"
 fi
 
-# Gemini CLI: ~/.gemini/skills/tgd-rules
+# Gemini CLI: ~/.gemini/skills/tgd-core-rules
 if command -v gemini &> /dev/null || [[ "$CI_ACTIVE" -eq 1 ]]; then
     mkdir -p "$HOME/.gemini/skills"
-    managed_link "$TGD_REPO_ROOT/skills/tgd-rules" "$HOME/.gemini/skills/tgd-rules"
-    echo "   ✅ Gemini CLI: ~/.gemini/skills/tgd-rules → symlink"
+    managed_link "$TGD_REPO_ROOT/skills/tgd-core-rules" "$HOME/.gemini/skills/tgd-core-rules"
+    echo "   ✅ Gemini CLI: ~/.gemini/skills/tgd-core-rules → symlink"
 fi
 
-# Pi: ~/.pi/agent/skills/tgd-rules
+# Pi: ~/.pi/agent/skills/tgd-core-rules
 if command -v pi &> /dev/null || [[ "$CI_ACTIVE" -eq 1 ]]; then
     mkdir -p "$HOME/.pi/agent/skills"
-    managed_link "$TGD_REPO_ROOT/skills/tgd-rules" "$HOME/.pi/agent/skills/tgd-rules"
-    echo "   ✅ Pi: ~/.pi/agent/skills/tgd-rules → symlink"
+    managed_link "$TGD_REPO_ROOT/skills/tgd-core-rules" "$HOME/.pi/agent/skills/tgd-core-rules"
+    echo "   ✅ Pi: ~/.pi/agent/skills/tgd-core-rules → symlink"
 fi
 
-# Hermes Agent: ~/.hermes/skills/tgd-rules plus every existing profile.
+# Hermes Agent: ~/.hermes/skills/tgd-core-rules plus every existing profile.
 if command -v hermes &> /dev/null || [[ "$CI_ACTIVE" -eq 1 ]]; then
-    link_skill_folder_to_hermes_homes "$TGD_REPO_ROOT/skills/tgd-rules" "tgd-rules" "tgd-rules"
+    link_skill_folder_to_hermes_homes "$TGD_REPO_ROOT/skills/tgd-core-rules" "tgd-core-rules" "tgd-core-rules"
 fi
 
 echo ""

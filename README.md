@@ -323,13 +323,13 @@ The `tgd` CLI manages installation, updates, and diagnostics:
 
 | 🎯 What you're doing | ⌨️ Command | 💡 Key principle | 🔧 Invokes |
 |---|---|---|---|
-| Understand the project | `/tgd-map` | Context before changes + live dashboard | `tgd-context-engineering` + `codegraph init` + `understand-dashboard` |
-| Define what to build | `/tgd-define` | PRD → conditional 0/2/3 design → final SPEC | `tgd-interview-me` → `tgd-idea-refine` → `tgd-spec-driven-development` + `tgd-sketch` (if needed) |
-| Plan how to build it | `/tgd-plan` | Read CONTEXT + PRD + SPEC + approved design → atomic tasks | `tgd-planning-and-task-breakdown` → `tgd-jira-auto-sync` *(only if Jira preview is chosen)* |
-| Develop in sandbox | `/tgd-develop` | **Mandatory Worktree** + smart routing | `tgd-source-driven-development` → (`subagent` OR `incremental`) → `tgd-test-driven-development` |
-| Prove it works | `/tgd-verify` | Tests are proof | `tgd-debugging-and-error-recovery` → `tgd-test-driven-development` → **Cross-Feature Regression Gate** |
-| Review before merge | `/tgd-review` | Improve code health | `tgd-code-review-and-quality` → `tgd-code-simplification` |
-| Release to production | `/tgd-release` | Faster is safer | `tgd-git-workflow-and-versioning` → `tgd-shipping-and-launch` → **Regression Catalog Update + Audit** → **METRICS.md handoff** |
+| Understand the project | `/tgd-map` | Context before changes + live dashboard | `tgd-core-context` + `codegraph init` + `understand-dashboard` |
+| Define what to build | `/tgd-define` | PRD → conditional 0/2/3 design → final SPEC | `tgd-define-interview` → `tgd-define-ideate` → `tgd-define-spec` + `tgd-define-sketch` (if needed) |
+| Plan how to build it | `/tgd-plan` | Read CONTEXT + PRD + SPEC + approved design → atomic tasks | `tgd-plan-breakdown` → `tgd-plan-jira` *(only if Jira preview is chosen)* |
+| Develop in sandbox | `/tgd-develop` | **Mandatory Worktree** + smart routing | `tgd-develop-source` → (`subagent` OR `incremental`) → `tgd-develop-tdd` |
+| Prove it works | `/tgd-verify` | Tests are proof | `tgd-verify-debug` → `tgd-develop-tdd` → **Cross-Feature Regression Gate** |
+| Review before merge | `/tgd-review` | Improve code health | `tgd-review-quality` → `tgd-review-simplify` |
+| Release to production | `/tgd-release` | Faster is safer | `tgd-core-git` → `tgd-release-ship` → **Regression Catalog Update + Audit** → **METRICS.md handoff** |
 
 ---
 
@@ -388,7 +388,7 @@ The agent auto-detects the test runner from SPEC.md tech stack:
 | Go | `go test` | `//go:build regression` or `TestXxxRegression` naming |
 | Rust | `cargo test` | Naming convention |
 | Java | junit / mvn test | `@Tag("regression")` |
-| E2E (any) | tgd-agent-browser | Separate regression suite |
+| E2E (any) | tgd-verify-browser | Separate regression suite |
 
 ### 🧪 Verify: Run Tests + Generate Report
 
@@ -428,7 +428,7 @@ Command: pytest -v --tb=short
 
 TEST-REPORT.md is **auto-generated** from test runner output, NOT hand-maintained.
 
-**Frontend requirement:** If DESIGN.md exists, Verify MUST run `tgd-agent-browser` and append design-conformance evidence for the named viewports, runtime states, and accessibility checks to TEST-REPORT.md.
+**Frontend requirement:** If DESIGN.md exists, Verify MUST run `tgd-verify-browser` and append design-conformance evidence for the named viewports, runtime states, and accessibility checks to TEST-REPORT.md.
 
 ### 🏷️ Regression: The Safety Net
 
@@ -519,7 +519,7 @@ tGD has four human roles. They can use the workflow independently through shared
 ## 🔗 Integrations
 
 ### Jira Data Center
-When `/tgd-plan` generates `TASKS.md`, the **`tgd-jira-auto-sync`** skill provides a confirmation-gated sync:
+When `/tgd-plan` generates `TASKS.md`, the **`tgd-plan-jira`** skill provides a confirmation-gated sync:
 ```
 /tgd-plan → TASKS.md → choose Jira preview or skip → choose exact Project → dry-run + digest → confirm → apply → verify → write back
 ```
@@ -717,68 +717,68 @@ tGD/
 
 ## 📦 All 29 Skills
 
-The commands above are entry points. The pack includes 29 skills total — 27 lifecycle skills plus `tgd-router` meta-skill and `tgd-rules` core rules.
+The commands above are entry points. The pack includes 29 internal skills, named by lifecycle phase where possible. See the [skill lifecycle naming and migration map](docs/skill-lifecycle-naming.md) when updating an existing installation.
 
 ### 🧭 Meta
 | Skill | Purpose |
 |---|---|
-| [tgd-router](skills/tgd-router/SKILL.md) | Maps work to the right skill |
-| [tgd-rules](skills/tgd-rules/SKILL.md) | Core rules — verification iron law, anti-rationalization |
+| [tgd-core-router](skills/tgd-core-router/SKILL.md) | Maps work to the right skill |
+| [tgd-core-rules](skills/tgd-core-rules/SKILL.md) | Core rules — verification iron law, anti-rationalization |
 
 ### 🗺️ Map
 | Skill | Purpose |
 |---|---|
-| [tgd-context-engineering](skills/tgd-context-engineering/SKILL.md) | Feed agents the right info |
-| [tgd-wiki-generation](skills/tgd-wiki-generation/SKILL.md) | DeepWiki-style multi-repo docs site — standalone tool, invoke directly; not part of the `/tgd-map` pipeline since v2026.07.09 |
+| [tgd-core-context](skills/tgd-core-context/SKILL.md) | Feed agents the right info |
+| [tgd-support-wiki](skills/tgd-support-wiki/SKILL.md) | DeepWiki-style multi-repo docs site — standalone tool, invoke directly; not part of the `/tgd-map` pipeline since v2026.07.09 |
 
 ### 📋 Define
 | Skill | Purpose |
 |---|---|
-| [tgd-interview-me](skills/tgd-interview-me/SKILL.md) | Extract user intent via Q&A |
-| [tgd-idea-refine](skills/tgd-idea-refine/SKILL.md) | Divergent/convergent thinking |
-| [tgd-spec-driven-development](skills/tgd-spec-driven-development/SKILL.md) | Write PRD → route UI design (0/2/3 variants) → finalize SPEC |
-| [tgd-sketch](skills/tgd-sketch/SKILL.md) | Context-grounded HTML mockups: 0/2/3 variants by design mode |
+| [tgd-define-interview](skills/tgd-define-interview/SKILL.md) | Extract user intent via Q&A |
+| [tgd-define-ideate](skills/tgd-define-ideate/SKILL.md) | Divergent/convergent thinking |
+| [tgd-define-spec](skills/tgd-define-spec/SKILL.md) | Write PRD → route UI design (0/2/3 variants) → finalize SPEC |
+| [tgd-define-sketch](skills/tgd-define-sketch/SKILL.md) | Context-grounded HTML mockups: 0/2/3 variants by design mode |
 
 ### 📐 Plan
 | Skill | Purpose |
 |---|---|
-| [tgd-planning-and-task-breakdown](skills/tgd-planning-and-task-breakdown/SKILL.md) | Decompose specs into TASKS.md |
-| [tgd-jira-auto-sync](skills/tgd-jira-auto-sync/SKILL.md) | Preview, confirm, and verify Jira issue sync from TASKS.md |
+| [tgd-plan-breakdown](skills/tgd-plan-breakdown/SKILL.md) | Decompose specs into TASKS.md |
+| [tgd-plan-jira](skills/tgd-plan-jira/SKILL.md) | Preview, confirm, and verify Jira issue sync from TASKS.md |
 
 ### ⚡ Develop
 | Skill | Purpose |
 |---|---|
-| [tgd-subagent-driven-development](skills/tgd-subagent-driven-development/SKILL.md) | Parallel tasks via fresh subagents |
-| [tgd-incremental-implementation](skills/tgd-incremental-implementation/SKILL.md) | Thin vertical slices |
-| [tgd-test-driven-development](skills/tgd-test-driven-development/SKILL.md) | Red-Green-Refactor |
-| [tgd-verification-before-completion](skills/tgd-verification-before-completion/SKILL.md) | Evidence before claims |
-| [tgd-source-driven-development](skills/tgd-source-driven-development/SKILL.md) | Ground decisions in official docs |
-| [tgd-doubt-driven-development](skills/tgd-doubt-driven-development/SKILL.md) | Adversarial review |
-| [tgd-frontend-ui-engineering](skills/tgd-frontend-ui-engineering/SKILL.md) | UI architecture & design systems |
-| [tgd-api-and-interface-design](skills/tgd-api-and-interface-design/SKILL.md) | Contract-first API design |
+| [tgd-develop-subagents](skills/tgd-develop-subagents/SKILL.md) | Parallel tasks via fresh subagents |
+| [tgd-develop-incremental](skills/tgd-develop-incremental/SKILL.md) | Thin vertical slices |
+| [tgd-develop-tdd](skills/tgd-develop-tdd/SKILL.md) | Red-Green-Refactor |
+| [tgd-verify-completion](skills/tgd-verify-completion/SKILL.md) | Evidence before claims |
+| [tgd-develop-source](skills/tgd-develop-source/SKILL.md) | Ground decisions in official docs |
+| [tgd-core-doubt](skills/tgd-core-doubt/SKILL.md) | Adversarial review |
+| [tgd-develop-ui](skills/tgd-develop-ui/SKILL.md) | UI architecture & design systems |
+| [tgd-define-api](skills/tgd-define-api/SKILL.md) | Contract-first API design |
 
 ### 🧪 Verify
 | Skill | Purpose |
 |---|---|
-| [tgd-agent-browser](skills/tgd-agent-browser/SKILL.md) | E2E browser automation, CDP-based CLI |
-| [tgd-debugging-and-error-recovery](skills/tgd-debugging-and-error-recovery/SKILL.md) | Triage, fix, guard |
+| [tgd-verify-browser](skills/tgd-verify-browser/SKILL.md) | E2E browser automation, CDP-based CLI |
+| [tgd-verify-debug](skills/tgd-verify-debug/SKILL.md) | Triage, fix, guard |
 
 ### 🔎 Review
 | Skill | Purpose |
 |---|---|
-| [tgd-code-review-and-quality](skills/tgd-code-review-and-quality/SKILL.md) | Five-axis review |
-| [tgd-code-simplification](skills/tgd-code-simplification/SKILL.md) | Reduce complexity |
-| [tgd-security-and-hardening](skills/tgd-security-and-hardening/SKILL.md) | OWASP & secrets management |
-| [tgd-performance-optimization](skills/tgd-performance-optimization/SKILL.md) | Profiling & anti-patterns |
+| [tgd-review-quality](skills/tgd-review-quality/SKILL.md) | Five-axis review |
+| [tgd-review-simplify](skills/tgd-review-simplify/SKILL.md) | Reduce complexity |
+| [tgd-review-security](skills/tgd-review-security/SKILL.md) | OWASP & secrets management |
+| [tgd-review-performance](skills/tgd-review-performance/SKILL.md) | Profiling & anti-patterns |
 
 ### 🚀 Release
 | Skill | Purpose |
 |---|---|
-| [tgd-git-workflow-and-versioning](skills/tgd-git-workflow-and-versioning/SKILL.md) | Atomic commits & trunk-based dev |
-| [tgd-ci-cd-and-automation](skills/tgd-ci-cd-and-automation/SKILL.md) | Shift Left & feature flags |
-| [tgd-deprecation-and-migration](skills/tgd-deprecation-and-migration/SKILL.md) | Migration patterns |
-| [tgd-documentation-and-adrs](skills/tgd-documentation-and-adrs/SKILL.md) | ADRs & API docs |
-| [tgd-shipping-and-launch](skills/tgd-shipping-and-launch/SKILL.md) | Rollouts & monitoring |
+| [tgd-core-git](skills/tgd-core-git/SKILL.md) | Atomic commits & trunk-based dev |
+| [tgd-release-ci](skills/tgd-release-ci/SKILL.md) | Shift Left & feature flags |
+| [tgd-release-migration](skills/tgd-release-migration/SKILL.md) | Migration patterns |
+| [tgd-review-adr](skills/tgd-review-adr/SKILL.md) | ADRs & API docs |
+| [tgd-release-ship](skills/tgd-release-ship/SKILL.md) | Rollouts & monitoring |
 
 ---
 
@@ -790,7 +790,7 @@ After you've built your first feature:
 2. 🔧 Explore [All 29 Skills](#-all-29-skills) to see what's available
 3. 🤖 Try [Agent Personas](#-agent-personas) for specialized review
 4. 🔗 Set up [Jira Integration](#jira-data-center) for task tracking
-5. 🌐 Enable [tgd-agent-browser](skills/tgd-agent-browser/SKILL.md) for E2E browser testing
+5. 🌐 Enable [tgd-verify-browser](skills/tgd-verify-browser/SKILL.md) for E2E browser testing
 
 ---
 

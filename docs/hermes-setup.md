@@ -62,7 +62,7 @@ Accordingly, the tGD plugin registers `pre_llm_call`, not
 opt-in marker at `~/.tgd/session-preamble.enabled`.
 
 When enabled, the plugin reads `hooks/session-preamble.md` and returns it once
-per session as `{"context": "..."}`. The full `tgd-router` skill is still
+per session as `{"context": "..."}`. The full `tgd-core-router` skill is still
 loaded on demand rather than being copied into every session.
 
 ## Skills

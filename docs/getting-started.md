@@ -37,7 +37,7 @@ Copy the relevant `SKILL.md` content into your agent's system prompt, rules file
 
 ### 4. Use the meta-skill for discovery
 
-Start with the `tgd-router` skill loaded. It contains a flowchart that maps task types to the appropriate skill.
+Start with the `tgd-core-router` skill loaded. It contains a flowchart that maps task types to the appropriate skill.
 
 ## Recommended Setup
 
@@ -66,9 +66,9 @@ Before deploy:       shipping-and-launch
 
 Don't load all skills at once — it wastes context. Load skills relevant to the current task:
 
-- Working on UI? Load `tgd-frontend-ui-engineering`
-- Debugging? Load `tgd-debugging-and-error-recovery`
-- Setting up CI? Load `tgd-ci-cd-and-automation`
+- Working on UI? Load `tgd-develop-ui`
+- Debugging? Load `tgd-verify-debug`
+- Setting up CI? Load `tgd-release-ci`
 
 ## Skill Anatomy
 

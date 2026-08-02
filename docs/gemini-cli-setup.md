@@ -62,9 +62,9 @@ For skills you want always loaded as persistent project context (rather than on-
 
 ```bash
 # Create GEMINI.md with core skills as persistent context
-cat /path/to/tGD/skills/tgd-incremental-implementation/SKILL.md > GEMINI.md
+cat /path/to/tGD/skills/tgd-develop-incremental/SKILL.md > GEMINI.md
 echo -e "\n---\n" >> GEMINI.md
-cat /path/to/tGD/skills/tgd-code-review-and-quality/SKILL.md >> GEMINI.md
+cat /path/to/tGD/skills/tgd-review-quality/SKILL.md >> GEMINI.md
 ```
 
 You can also modularize by importing from separate files:
@@ -72,8 +72,8 @@ You can also modularize by importing from separate files:
 ```markdown
 # Project Instructions
 
-@skills/tgd-test-driven-development/SKILL.md
-@skills/tgd-incremental-implementation/SKILL.md
+@skills/tgd-develop-tdd/SKILL.md
+@skills/tgd-develop-incremental/SKILL.md
 ```
 
 Use `/memory show` to verify loaded context, and `/memory reload` to refresh after changes.
@@ -86,18 +86,18 @@ Use `/memory show` to verify loaded context, and `/memory reload` to refresh aft
 
 Add these as persistent context for every session:
 
-- `tgd-incremental-implementation` — Build in small verifiable slices
-- `tgd-code-review-and-quality` — Five-axis review
+- `tgd-develop-incremental` — Build in small verifiable slices
+- `tgd-review-quality` — Five-axis review
 
 ### On-Demand (Skills)
 
 Install these as skills so they activate only when relevant:
 
-- `tgd-test-driven-development` — Activates when implementing logic or fixing bugs
-- `tgd-spec-driven-development` — Activates when starting a new project or feature
-- `tgd-frontend-ui-engineering` — Activates when building UI
-- `tgd-security-and-hardening` — Activates during security reviews
-- `tgd-performance-optimization` — Activates during performance work
+- `tgd-develop-tdd` — Activates when implementing logic or fixing bugs
+- `tgd-define-spec` — Activates when starting a new project or feature
+- `tgd-develop-ui` — Activates when building UI
+- `tgd-review-security` — Activates during security reviews
+- `tgd-review-performance` — Activates during performance work
 
 ## Advanced Configuration
 
@@ -105,8 +105,8 @@ Install these as skills so they activate only when relevant:
 
 Many skills in this pack leverage [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) tools to interact with the environment. For example:
 
-- `tgd-agent-browser` uses CDP-based browser automation via Rust CLI.
-- `tgd-performance-optimization` can benefit from performance-related MCP tools.
+- `tgd-verify-browser` uses CDP-based browser automation via Rust CLI.
+- `tgd-review-performance` can benefit from performance-related MCP tools.
 
 To enable these, configure the relevant MCP servers with the `gemini mcp`
 command (use `gemini mcp list` to verify them). Gemini CLI stores user-level
@@ -147,7 +147,7 @@ python3 scripts/merge-agent-hooks.py install \
 
 **session-start** — Injects the bounded `hooks/session-preamble.md` content at
 session start. The preamble carries the core verification rule and tells
-Gemini to load `tgd-router` on demand when it needs skill routing. The full
+Gemini to load `tgd-core-router` on demand when it needs skill routing. The full
 router skill is not injected into every session.
 
 ### Explicit Context Loading
@@ -155,7 +155,7 @@ router skill is not injected into every session.
 You can explicitly load any skill into your current session by referencing it with the `@` symbol in your prompt:
 
 ```markdown
-Use the @skills/tgd-test-driven-development/SKILL.md skill to implement this fix.
+Use the @skills/tgd-develop-tdd/SKILL.md skill to implement this fix.
 ```
 
 This is useful when you want to ensure a specific workflow is followed without waiting for auto-discovery.

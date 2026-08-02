@@ -319,13 +319,13 @@ Die `tgd` CLI verwaltet Installation, Updates und Diagnose:
 
 | 🎯 Was | ⌨️ Command | 💡 Prinzip | 🔧 Skills |
 |---|---|---|---|
-| Projekt verstehen | `/tgd-map` | Kontext vor Änderungen + Live-Dashboard | `tgd-context-engineering` + `codegraph init` + `understand-dashboard` |
-| Definition | `/tgd-define` | PRD → bedingtes 0/2/3-Design → finale SPEC | `tgd-interview-me` → `tgd-idea-refine` → `tgd-spec-driven-development` + `tgd-sketch` (bei Bedarf) |
-| Planung | `/tgd-plan` | CONTEXT + PRD + SPEC + freigegebenes Design → atomare Tasks | `tgd-planning-and-task-breakdown` → `tgd-jira-auto-sync` *(nur bei gewählter Jira-Vorschau)* |
-| Sandbox-Bau | `/tgd-develop` | **Pflicht-Worktree** + Intelligentes Routing | `tgd-source-driven-development` → (`subagent` OR `incremental`) → `tgd-test-driven-development` |
-| Beweis erbringen | `/tgd-verify` | Tests sind der Beweis | `tgd-debugging-and-error-recovery` → `tgd-test-driven-development` → **Cross-Feature Regression Gate** |
-| Review vor Merge | `/tgd-review` | Code-Qualität verbessern | `tgd-code-review-and-quality` → `tgd-code-simplification` |
-| Produktion | `/tgd-release` | Schneller ist sicherer | `tgd-git-workflow-and-versioning` → `tgd-shipping-and-launch` → **Regression Catalog Update + Audit** → **METRICS.md-Übergabe** |
+| Projekt verstehen | `/tgd-map` | Kontext vor Änderungen + Live-Dashboard | `tgd-core-context` + `codegraph init` + `understand-dashboard` |
+| Definition | `/tgd-define` | PRD → bedingtes 0/2/3-Design → finale SPEC | `tgd-define-interview` → `tgd-define-ideate` → `tgd-define-spec` + `tgd-define-sketch` (bei Bedarf) |
+| Planung | `/tgd-plan` | CONTEXT + PRD + SPEC + freigegebenes Design → atomare Tasks | `tgd-plan-breakdown` → `tgd-plan-jira` *(nur bei gewählter Jira-Vorschau)* |
+| Sandbox-Bau | `/tgd-develop` | **Pflicht-Worktree** + Intelligentes Routing | `tgd-develop-source` → (`subagent` OR `incremental`) → `tgd-develop-tdd` |
+| Beweis erbringen | `/tgd-verify` | Tests sind der Beweis | `tgd-verify-debug` → `tgd-develop-tdd` → **Cross-Feature Regression Gate** |
+| Review vor Merge | `/tgd-review` | Code-Qualität verbessern | `tgd-review-quality` → `tgd-review-simplify` |
+| Produktion | `/tgd-release` | Schneller ist sicherer | `tgd-core-git` → `tgd-release-ship` → **Regression Catalog Update + Audit** → **METRICS.md-Übergabe** |
 
 ---
 
@@ -384,7 +384,7 @@ Der Agent erkennt den Test-Runner automatisch aus dem SPEC.md Tech-Stack:
 | Go | `go test` | `//go:build regression` or `TestXxxRegression` naming |
 | Rust | `cargo test` | Naming convention |
 | Java | junit / mvn test | `@Tag("regression")` |
-| E2E (any) | tgd-agent-browser | Separate regression suite |
+| E2E (any) | tgd-verify-browser | Separate regression suite |
 
 ### 🧪 Verify: Tests ausführen + Report generieren
 
@@ -424,7 +424,7 @@ Command: pytest -v --tb=short
 
 TEST-REPORT.md wird **automatisch** aus der Test-Runner-Ausgabe generiert, nicht manuell gepflegt.
 
-**Frontend-Pflicht:** Wenn DESIGN.md existiert, MUSS Verify `tgd-agent-browser` ausführen und Design-Konformität für benannte Viewports, Laufzeitzustände und Accessibility in TEST-REPORT.md belegen.
+**Frontend-Pflicht:** Wenn DESIGN.md existiert, MUSS Verify `tgd-verify-browser` ausführen und Design-Konformität für benannte Viewports, Laufzeitzustände und Accessibility in TEST-REPORT.md belegen.
 
 ### 🏷️ Regression: Das Sicherheitsnetz
 
@@ -515,7 +515,7 @@ tGD hat vier menschliche Rollen. Jede Rolle kann nur die für sie relevanten gem
 ## 🔗 Integrationen
 
 ### Jira Data Center
-Wenn `/tgd-plan` eine `TASKS.md` erzeugt, ermöglicht **`tgd-jira-auto-sync`** eine bestätigungspflichtige Synchronisierung:
+Wenn `/tgd-plan` eine `TASKS.md` erzeugt, ermöglicht **`tgd-plan-jira`** eine bestätigungspflichtige Synchronisierung:
 ```
 /tgd-plan → TASKS.md → Jira-Vorschau oder Überspringen wählen → Project-Key wählen → Dry Run + Digest → bestätigen → anwenden → prüfen → zurückschreiben
 ```
@@ -715,15 +715,15 @@ tGD/
 
 ## 📦 Alle 29 Skills
 
-Die obigen Commands sind Einstiegspunkte. Das Paket enthält insgesamt 29 Skills — 27 Lifecycle-Skills plus den `tgd-router`-Meta-Skill und die `tgd-rules`-Kernregeln.
+Die obigen Commands sind Einstiegspunkte. Das Paket enthält insgesamt 29 interne Skills, die nach Möglichkeit nach ihrer Lifecycle-Phase benannt sind. Siehe die [Namens- und Migrationsübersicht der Skills](docs/skill-lifecycle-naming.md) für bestehende Installationen.
 
 <details>
 <summary><b>🧭 Meta (2)</b></summary>
 
 | Skill | Zweck |
 |-------|-------|
-| [tgd-router](skills/tgd-router/SKILL.md) | Arbeit dem richtigen Skill zuordnen |
-| [tgd-rules](skills/tgd-rules/SKILL.md) | Kernregeln — Verifikations-Grundgesetz, Anti-Rationalisierung |
+| [tgd-core-router](skills/tgd-core-router/SKILL.md) | Arbeit dem richtigen Skill zuordnen |
+| [tgd-core-rules](skills/tgd-core-rules/SKILL.md) | Kernregeln — Verifikations-Grundgesetz, Anti-Rationalisierung |
 </details>
 
 <details>
@@ -731,8 +731,8 @@ Die obigen Commands sind Einstiegspunkte. Das Paket enthält insgesamt 29 Skills
 
 | Skill | Zweck |
 |-------|-------|
-| [tgd-context-engineering](skills/tgd-context-engineering/SKILL.md) | Richtige Infos an Agent liefern |
-| [tgd-wiki-generation](skills/tgd-wiki-generation/SKILL.md) | Doku-Site im DeepWiki-Stil für mehrere Repos — eigenständiges Tool, direkt aufrufen; seit v2026.07.09 nicht Teil der `/tgd-map`-Pipeline |
+| [tgd-core-context](skills/tgd-core-context/SKILL.md) | Richtige Infos an Agent liefern |
+| [tgd-support-wiki](skills/tgd-support-wiki/SKILL.md) | Doku-Site im DeepWiki-Stil für mehrere Repos — eigenständiges Tool, direkt aufrufen; seit v2026.07.09 nicht Teil der `/tgd-map`-Pipeline |
 </details>
 
 <details>
@@ -740,10 +740,10 @@ Die obigen Commands sind Einstiegspunkte. Das Paket enthält insgesamt 29 Skills
 
 | Skill | Zweck |
 |-------|-------|
-| [tgd-interview-me](skills/tgd-interview-me/SKILL.md) | Benutzer-Intent durch Q&A extrahieren |
-| [tgd-idea-refine](skills/tgd-idea-refine/SKILL.md) | Divergentes/konvergentes Denken |
-| [tgd-spec-driven-development](skills/tgd-spec-driven-development/SKILL.md) | PRD → UI-Designrouting (0/2/3 Varianten) → finale SPEC |
-| [tgd-sketch](skills/tgd-sketch/SKILL.md) | Produktkontextbasierte HTML-Mockups: je Modus 0/2/3 Varianten |
+| [tgd-define-interview](skills/tgd-define-interview/SKILL.md) | Benutzer-Intent durch Q&A extrahieren |
+| [tgd-define-ideate](skills/tgd-define-ideate/SKILL.md) | Divergentes/konvergentes Denken |
+| [tgd-define-spec](skills/tgd-define-spec/SKILL.md) | PRD → UI-Designrouting (0/2/3 Varianten) → finale SPEC |
+| [tgd-define-sketch](skills/tgd-define-sketch/SKILL.md) | Produktkontextbasierte HTML-Mockups: je Modus 0/2/3 Varianten |
 </details>
 
 <details>
@@ -751,8 +751,8 @@ Die obigen Commands sind Einstiegspunkte. Das Paket enthält insgesamt 29 Skills
 
 | Skill | Zweck |
 |-------|-------|
-| [tgd-planning-and-task-breakdown](skills/tgd-planning-and-task-breakdown/SKILL.md) | In TASKS.md zerlegen |
-| [tgd-jira-auto-sync](skills/tgd-jira-auto-sync/SKILL.md) | Jira-Sync aus TASKS.md anzeigen, bestätigen und prüfen |
+| [tgd-plan-breakdown](skills/tgd-plan-breakdown/SKILL.md) | In TASKS.md zerlegen |
+| [tgd-plan-jira](skills/tgd-plan-jira/SKILL.md) | Jira-Sync aus TASKS.md anzeigen, bestätigen und prüfen |
 </details>
 
 <details>
@@ -760,14 +760,14 @@ Die obigen Commands sind Einstiegspunkte. Das Paket enthält insgesamt 29 Skills
 
 | Skill | Zweck |
 |-------|-------|
-| [tgd-subagent-driven-development](skills/tgd-subagent-driven-development/SKILL.md) | Parallele Tasks durch frische Subagenten |
-| [tgd-incremental-implementation](skills/tgd-incremental-implementation/SKILL.md) | Schrittweise inkrementell |
-| [tgd-test-driven-development](skills/tgd-test-driven-development/SKILL.md) | Red-Green-Refactor |
-| [tgd-verification-before-completion](skills/tgd-verification-before-completion/SKILL.md) | Beweis vor Behauptungen |
-| [tgd-source-driven-development](skills/tgd-source-driven-development/SKILL.md) | Entscheidungen auf offizielle Docs stützen |
-| [tgd-doubt-driven-development](skills/tgd-doubt-driven-development/SKILL.md) | Gegnerische Überprüfung |
-| [tgd-frontend-ui-engineering](skills/tgd-frontend-ui-engineering/SKILL.md) | UI-Architektur & Design-Systeme |
-| [tgd-api-and-interface-design](skills/tgd-api-and-interface-design/SKILL.md) | Contract-First-API-Design |
+| [tgd-develop-subagents](skills/tgd-develop-subagents/SKILL.md) | Parallele Tasks durch frische Subagenten |
+| [tgd-develop-incremental](skills/tgd-develop-incremental/SKILL.md) | Schrittweise inkrementell |
+| [tgd-develop-tdd](skills/tgd-develop-tdd/SKILL.md) | Red-Green-Refactor |
+| [tgd-verify-completion](skills/tgd-verify-completion/SKILL.md) | Beweis vor Behauptungen |
+| [tgd-develop-source](skills/tgd-develop-source/SKILL.md) | Entscheidungen auf offizielle Docs stützen |
+| [tgd-core-doubt](skills/tgd-core-doubt/SKILL.md) | Gegnerische Überprüfung |
+| [tgd-develop-ui](skills/tgd-develop-ui/SKILL.md) | UI-Architektur & Design-Systeme |
+| [tgd-define-api](skills/tgd-define-api/SKILL.md) | Contract-First-API-Design |
 </details>
 
 <details>
@@ -775,8 +775,8 @@ Die obigen Commands sind Einstiegspunkte. Das Paket enthält insgesamt 29 Skills
 
 | Skill | Zweck |
 |-------|-------|
-| [tgd-agent-browser](skills/tgd-agent-browser/SKILL.md) | E2E-Browser-Automatisierung, CDP-basiertes CLI |
-| [tgd-debugging-and-error-recovery](skills/tgd-debugging-and-error-recovery/SKILL.md) | Triage, Fix, Guard |
+| [tgd-verify-browser](skills/tgd-verify-browser/SKILL.md) | E2E-Browser-Automatisierung, CDP-basiertes CLI |
+| [tgd-verify-debug](skills/tgd-verify-debug/SKILL.md) | Triage, Fix, Guard |
 </details>
 
 <details>
@@ -784,10 +784,10 @@ Die obigen Commands sind Einstiegspunkte. Das Paket enthält insgesamt 29 Skills
 
 | Skill | Zweck |
 |-------|-------|
-| [tgd-code-review-and-quality](skills/tgd-code-review-and-quality/SKILL.md) | 5-Achsen-Review |
-| [tgd-code-simplification](skills/tgd-code-simplification/SKILL.md) | Komplexität reduzieren |
-| [tgd-security-and-hardening](skills/tgd-security-and-hardening/SKILL.md) | OWASP & Secrets-Management |
-| [tgd-performance-optimization](skills/tgd-performance-optimization/SKILL.md) | Profiling & Anti-Patterns |
+| [tgd-review-quality](skills/tgd-review-quality/SKILL.md) | 5-Achsen-Review |
+| [tgd-review-simplify](skills/tgd-review-simplify/SKILL.md) | Komplexität reduzieren |
+| [tgd-review-security](skills/tgd-review-security/SKILL.md) | OWASP & Secrets-Management |
+| [tgd-review-performance](skills/tgd-review-performance/SKILL.md) | Profiling & Anti-Patterns |
 </details>
 
 <details>
@@ -795,11 +795,11 @@ Die obigen Commands sind Einstiegspunkte. Das Paket enthält insgesamt 29 Skills
 
 | Skill | Zweck |
 |-------|-------|
-| [tgd-git-workflow-and-versioning](skills/tgd-git-workflow-and-versioning/SKILL.md) | Atomische Commits & Trunk-basiert |
-| [tgd-ci-cd-and-automation](skills/tgd-ci-cd-and-automation/SKILL.md) | Shift Left & Feature-Flags |
-| [tgd-deprecation-and-migration](skills/tgd-deprecation-and-migration/SKILL.md) | Migrations-Pattern |
-| [tgd-documentation-and-adrs](skills/tgd-documentation-and-adrs/SKILL.md) | ADRs & API-Dokumentation |
-| [tgd-shipping-and-launch](skills/tgd-shipping-and-launch/SKILL.md) | Stufen-Rollouts & Monitoring |
+| [tgd-core-git](skills/tgd-core-git/SKILL.md) | Atomische Commits & Trunk-basiert |
+| [tgd-release-ci](skills/tgd-release-ci/SKILL.md) | Shift Left & Feature-Flags |
+| [tgd-release-migration](skills/tgd-release-migration/SKILL.md) | Migrations-Pattern |
+| [tgd-review-adr](skills/tgd-review-adr/SKILL.md) | ADRs & API-Dokumentation |
+| [tgd-release-ship](skills/tgd-release-ship/SKILL.md) | Stufen-Rollouts & Monitoring |
 </details>
 
 ---
@@ -812,7 +812,7 @@ Nachdem Sie Ihr erstes Feature gebaut haben:
 2. 🔧 Entdecken Sie [alle 29 Skills](#-alle-29-skills), um zu sehen, was verfügbar ist
 3. 🤖 Probieren Sie [Agent Personas](#-agent-personas) für spezialisierte Reviews
 4. 🔗 Richten Sie die [Jira-Integration](#integrationen) für Task-Tracking ein
-5. 🌐 Aktivieren Sie [tgd-agent-browser](skills/tgd-agent-browser/SKILL.md) für E2E-Browser-Tests
+5. 🌐 Aktivieren Sie [tgd-verify-browser](skills/tgd-verify-browser/SKILL.md) für E2E-Browser-Tests
 
 ---
 

@@ -293,13 +293,13 @@ Sprint は他の Jira フィールドと同様に扱い、Jira が必須とし�
 
 | 🎯 内容 | ⌨️ コマンド | 💡 原則 | 🔧 呼び出し |
 |---|---|---|---|
-| プロジェクト理解 | `/tgd-map` | 変更前にコンテキスト + ライブダッシュボード | `tgd-context-engineering` + `codegraph init` + `understand-dashboard` |
-| 何を構築するか定義 | `/tgd-define` | PRD → 条件付き0/2/3デザイン → 最終SPEC | `tgd-interview-me` → `tgd-idea-refine` → `tgd-spec-driven-development` + `tgd-sketch`（必要時） |
-| 構築方法を計画 | `/tgd-plan` | CONTEXT + PRD + SPEC + 承認済みデザイン → アトミックタスク | `tgd-planning-and-task-breakdown` → `tgd-jira-auto-sync`（Jira プレビュー選択時のみ） |
-| サンドボックス構築 | `/tgd-develop` | **必須 Worktree** + スマートルーティング | `tgd-source-driven-development` → (`subagent` OR `incremental`) → `tgd-test-driven-development` |
-| 動作を証明 | `/tgd-verify` | テストが証拠 | `tgd-debugging-and-error-recovery` → `tgd-test-driven-development` → **Cross-Feature Regression Gate** |
-| マージ前レビュー | `/tgd-review` | コードの健康改善 | `tgd-code-review-and-quality` → `tgd-code-simplification` |
-| 本番デプロイ | `/tgd-release` | 速い方が安全 | `tgd-git-workflow-and-versioning` → `tgd-shipping-and-launch` → **Regression Catalog Update + Audit** → **METRICS.md 引き継ぎ** |
+| プロジェクト理解 | `/tgd-map` | 変更前にコンテキスト + ライブダッシュボード | `tgd-core-context` + `codegraph init` + `understand-dashboard` |
+| 何を構築するか定義 | `/tgd-define` | PRD → 条件付き0/2/3デザイン → 最終SPEC | `tgd-define-interview` → `tgd-define-ideate` → `tgd-define-spec` + `tgd-define-sketch`（必要時） |
+| 構築方法を計画 | `/tgd-plan` | CONTEXT + PRD + SPEC + 承認済みデザイン → アトミックタスク | `tgd-plan-breakdown` → `tgd-plan-jira`（Jira プレビュー選択時のみ） |
+| サンドボックス構築 | `/tgd-develop` | **必須 Worktree** + スマートルーティング | `tgd-develop-source` → (`subagent` OR `incremental`) → `tgd-develop-tdd` |
+| 動作を証明 | `/tgd-verify` | テストが証拠 | `tgd-verify-debug` → `tgd-develop-tdd` → **Cross-Feature Regression Gate** |
+| マージ前レビュー | `/tgd-review` | コードの健康改善 | `tgd-review-quality` → `tgd-review-simplify` |
+| 本番デプロイ | `/tgd-release` | 速い方が安全 | `tgd-core-git` → `tgd-release-ship` → **Regression Catalog Update + Audit** → **METRICS.md 引き継ぎ** |
 
 ---
 
@@ -358,7 +358,7 @@ BDDはテストコードを生成しません — Develop段階でテストコ�
 | Go | `go test` | `//go:build regression` または `TestXxxRegression` 命名 |
 | Rust | `cargo test` | 命名規則 |
 | Java | junit / mvn test | `@Tag("regression")` |
-| E2E（任意） | tgd-agent-browser | 独立したリグレッションスイート |
+| E2E（任意） | tgd-verify-browser | 独立したリグレッションスイート |
 
 ### 🧪 Verify: テスト実行 + レポート生成
 
@@ -398,7 +398,7 @@ Command: pytest -v --tb=short
 
 TEST-REPORT.mdはテストランナーの出力から **自動生成** されるもので、手動で管理するものではありません。
 
-**フロントエンドの要件：** DESIGN.md がある場合、Verifyでは必ず `tgd-agent-browser` を実行し、指定viewport、runtime state、アクセシビリティのデザイン適合証拠を TEST-REPORT.md に追加します。
+**フロントエンドの要件：** DESIGN.md がある場合、Verifyでは必ず `tgd-verify-browser` を実行し、指定viewport、runtime state、アクセシビリティのデザイン適合証拠を TEST-REPORT.md に追加します。
 
 ### 🏷️ リグレッション: 安全ネット
 
@@ -489,7 +489,7 @@ tGD には4つの人間ロールがあります。各ロールは共有アーテ
 ## 🔗 統合
 
 ### Jira Data Center
-`/tgd-plan` が `TASKS.md` を生成すると、**`tgd-jira-auto-sync`** スキルで確認付きの同期を実行できます：
+`/tgd-plan` が `TASKS.md` を生成すると、**`tgd-plan-jira`** スキルで確認付きの同期を実行できます：
 ```
 /tgd-plan → TASKS.md → Jira プレビューまたはスキップを選択 → Project key を選択 → dry-run + digest → 確認 → 適用 → 検証 → 書き戻し
 ```
@@ -681,15 +681,15 @@ tGD/
 
 ## 📦 全29スキル
 
-上記のコマンドはエントリーポイントです。パックには全29スキル — 27のライフサイクルスキルに `tgd-router` メタスキルと `tgd-rules` コアルールを加えたもの — が含まれます。
+上記のコマンドはエントリーポイントです。パックには、可能な限りライフサイクルのフェーズに沿って命名された29個の内部スキルが含まれます。既存のインストールを更新する場合は、[スキルの命名と移行マップ](docs/skill-lifecycle-naming.md)を参照してください。
 
 <details>
 <summary><b>🧭 Meta (2)</b></summary>
 
 | スキル | 用途 |
 |--------|------|
-| [tgd-router](skills/tgd-router/SKILL.md) | 作業を適切なスキルにマッピング |
-| [tgd-rules](skills/tgd-rules/SKILL.md) | コアルール — 検証の鉄則、反合理化 |
+| [tgd-core-router](skills/tgd-core-router/SKILL.md) | 作業を適切なスキルにマッピング |
+| [tgd-core-rules](skills/tgd-core-rules/SKILL.md) | コアルール — 検証の鉄則、反合理化 |
 </details>
 
 <details>
@@ -697,8 +697,8 @@ tGD/
 
 | スキル | 用途 |
 |--------|------|
-| [tgd-context-engineering](skills/tgd-context-engineering/SKILL.md) | 正確な情報をエージェントに供給 |
-| [tgd-wiki-generation](skills/tgd-wiki-generation/SKILL.md) | DeepWikiスタイルのマルチレポドキュメントサイト — スタンドアロンツール（直接呼び出し。v2026.07.09 以降 `/tgd-map` パイプライン外） |
+| [tgd-core-context](skills/tgd-core-context/SKILL.md) | 正確な情報をエージェントに供給 |
+| [tgd-support-wiki](skills/tgd-support-wiki/SKILL.md) | DeepWikiスタイルのマルチレポドキュメントサイト — スタンドアロンツール（直接呼び出し。v2026.07.09 以降 `/tgd-map` パイプライン外） |
 </details>
 
 <details>
@@ -706,10 +706,10 @@ tGD/
 
 | スキル | 用途 |
 |--------|------|
-| [tgd-interview-me](skills/tgd-interview-me/SKILL.md) | Q&Aでユーザー意図を抽出 |
-| [tgd-idea-refine](skills/tgd-idea-refine/SKILL.md) | 発散/収束思考 |
-| [tgd-spec-driven-development](skills/tgd-spec-driven-development/SKILL.md) | PRD → UIデザインルーティング（0/2/3案）→ 最終SPEC |
-| [tgd-sketch](skills/tgd-sketch/SKILL.md) | プロダクトコンテキストに沿ったHTMLモックアップ：モード別0/2/3案 |
+| [tgd-define-interview](skills/tgd-define-interview/SKILL.md) | Q&Aでユーザー意図を抽出 |
+| [tgd-define-ideate](skills/tgd-define-ideate/SKILL.md) | 発散/収束思考 |
+| [tgd-define-spec](skills/tgd-define-spec/SKILL.md) | PRD → UIデザインルーティング（0/2/3案）→ 最終SPEC |
+| [tgd-define-sketch](skills/tgd-define-sketch/SKILL.md) | プロダクトコンテキストに沿ったHTMLモックアップ：モード別0/2/3案 |
 </details>
 
 <details>
@@ -717,8 +717,8 @@ tGD/
 
 | スキル | 用途 |
 |--------|------|
-| [tgd-planning-and-task-breakdown](skills/tgd-planning-and-task-breakdown/SKILL.md) | TASKS.md に分解 |
-| [tgd-jira-auto-sync](skills/tgd-jira-auto-sync/SKILL.md) | TASKS.md から Jira issue の同期をプレビュー・確認・検証 |
+| [tgd-plan-breakdown](skills/tgd-plan-breakdown/SKILL.md) | TASKS.md に分解 |
+| [tgd-plan-jira](skills/tgd-plan-jira/SKILL.md) | TASKS.md から Jira issue の同期をプレビュー・確認・検証 |
 </details>
 
 <details>
@@ -726,14 +726,14 @@ tGD/
 
 | スキル | 用途 |
 |--------|------|
-| [tgd-subagent-driven-development](skills/tgd-subagent-driven-development/SKILL.md) | 新しいサブエージェントによる並列タスク |
-| [tgd-incremental-implementation](skills/tgd-incremental-implementation/SKILL.md) | 縦に薄くスライスして実装 |
-| [tgd-test-driven-development](skills/tgd-test-driven-development/SKILL.md) | Red-Green-Refactor |
-| [tgd-verification-before-completion](skills/tgd-verification-before-completion/SKILL.md) | 主張の前に証拠を |
-| [tgd-source-driven-development](skills/tgd-source-driven-development/SKILL.md) | 公式ドキュメントに基づく判断 |
-| [tgd-doubt-driven-development](skills/tgd-doubt-driven-development/SKILL.md) | 対抗レビュー |
-| [tgd-frontend-ui-engineering](skills/tgd-frontend-ui-engineering/SKILL.md) | UIアーキテクチャ & デザインシステム |
-| [tgd-api-and-interface-design](skills/tgd-api-and-interface-design/SKILL.md) | コントラクトファーストAPI設計 |
+| [tgd-develop-subagents](skills/tgd-develop-subagents/SKILL.md) | 新しいサブエージェントによる並列タスク |
+| [tgd-develop-incremental](skills/tgd-develop-incremental/SKILL.md) | 縦に薄くスライスして実装 |
+| [tgd-develop-tdd](skills/tgd-develop-tdd/SKILL.md) | Red-Green-Refactor |
+| [tgd-verify-completion](skills/tgd-verify-completion/SKILL.md) | 主張の前に証拠を |
+| [tgd-develop-source](skills/tgd-develop-source/SKILL.md) | 公式ドキュメントに基づく判断 |
+| [tgd-core-doubt](skills/tgd-core-doubt/SKILL.md) | 対抗レビュー |
+| [tgd-develop-ui](skills/tgd-develop-ui/SKILL.md) | UIアーキテクチャ & デザインシステム |
+| [tgd-define-api](skills/tgd-define-api/SKILL.md) | コントラクトファーストAPI設計 |
 </details>
 
 <details>
@@ -741,8 +741,8 @@ tGD/
 
 | スキル | 用途 |
 |--------|------|
-| [tgd-agent-browser](skills/tgd-agent-browser/SKILL.md) | E2Eブラウザ自動化、CDPベースCLI |
-| [tgd-debugging-and-error-recovery](skills/tgd-debugging-and-error-recovery/SKILL.md) | トリアージ、修正、防御 |
+| [tgd-verify-browser](skills/tgd-verify-browser/SKILL.md) | E2Eブラウザ自動化、CDPベースCLI |
+| [tgd-verify-debug](skills/tgd-verify-debug/SKILL.md) | トリアージ、修正、防御 |
 </details>
 
 <details>
@@ -750,10 +750,10 @@ tGD/
 
 | スキル | 用途 |
 |--------|------|
-| [tgd-code-review-and-quality](skills/tgd-code-review-and-quality/SKILL.md) | 5軸レビュー |
-| [tgd-code-simplification](skills/tgd-code-simplification/SKILL.md) | 複雑性削減 |
-| [tgd-security-and-hardening](skills/tgd-security-and-hardening/SKILL.md) | OWASP & シークレット管理 |
-| [tgd-performance-optimization](skills/tgd-performance-optimization/SKILL.md) | パフォーマンス解析 & アンチパターン |
+| [tgd-review-quality](skills/tgd-review-quality/SKILL.md) | 5軸レビュー |
+| [tgd-review-simplify](skills/tgd-review-simplify/SKILL.md) | 複雑性削減 |
+| [tgd-review-security](skills/tgd-review-security/SKILL.md) | OWASP & シークレット管理 |
+| [tgd-review-performance](skills/tgd-review-performance/SKILL.md) | パフォーマンス解析 & アンチパターン |
 </details>
 
 <details>
@@ -761,11 +761,11 @@ tGD/
 
 | スキル | 用途 |
 |--------|------|
-| [tgd-git-workflow-and-versioning](skills/tgd-git-workflow-and-versioning/SKILL.md) | アトミックコミット & トランクベース開発 |
-| [tgd-ci-cd-and-automation](skills/tgd-ci-cd-and-automation/SKILL.md) | Shift Left & フィーチャーフラグ |
-| [tgd-deprecation-and-migration](skills/tgd-deprecation-and-migration/SKILL.md) | マイグレーションパターン |
-| [tgd-documentation-and-adrs](skills/tgd-documentation-and-adrs/SKILL.md) | ADR & APIドキュメント |
-| [tgd-shipping-and-launch](skills/tgd-shipping-and-launch/SKILL.md) | 段階的デプロイ & モニタリング |
+| [tgd-core-git](skills/tgd-core-git/SKILL.md) | アトミックコミット & トランクベース開発 |
+| [tgd-release-ci](skills/tgd-release-ci/SKILL.md) | Shift Left & フィーチャーフラグ |
+| [tgd-release-migration](skills/tgd-release-migration/SKILL.md) | マイグレーションパターン |
+| [tgd-review-adr](skills/tgd-review-adr/SKILL.md) | ADR & APIドキュメント |
+| [tgd-release-ship](skills/tgd-release-ship/SKILL.md) | 段階的デプロイ & モニタリング |
 </details>
 
 ---
@@ -778,7 +778,7 @@ tGD/
 2. 🔧 [全29スキル](#-全29スキル)を探索して利用可能なものを見る
 3. 🤖 [Agent Personas](#-agent-personas)で専門的なレビューを試す
 4. 🔗 [Jira 統合](#統合)でタスクトラッキングを設定
-5. 🌐 [tgd-agent-browser](skills/tgd-agent-browser/SKILL.md)でE2Eブラウザテストを有効化
+5. 🌐 [tgd-verify-browser](skills/tgd-verify-browser/SKILL.md)でE2Eブラウザテストを有効化
 
 ---
 

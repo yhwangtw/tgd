@@ -36,27 +36,27 @@ First determine which repos have work: the set of `[repo-name]` prefixes in TASK
 
 **⚡ Step 2: Execution Mode Routing**
 Route on risk first, then size:
-- **Any task with an `[R]` criterion on a critical path** (auth, payment, data loss, security boundary) OR **any Large task (5+ files)** → `tgd-subagent-driven-development`. High-stakes work gets fresh-context implementation and two-stage review regardless of task count.
-- Otherwise, **< 3 tasks** → `tgd-incremental-implementation`. The main agent switches to the worktree directory and implements directly.
-- Otherwise (**≥ 3 tasks**) → `tgd-subagent-driven-development`. Dispatch subagents to implement and review within the worktree directory.
+- **Any task with an `[R]` criterion on a critical path** (auth, payment, data loss, security boundary) OR **any Large task (5+ files)** → `tgd-develop-subagents`. High-stakes work gets fresh-context implementation and two-stage review regardless of task count.
+- Otherwise, **< 3 tasks** → `tgd-develop-incremental`. The main agent switches to the worktree directory and implements directly.
+- Otherwise (**≥ 3 tasks**) → `tgd-develop-subagents`. Dispatch subagents to implement and review within the worktree directory.
 
 **Core flow (both modes):**
-1. `tgd-context-engineering` — load the right spec sections and source files for the current task
+1. `tgd-core-context` — load the right spec sections and source files for the current task
    - **If `codegraph` is available** (the `/tgd-map` Step 0.5 probe): before modifying a file, run `codegraph callers <symbol>` to ensure backward compatibility. If not installed, skip — this enrichment is Tier 2, its absence is not a failure.
-2. `tgd-source-driven-development` — ground framework decisions in official docs, verify and cite
-3. `tgd-subagent-driven-development` OR `tgd-incremental-implementation` — execute tasks in worktree
-4. `tgd-test-driven-development` — Red-Green-Refactor, write tests alongside each task
+2. `tgd-develop-source` — ground framework decisions in official docs, verify and cite
+3. `tgd-develop-subagents` OR `tgd-develop-incremental` — execute tasks in worktree
+4. `tgd-develop-tdd` — Red-Green-Refactor, write tests alongside each task
    - Every test verifying a criterion MUST mention its `AC-<task>.<n>` id in the test name, docstring, or a comment (`ac-trace.py` cross-references them in `/tgd-verify`).
 5. **Backfill `Test:` fields + flip `Status:`** — after each task's tests pass, record the test file path in the corresponding criterion's `Test:` field in `$TGD_DIR/<feature-name>/TASKS.md` AND flip the task's `**Status:**` line to `complete` (set it to `in-progress` when starting a task). This is the state the resume rule and `/tgd-plan`'s re-plan protocol read — a finished task without `Status: complete` will be treated as unfinished on the next run. `Test:` backfill is MANDATORY for `[R]` criteria — they feed REGRESSION-CATALOG.md at release, and `/tgd-verify` fails closed on `[R]` criteria without a `Test:` file.
-   - **Also flip the review fields.** Each task's two-stage review (spec-compliance first, then code-quality — run both INLINE if you cannot dispatch subagents; per `tgd-rules`, inability to delegate moves *where* work runs, never *whether*) records its outcome in the task's `Spec-Review:` and `Quality-Review:` fields: `PASS — <one line>` or `FAIL — <one line>` (fix, re-review, then flip to PASS). A task is not complete while either field reads `pending` — `/tgd-verify` fails closed on it. This is what makes "the reviews actually ran" machine-checkable instead of a claim.
-6. `tgd-verification-before-completion` — evidence before claims, no exceptions
+   - **Also flip the review fields.** Each task's two-stage review (spec-compliance first, then code-quality — run both INLINE if you cannot dispatch subagents; per `tgd-core-rules`, inability to delegate moves *where* work runs, never *whether*) records its outcome in the task's `Spec-Review:` and `Quality-Review:` fields: `PASS — <one line>` or `FAIL — <one line>` (fix, re-review, then flip to PASS). A task is not complete while either field reads `pending` — `/tgd-verify` fails closed on it. This is what makes "the reviews actually ran" machine-checkable instead of a claim.
+6. `tgd-verify-completion` — evidence before claims, no exceptions
 
 **Conditional (apply when relevant):**
 - Working with unfamiliar code? → the `understand` skill to clarify architectural boundaries.
-- Touching UI? → `tgd-frontend-ui-engineering`
-- Designing APIs? → `tgd-api-and-interface-design`
-- High-stakes decision? → `tgd-doubt-driven-development`
-- Blocked by a bug you can't fix within the task's scope? → `tgd-debugging-and-error-recovery` → **Blocked Task Handling**: set the task's `**Status:** blocked: <issue-ref>`, file the bug, continue with non-blocked tasks. A blocked task's ACs will fail `/tgd-verify`'s `ac-trace.py` closed — the way to ship without it is deferring the task via `/tgd-plan`'s incremental re-plan, never deleting it.
+- Touching UI? → `tgd-develop-ui`
+- Designing APIs? → `tgd-define-api`
+- High-stakes decision? → `tgd-core-doubt`
+- Blocked by a bug you can't fix within the task's scope? → `tgd-verify-debug` → **Blocked Task Handling**: set the task's `**Status:** blocked: <issue-ref>`, file the bug, continue with non-blocked tasks. A blocked task's ACs will fail `/tgd-verify`'s `ac-trace.py` closed — the way to ship without it is deferring the task via `/tgd-plan`'s incremental re-plan, never deleting it.
 
 **Checkpoints:** when execution reaches a `## Checkpoint` in TASKS.md, run every command it lists and check off what passes. All pass → continue immediately (checkpoints are machine gates, not human pauses). Any fail → fix before starting the next task; if unfixable, apply Blocked Task Handling to the task that broke it.
 
@@ -80,4 +80,4 @@ After completing the implementation, verify the outputs.
 - [ ] Each worktree is clean: `git status --porcelain` is empty — everything the gates above certified is committed on the feature branch
 - [ ] Verification commands run and output confirmed (no "should work")
 
-End with the closing report per `tgd-rules` → **Command Closing Report**: 📦 產出 (實作的任務數 + 檔案摘要；worktree 保留、未 merge) · 🔎 檢查 (gate as one line) · ➡️ 下一步 `/tgd-verify` — 證明它能動. Don't paste the raw checklist above.
+End with the closing report per `tgd-core-rules` → **Command Closing Report**: 📦 產出 (實作的任務數 + 檔案摘要；worktree 保留、未 merge) · 🔎 檢查 (gate as one line) · ➡️ 下一步 `/tgd-verify` — 證明它能動. Don't paste the raw checklist above.

@@ -1,6 +1,6 @@
 # Accessibility Checklist
 
-Quick reference for WCAG 2.1 AA compliance. Use alongside the `tgd-frontend-ui-engineering` skill.
+Quick reference for WCAG 2.1 AA compliance. Use alongside the `tgd-develop-ui` skill.
 
 ## Table of Contents
 

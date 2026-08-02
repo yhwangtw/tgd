@@ -43,7 +43,7 @@ class MergeAgentHooksTests(unittest.TestCase):
         for checkout in (self.repo, self.old_repo):
             (checkout / "setup.sh").write_text("#!/usr/bin/env bash\n", encoding="utf-8")
             (checkout / "VERSION").write_text("v2026.01.01\n", encoding="utf-8")
-            rules = checkout / "skills" / "tgd-rules"
+            rules = checkout / "skills" / "tgd-core-rules"
             rules.mkdir(parents=True)
             (rules / "SKILL.md").write_text("# rules\n", encoding="utf-8")
 
