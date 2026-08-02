@@ -4,6 +4,14 @@ All notable changes to tGD will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/). Versions follow [CalVer](https://calver.org/) (YYYY.MM.DD).
 
+## v2026.08.03
+
+### 🐛 Bug Fixes
+- update stale skill and repository references (`c7de3e5`)
+
+### ♻️ Refactoring
+- rename skills by lifecycle phase (`0b319f6`)
+
 ## v2026.08.02.1
 
 ### 🐛 Bug Fixes
