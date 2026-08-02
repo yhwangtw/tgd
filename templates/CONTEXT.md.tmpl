@@ -1,0 +1,88 @@
+# CONTEXT.md
+
+## 1. Primary Repository
+**Path:** <absolute path>
+**Name:** <repo name>
+
+### Analysis Coverage
+<Prove the analysis actually covered the whole repo. State the REAL count from the Step 4 UA run — number of source files analyzed into the knowledge graph, and how many were excluded per `.understandignore` — then point at the graph. Example: "UA analyzed 247 source files across 3 languages; build/vendor/binary files excluded per .understandignore (node_modules, dist, lockfiles, images). Full detail: `.scans/<repo>/.understand-anything/knowledge-graph.json`." If UA was skipped, write exactly: "not analyzed — understand skill unavailable (see ## Degraded Mode)". Never invent a number.>
+
+### Structure
+<top 2-3 levels of the dir tree, each top-level dir annotated with what it holds — not an exhaustive `find` dump>
+
+### Key Files
+<the handful of files an engineer opens first, each with its one-line role>
+
+### Summary
+<tech stack, architecture, and the dominant patterns — synthesized from the UA knowledge graph, not guessed>
+
+### UI Landscape (if frontend exists)
+<CONTEXT.md is navigation, not the visual source of truth. Inspect the real files below before producing UI work; never copy stale token values into CONTEXT.md. Repeat this subsection for every mapped repo that owns a frontend surface.>
+- **Frontend surfaces:** <routes/apps/packages that render user-facing UI>
+- **Design-system source:** <real path to the component library/theme package, or "not detected">
+- **Token source:** <real path to CSS variables/theme/tokens, or "not detected">
+- **Global styles / typography:** <real paths, or "not detected">
+- **Representative components:** <2-4 real files that establish current patterns>
+- **Responsive source:** <real breakpoint/layout source, or "not detected">
+- **External design source:** <Figma/design docs/screenshots if found, or "none found">
+
+### Code Entry Points
+<the real entry points from CodeGraph: main()/CLI/HTTP routes/exported API — with file:symbol>
+
+### Business Flows
+<FACTS extracted from domain-graph.json — domain names, flow names, step counts, entry file. No narrative prose here; the story lives in the dashboard's Domain view. If Step 4's domain derivation was skipped/failed, write exactly: "not analyzed — see ## Degraded Mode".>
+| Domain | Flow | Steps | Entry |
+|---|---|---|---|
+| <domain> | <flow> | <n> | <file> |
+Full detail: `.scans/<repo>/.understand-anything/domain-graph.json` · dashboard → Domain view
+
+## 2. Build / Test / Run
+<The commands to work with this repo, each tagged with where you found it. Write "not detected" for any you cannot find in a real source — never invent one.>
+- **Build:** `<cmd>`  _(source: package.json / Makefile / pyproject.toml / … )_
+- **Test:** `<cmd>`  _(framework + where tests live, e.g. `jest`, tests in `tests/`)_
+- **Lint / format:** `<cmd>`  _(or "none found")_
+- **Run locally:** `<cmd>` + required env vars / services  _(from `.env.example`, `docker-compose.yml`, or the README)_
+
+## 3. Conventions & Rules
+<Pointers, not a rewrite of the rules. This is what downstream `/tgd-develop` must honor.>
+- **Rules files present:** `CLAUDE.md` / `.cursorrules` / `AGENTS.md` / …  → downstream MUST read these before editing (or "none found")
+- **Tests live in:** `<path>`, named `<pattern>`
+- **Notable conventions:** naming, error handling, module boundaries — cite ONE existing example file per convention so it can be copied, not guessed
+
+## 4. Additional Context Repositories
+(For each additional repo provided in Step 1:)
+
+### <repo-name> (<type: local_path | git_url>)
+**Source:** <original input>
+**Resolved to:** <absolute path or clone path>
+**Summary:** <what this repo does>
+
+**Key Insights:**
+- <insight 1>
+- <insight 2>
+
+**Relevance:** <why this repo is relevant to the primary project>
+
+## 5. Synthesis
+### Integration Points
+- <how repos relate to each other>
+
+### Architecture Decisions
+- <key decisions based on combined context>
+
+### Open Questions
+- <unresolved questions>
+
+## Degraded Mode
+(Only if Tier 2 steps were skipped. List each skipped step, the missing dependency, and how to enable it later. Delete this section if Tier 2 ran in full.)
+- Step 3 (CodeGraph): skipped — `codegraph` not installed. Enable: install codegraph, re-run `/tgd-map`.
+
+## See Also
+- Knowledge graph (per repo, agent-readable): `$TGD_DIR/.scans/<repo>/.understand-anything/knowledge-graph.json` — the authoritative "where things live" map. Query it for symbol/file/dependency detail instead of duplicating a file table here (a copied table drifts; the graph is regenerated each `/tgd-map`).
+- Interactive Dashboards (one per repo; only when node/npm present):
+  - <primary-repo-name>: http://localhost:<port>
+  - <additional-repo-name>: http://localhost:<port>
+- 🔍 繼續探索這份知識圖 (on-demand, generated fresh per question — no stale docs):
+  - 問這個 codebase:`/understand-chat <question>`
+  - 深讀某個檔/函式:`/understand-explain <file-or-symbol>`
+  - 業務流程視角:dashboard 的 **Domain** 切換鈕 (or re-derive: `/understand-domain`)

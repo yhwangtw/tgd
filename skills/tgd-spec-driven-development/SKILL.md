@@ -72,82 +72,8 @@ Don't silently fill in ambiguous requirements. The spec's entire purpose is to s
 
 **PRD.md template (save to `$TGD_DIR/<feature-name>/PRD.md`):**
 
-```markdown
-# PRD: [Feature Name]
 
-| Metadata       | Details                           |
-|----------------|-----------------------------------|
-| **Status**     | Draft / Ready for Dev             |
-| **Author**     | Product Manager                   |
-| **Date**       | YYYY-MM-DD                        |
-
-## 1. Executive Summary
-[Why are we doing this? Business value? Expected impact?]
-
-## 2. Problem Statement
-- **Current state:** [What is happening now?]
-- **Pain point:** [What is the problem?]
-- **Impact:** [How does this affect users/business?]
-
-## 3. Goals & Non-Goals
-- **Goals:** (outcomes, not features — what changes for the user?)
-  - [e.g., "Users can recover access without an email round-trip" — not "Add SMS OTP"]
-- **Non-Goals:**
-  - [What is explicitly out of scope for this iteration?]
-  - [Things we considered but chose not to do — and why]
-
-## 4. Target Audience
-- **Primary:** [Who is this for?]
-- **Secondary:** [Who else benefits?]
-- **User scale:** [Expected MAU/DAU]
-
-## 5. User Stories
-| ID | Story | Priority | Acceptance Criteria |
-|----|-------|----------|---------------------|
-| US-01 | As a [role], I want [goal], so [benefit] | P0 | [Specific criteria] |
-
-## 6. Success Metrics (KPIs)
-| Metric | Target | Measurement Method |
-|--------|--------|-------------------|
-| [Metric 1] | [Target] | [How to measure] |
-
-## 7. Scope
-(deliverables, not outcomes — what gets built and when)
-- **Phase 1:** [Must haves]
-- **Phase 2:** [Nice to haves]
-- **Phase 3:** [Future]
-- **Out of Scope:** See §3 Non-Goals
-
-## UI Design
-- **Mode:** [1 — Existing approved design / 2 — Extend existing product UI / 3 — Explore a new experience / 4 — No user-facing UI]
-- **Owner:** [Design role/person, or N/A]
-- **Existing system:** [CONTEXT.md path pointers / external approved source / none]
-- **Status:** [pending / direction-approved / not-applicable]
-
-## 8. Risks & Mitigations
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| [Risk] | High/Med/Low | [Strategy] |
-
-## 9. Competitive Analysis (if applicable)
-| Feature | Our Product | Competitor A | Competitor B |
-|---------|-------------|--------------|--------------|
-| [Feature] | ✅/❌/Phase N | ✅/❌ | ✅/❌ |
-
-## 10. Stakeholder Alignment (if applicable)
-- **PM:** [Sign-off on scope]
-- **Design:** [Sign-off on UX flow]
-- **Engineering:** [Sign-off on feasibility]
-- **Security:** [Sign-off on security requirements]
-
-## 11. Timeline (if applicable)
-| Phase | Duration | Milestone |
-|-------|----------|-----------|
-| Phase 1 | [X weeks] | [Milestone] |
-
-## Sign-off
-- [ ] **PM**: (pending)
-```
+> Canonical template: `$TGD_REPO_ROOT/templates/PRD.md.tmpl`.
 
 The `## Sign-off` section is the PM's **final release approval** — `/tgd-release`'s hard gate greps this exact line and blocks until it reads `[x] **PM**: Approved`. It is NOT §10 Stakeholder Alignment (define-time scope alignment); it is the release-time go/no-go, same convention as TEST-REPORT.md (QA) and REVIEW.md (QA + DEV).
 
@@ -165,40 +91,8 @@ At `/tgd-release`, the §6 table becomes `$TGD_DIR/<feature-name>/METRICS.md` �
 
 **SPEC.md template (save to `$TGD_DIR/<feature-name>/SPEC.md`):** For backend-only work, write it immediately after PRD approval. For UI modes 1-3, this is the final technical artifact: do not write/finalize it until the Design Routing below has an approved direction. A pre-existing draft may be reconciled in place, but it must not remain stale after DESIGN.md changes the flow, states, components, data needs, or events.
 
-```markdown
-# SPEC: [Feature Name]
 
-## Feature Type
-- [ ] **Backend** (API / CLI / Service)
-- [ ] **Frontend** (UI / Web / Mobile)
-- [ ] **Full-stack** (Both)
-
-### UI Requirements (if Frontend or Full-stack)
-- **Design Source**: [Figma URL / Screenshot / PDF / None]
-- **Pages/Screens**: [List of screens needed]
-- **Key Components**: [Component names]
-- **Responsive**: [Mobile-first / Desktop-first / Both]
-
-## Tech Stack
-[Framework, language, key dependencies with versions]
-
-## Architecture / Data Models
-[Data models, endpoints, key algorithms, schema definitions]
-
-## Project Structure
-[Directory layout with descriptions]
-
-## API Contract
-[Input/Output definitions for key endpoints]
-
-## Testing Strategy
-[Framework, test locations, coverage requirements]
-
-## Boundaries
-- Always: [...]
-- Ask first: [...]
-- Never: [...]
-```
+> Canonical template: `$TGD_REPO_ROOT/templates/SPEC.md.tmpl`.
 
 ### Phase 1.5: UI Design Routing (inside DEFINE; not a new lifecycle phase)
 
@@ -223,93 +117,8 @@ For modes 2-3, run `tgd-sketch`, save the required variants under `$TGD_DIR/<fea
 Write DESIGN.md from the approved source/direction, then stop for the Design owner. Its Sign-off remains pending until the role records `[x] **DESIGN**: Direction Approved`; then update PRD `## UI Design` Status to `direction-approved`. Only then write or reconcile SPEC.md against the approved user flow, component mapping, state matrix, responsive behavior, content/copy, API/data needs, events, and test strategy.
 
 **DESIGN.md template (save to `$TGD_DIR/<feature-name>/DESIGN.md`):**
-```markdown
-# DESIGN: [Feature Name]
 
-## Source & Revision
-- **Type:** [Figma / Mockup / Screenshot / PDF]
-- **URL/Path:** [stable link or artifact path]
-- **Frame/Variant:** [frame/node id or Conservative / Strong-fit / Divergent]
-- **Revision/Reviewed:** [source revision, commit, export hash, or YYYY-MM-DD]
-- **Context:** [`$TGD_DIR/CONTEXT.md` mapping revision/date]
-
-## Design-System Precedence
-**Existing design system > approved DESIGN.md additions > tGD fallback defaults**
-- **Component source:** [real path / none]
-- **Token source:** [real path / none]
-- **Global style / typography source:** [real paths / none]
-- **Responsive source:** [real path / none]
-- **Fallbacks used:** [none, or list each fallback and why no product source existed]
-
-## Visual Direction
-- **Product fit:** [how this continues or intentionally changes the existing product]
-- **Vibe:** [specific adjectives grounded in product/user context]
-- **Chosen direction:** [why this direction wins]
-- **Rejected alternatives:** [what was rejected and the concrete trade-off]
-
-## Primary User & Core Job
-- **Primary user:** [specific role/context]
-- **Core job:** [single most important action/outcome]
-- **Success signal:** [what the user sees/does when the job is complete]
-
-## User Flow
-1. [Entry point]
-2. [Primary action]
-3. [System response]
-4. [Success and recoverable failure exits]
-
-## Information Hierarchy
-1. [Highest-priority content/action]
-2. [Secondary context]
-3. [Progressive disclosure / tertiary controls]
-
-## Component Mapping
-| UI responsibility | Existing component/pattern | New component | Source path / rationale |
-|---|---|---|---|
-| [Primary action] | [Button/Form/etc. or none] | [name or none] | [path or reason] |
-
-## Token Changes
-| Token | Existing value/source | New value | Why a new/overridden token is necessary |
-|---|---|---|---|
-| [token or "none"] | [path/value] | [value] | [reason] |
-
-## Responsive
-| Product breakpoint / condition | Layout and priority changes | Source / rationale |
-|---|---|---|
-| [existing breakpoint or content condition] | [behavior] | [path or reason] |
-
-## Interactions
-- [Trigger → response → completion/recovery]
-- [Keyboard and focus behavior]
-
-## State Matrix
-| State | Trigger/data condition | Treatment | User recovery/action |
-|---|---|---|---|
-| Default | [condition] | [treatment] | [action] |
-| Loading | [condition] | [treatment] | [action] |
-| Empty | [condition] | [treatment] | [action] |
-| Error | [condition] | [treatment] | [action] |
-| Success | [condition] | [treatment] | [action] |
-
-## Content & Copy
-| Surface | Approved copy / content rule | Localization or length constraint |
-|---|---|---|
-| [title/CTA/error/empty state] | [real text or rule] | [constraint] |
-
-## Accessibility
-- **Keyboard/focus:** [tab order, focus movement, escape behavior]
-- **Semantics/name:** [landmarks, headings, accessible names]
-- **Contrast/color:** [source tokens and non-color indicators]
-- **Motion:** [reduced-motion behavior]
-
-## Allowed Deviations
-| Deviation | Reason | Owner approval |
-|---|---|---|
-| [none or explicit constraint] | [reason] | [pending/approved] |
-
-## Sign-off
-- [ ] **DESIGN**: Direction Approved — YYYY-MM-DD — comment
-```
+> Canonical template: `$TGD_REPO_ROOT/templates/DESIGN.md.tmpl`.
 
 ### Phase 1.75: Finalize the Technical Specification
 

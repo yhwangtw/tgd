@@ -68,18 +68,13 @@ After releasing, update `$TGD_DIR/CHANGELOG.md` (create if it doesn't exist) wit
 - Feature name and summary
 - Date shipped
 - Key changes
+- Use `$TGD_REPO_ROOT/templates/CHANGELOG.md.tmpl` as the skeleton when creating a new changelog.
 
 **📊 METRICS.md — Metrics Handoff**
 Skip this step entirely if PRD §6 is `N/A` (with its PM sign-off) — do NOT generate an empty sheet.
 Otherwise, create `$TGD_DIR/<feature-name>/METRICS.md` from the PRD §6 table:
-```markdown
-# METRICS: <feature-name>
-> Shipped: vYYYY.MM.DD · Source: PRD §6
 
-| Metric | Target | Data Source / Event | Actual | Filled on |
-|--------|--------|---------------------|--------|-----------|
-| [from §6] | [from §6] | [from §6] | | |
-```
+> Canonical template: `$TGD_REPO_ROOT/templates/METRICS.md.tmpl`.
 - Copy every §6 row verbatim; leave **Actual** and **Filled on** blank. This sheet is a **handoff** — whoever owns the data (PM, analyst) fills it in their own rituals (weekly review, dashboard check). tGD's job ends at making the sheet accurate; do NOT chase the numbers, do NOT schedule follow-ups.
 - In `$TGD_DIR/TRACKING-PLAN.md`, flip this feature's event entries from `Status: planned` to `Status: live since vYYYY.MM.DD`.
 
@@ -89,23 +84,9 @@ After releasing, scan `$TGD_DIR/<feature-name>/TASKS.md` for Acceptance Criteria
 2. Take the test file from the criterion's `Test:` field in TASKS.md — recorded during `/tgd-develop` and already validated by `ac-trace.py` during `/tgd-verify`. Do NOT guess the file from directory listings.
 3. Append entries to `$TGD_DIR/REGRESSION-CATALOG.md` (create if it doesn't exist):
    If creating for the first time, start with this header:
-   ```markdown
-   # Regression Catalog
- 
-   > Cumulative catalog of `[R]` regression tests across all shipped features.
-   > Every entry must point to an existing, passing test file.
-   > Last audited: YYYY-MM-DD
- 
-   ---
-   ```
+   > Canonical template: `$TGD_REPO_ROOT/templates/REGRESSION-CATALOG.md.tmpl`.
    Then append each `[R]` criterion as an entry:
-   ```markdown
-   ### [<feature-name>] Short description
-   - **Criterion:** Given X, When Y, Then Z
-   - **Test:** `tests/path/to/test.ts`
-   - **Repo:** <repo-name>   (multi-repo features ONLY — from the task's `[repo-name]` tag; omit for single-repo. `regression-gate.sh` uses it to run each entry against the right worktree.)
-   - **Shipped:** vYYYY.MM.DD
-   ```
+   Use the `### [<feature-name>] ...` entry shape from that template.
 This catalog is cumulative — every shipped feature's `[R]` tests are preserved for future regression checks. Future features will re-run ALL catalog entries during `/tgd-verify` (and again in this command's pre-merge audit).
 
 **Verification Gate:**

@@ -4,10 +4,10 @@ check-doc-sections.py — verify a produced tGD artifact contains the required
 `##` sections its template prescribes.
 
 Usage:
-    python3 scripts/check-doc-sections.py <PRD|SPEC|DESIGN|REVIEW> <path-to-file>
+    python3 scripts/check-doc-sections.py <PRD|SPEC|DESIGN|TASKS|REVIEW> <path-to-file>
 
 Why this exists:
-    PRD/SPEC/DESIGN/REVIEW templates prescribe sections, but the phase gates only
+    PRD/SPEC/DESIGN/TASKS/REVIEW templates prescribe sections, but the phase gates only
     checked the file existed and was non-empty — an agent that wrote a
     truncated or free-form document still passed. This is the floor that
     catches "half the sections are missing". It does NOT check content (an
@@ -15,10 +15,12 @@ Why this exists:
     quality. Presence is the machine-checkable part.
 
 Single source of truth:
-    The required section list is DERIVED AT RUNTIME from the canonical template
-    (not hardcoded here), so the check can never drift from the template:
-      - PRD, SPEC, DESIGN → skills/tgd-spec-driven-development/SKILL.md
-      - REVIEW    → .claude/commands/tgd-review.md
+    The required section list is DERIVED AT RUNTIME from the canonical raw
+    template files in templates/ (not hardcoded here), so the check can never
+    drift from the template:
+      - PRD, SPEC, DESIGN → templates/PRD|SPEC|DESIGN.md.tmpl
+      - TASKS             → templates/TASKS.md.tmpl
+      - REVIEW            → templates/REVIEW.md.tmpl
     A section whose heading is marked "(if applicable)" / "(if <cond>)" in the
     template is OPTIONAL and not enforced. To relax a section, mark it in the
     template — nothing here changes.
@@ -31,7 +33,7 @@ Exit codes:
     0 = every required section is present
     1 = one or more required sections are missing (listed on stderr)
     2 = usage/config error (unknown artifact, template or target not found,
-        template block not parseable)
+        template source not parseable)
 """
 
 from __future__ import annotations
@@ -42,17 +44,15 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-SPEC_SKILL = REPO_ROOT / "skills" / "tgd-spec-driven-development" / "SKILL.md"
-PLAN_SKILL = REPO_ROOT / "skills" / "tgd-planning-and-task-breakdown" / "SKILL.md"
-REVIEW_CMD = REPO_ROOT / ".claude" / "commands" / "tgd-review.md"
+TEMPLATE_DIR = REPO_ROOT / "templates"
 
-# artifact -> (template file, regex marking the START of that template block)
+# artifact -> (raw template file, regex marking its first heading)
 TEMPLATES = {
-    "PRD": (SPEC_SKILL, r"^# PRD: "),
-    "SPEC": (SPEC_SKILL, r"^# SPEC: "),
-    "DESIGN": (SPEC_SKILL, r"^# DESIGN: "),
-    "TASKS": (PLAN_SKILL, r"^# TASKS\.md: "),
-    "REVIEW": (REVIEW_CMD, r"^# REVIEW: "),
+    "PRD": (TEMPLATE_DIR / "PRD.md.tmpl", r"^# PRD: "),
+    "SPEC": (TEMPLATE_DIR / "SPEC.md.tmpl", r"^# SPEC: "),
+    "DESIGN": (TEMPLATE_DIR / "DESIGN.md.tmpl", r"^# DESIGN: "),
+    "TASKS": (TEMPLATE_DIR / "TASKS.md.tmpl", r"^# TASKS\.md: "),
+    "REVIEW": (TEMPLATE_DIR / "REVIEW.md.tmpl", r"^# REVIEW: "),
 }
 
 # Repeating/parameterized template headings can't be required literally — the
@@ -84,15 +84,13 @@ def normalize(heading: str) -> str:
 
 
 def extract_required(template_file: Path, start_rx: str) -> Optional[List[str]]:
-    """Collect the level-2 (`## `) headings of the template block that begins
-    at start_rx, up to the closing code fence. Headings marked "(if ...)" are
-    dropped (optional). Returns None if the start marker is not found.
+    """Collect level-2 headings from a raw template or legacy fenced block.
 
-    Nested-fence rule: a template may contain INNER code blocks (e.g. the
-    TASKS template's schema example). An inner fence must open with an info
-    string (```lang); a BARE ``` at outer level closes the template. Without
-    this, the first inner fence would silently truncate extraction and the
-    gate would quietly require fewer sections."""
+    Raw templates have no outer Markdown fence. A legacy embedded template may
+    still be fenced, so detect that shape from the line before the first
+    heading. In either shape, inner code fences are ignored while collecting
+    headings; this matters for TASKS.md's schema example.
+    """
     try:
         lines = template_file.read_text(encoding="utf-8").splitlines()
     except OSError:
@@ -100,9 +98,11 @@ def extract_required(template_file: Path, start_rx: str) -> Optional[List[str]]:
     start = next((i for i, l in enumerate(lines) if re.search(start_rx, l)), None)
     if start is None:
         return None
+    fenced = start > 0 and lines[start - 1].lstrip().startswith("```")
     required: List[str] = []
     in_inner = False
-    for line in lines[start + 1:]:
+    source_lines = lines[start + 1:] if fenced else lines[start:]
+    for line in source_lines:
         stripped = line.lstrip()
         if stripped.startswith("```"):
             info = stripped[3:].strip()
@@ -110,8 +110,10 @@ def extract_required(template_file: Path, start_rx: str) -> Optional[List[str]]:
                 in_inner = False          # closes the inner block
             elif info:
                 in_inner = True           # opens an inner block (```lang)
-            else:
+            elif fenced:
                 break                     # bare ``` at outer level = template end
+            else:
+                break                     # unexpected bare fence in raw template
             continue
         if in_inner:
             continue

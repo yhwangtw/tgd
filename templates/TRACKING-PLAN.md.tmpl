@@ -1,0 +1,14 @@
+# Tracking Plan
+
+> Cumulative event dictionary across all features and platforms.
+> Event names are semantic and platform-agnostic — see the three rules below.
+
+---
+
+### sign_up_completed
+- **Semantic trigger:** User completes registration (server returns 201)
+- **Source of truth:** server
+- **Platforms:** server (web/ios do NOT duplicate this event)
+- **Properties:** `method: "email"|"oauth"` · `platform` (auto-attached by SDK) · no PII
+- **Feature:** user-login
+- **Status:** planned  <!-- flipped to "live since vYYYY.MM.DD" by /tgd-release -->
