@@ -34,7 +34,7 @@ its automatic skill selection depends on model compliance.
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/openclawyhwang-hub/tGD.git
+git clone https://github.com/yhwangtw/tgd.git
 ```
 
 2. Open the project in OpenCode.

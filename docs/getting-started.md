@@ -13,7 +13,7 @@ Each skill is a Markdown file (`SKILL.md`) that describes a specific engineering
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/openclawyhwang-hub/tGD.git
+git clone https://github.com/yhwangtw/tgd.git
 ```
 
 ### 2. Choose a skill
@@ -33,7 +33,7 @@ Copy the relevant `SKILL.md` content into your agent's system prompt, rules file
 
 **Rules file:** Add skill content to your project's rules file (CLAUDE.md, .cursorrules, etc.).
 
-**Conversation:** Reference the skill when giving instructions: "Follow the test-driven-development process for this change."
+**Conversation:** Reference the skill when giving instructions: "Follow the tgd-develop-tdd process for this change."
 
 ### 4. Use the meta-skill for discovery
 
@@ -45,9 +45,9 @@ Start with the `tgd-core-router` skill loaded. It contains a flowchart that maps
 
 Load three essential skills into your rules file:
 
-1. **spec-driven-development** — For defining what to build
-2. **test-driven-development** — For proving it works
-3. **code-review-and-quality** — For verifying quality before merge
+1. **tgd-define-spec** — For defining what to build
+2. **tgd-develop-tdd** — For proving it works
+3. **tgd-review-quality** — For verifying quality before merge
 
 These three cover the most critical quality gaps in AI-assisted development.
 
@@ -56,10 +56,10 @@ These three cover the most critical quality gaps in AI-assisted development.
 For comprehensive coverage, load skills by phase:
 
 ```
-Starting a project:  spec-driven-development → planning-and-task-breakdown
-During development:  incremental-implementation + test-driven-development
-Before merge:        code-review-and-quality + security-and-hardening
-Before deploy:       shipping-and-launch
+Starting a project:  tgd-define-spec → tgd-plan-breakdown
+During development:  tgd-develop-incremental + tgd-develop-tdd
+Before merge:        tgd-review-quality + tgd-review-security
+Before deploy:       tgd-release-ship
 ```
 
 ### Context-Aware Loading
@@ -105,13 +105,13 @@ The `.claude/commands/` directory contains slash commands for Claude Code. The s
 
 | Command | Skill Invoked |
 |---------|---------------|
-| `/tgd-map` | context-engineering + codegraph init |
-| `/tgd-define` | spec-driven-development |
-| `/tgd-plan` | planning-and-task-breakdown |
-| `/tgd-develop` | source-driven-development + incremental-implementation + test-driven-development + verification-before-completion |
-| `/tgd-verify` | debugging-and-error-recovery + test-driven-development + **Cross-Feature Regression Gate** |
-| `/tgd-review` | code-review-and-quality + code-simplification |
-| `/tgd-release` | git-workflow-and-versioning + shipping-and-launch + **Regression Catalog Update + Audit** |
+| `/tgd-map` | tgd-core-context + codegraph init |
+| `/tgd-define` | tgd-define-spec |
+| `/tgd-plan` | tgd-plan-breakdown |
+| `/tgd-develop` | tgd-develop-source + tgd-develop-incremental + tgd-develop-tdd + tgd-verify-completion |
+| `/tgd-verify` | tgd-verify-debug + tgd-develop-tdd + **Cross-Feature Regression Gate** |
+| `/tgd-review` | tgd-review-quality + tgd-review-simplify |
+| `/tgd-release` | tgd-core-git + tgd-release-ship + **Regression Catalog Update + Audit** |
 
 ## Using References
 
@@ -119,10 +119,10 @@ The `references/` directory contains supplementary checklists:
 
 | Reference | Use With |
 |-----------|----------|
-| `testing-patterns.md` | test-driven-development |
-| `performance-checklist.md` | performance-optimization |
-| `security-checklist.md` | security-and-hardening |
-| `accessibility-checklist.md` | frontend-ui-engineering |
+| `testing-patterns.md` | tgd-develop-tdd |
+| `performance-checklist.md` | tgd-review-performance |
+| `security-checklist.md` | tgd-review-security |
+| `accessibility-checklist.md` | tgd-develop-ui |
 
 Load a reference when you need detailed patterns beyond what the skill covers.
 
@@ -136,8 +136,8 @@ The `/tgd-define` and `/tgd-plan` commands create working artifacts (`$TGD_DIR/<
 
 ## Tips
 
-1. **Start with spec-driven-development** for any non-trivial work
-2. **Always load test-driven-development** when writing code
+1. **Start with tgd-define-spec** for any non-trivial work
+2. **Always load tgd-develop-tdd** when writing code
 3. **Don't skip verification steps** — they're the whole point
 4. **Load skills selectively** — more context isn't always better
 5. **Use the agents for review** — different perspectives catch different issues

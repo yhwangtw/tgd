@@ -16,7 +16,7 @@ a global `AGENTS.md` and does not inject tGD into every session.
 ## Installation
 
 ```bash
-git clone https://github.com/openclawyhwang-hub/tGD.git
+git clone https://github.com/yhwangtw/tgd.git
 cd tGD
 bash setup.sh
 ```

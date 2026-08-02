@@ -2,10 +2,10 @@
   "name": "tGD",
   "description": "tGD: a skill pack that makes AI coding agents act like senior engineers. Covers the full lifecycle from map to ship.",
   "author": {
-    "name": "openclawyhwang-hub"
+    "name": "yhwangtw"
   },
-  "homepage": "https://github.com/openclawyhwang-hub/tGD",
-  "repository": "https://github.com/openclawyhwang-hub/tGD",
+  "homepage": "https://github.com/yhwangtw/tgd",
+  "repository": "https://github.com/yhwangtw/tgd",
   "license": "Apache-2.0",
   "commands": "./.claude/commands",
   "skills": "./skills",

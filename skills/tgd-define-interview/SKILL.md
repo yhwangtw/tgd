@@ -11,7 +11,7 @@ What people ask for and what they actually want are different things. They ask f
 
 The cheapest moment to find this gap is before any plan, spec, or code exists. Once you've started building, switching costs are real, and the user will rationalize the wrong thing into a "good enough" thing. The misfit gets locked in.
 
-This skill closes the gap before it costs anything. The other Define-phase skills assume you already know roughly what you want: `tgd-define-ideate` generates variations from an idea, `tgd-define-spec` writes the requirements down, `tgd-core-doubt` stress-tests a plan after you've drafted one. Interview-me is the part before all of those, where you ask one question at a time, with your best guess attached, until you can predict what the user is going to say before they say it.
+This skill closes the gap before it costs anything. The other Define-phase skills assume you already know roughly what you want: `tgd-define-ideate` generates variations from an idea, `tgd-define-spec` writes the requirements down, `tgd-core-doubt` stress-tests a plan after you've drafted one. `tgd-define-interview` is the part before all of those, where you ask one question at a time, with your best guess attached, until you can predict what the user is going to say before they say it.
 
 ## When to Use
 
@@ -180,8 +180,8 @@ Two questions in, the agent has discovered the actual ask isn't "a dashboard." I
 - **`tgd-define-ideate`**: downstream. If the confirmed intent is "I want X but I don't know how to scope it," hand off to `tgd-define-ideate` to generate variations against the now-explicit intent.
 - **`tgd-define-spec`**: downstream. If the confirmed intent is concrete ("I want X for Y users with Z success criteria"), hand off to `tgd-define-spec` to write it down.
 - **`tgd-plan-breakdown`**: two hops downstream of this skill (after the spec).
-- **`tgd-core-doubt`**: opposite end of the timeline. Interview-me is pre-decision intent extraction; doubt-driven is post-decision artifact review. Both catch divergence, but at different moments.
-- **`tgd-develop-source`**: orthogonal. Interview-me clarifies what the user wants; SDD verifies framework facts. They don't compete.
+- **`tgd-core-doubt`**: opposite end of the timeline. `tgd-define-interview` is pre-decision intent extraction; doubt-driven is post-decision artifact review. Both catch divergence, but at different moments.
+- **`tgd-develop-source`**: orthogonal. `tgd-define-interview` clarifies what the user wants; SDD verifies framework facts. They don't compete.
 
 ## Common Rationalizations
 
@@ -211,7 +211,7 @@ Two questions in, the agent has discovered the actual ask isn't "a dashboard." I
 
 ## Verification
 
-After applying interview-me:
+After applying tgd-define-interview:
 
 - [ ] An explicit hypothesis with a confidence number was stated in the first turn
 - [ ] Every confidence number below ~70% was accompanied by a one-line reason (what's still unresolved or missing)

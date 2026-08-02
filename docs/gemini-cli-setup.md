@@ -22,7 +22,7 @@ without overwriting a user-owned collision.
 **Install all tGD integration assets from a local clone:**
 
 ```bash
-git clone https://github.com/openclawyhwang-hub/tGD.git
+git clone https://github.com/yhwangtw/tgd.git
 cd tGD
 bash setup.sh
 ```

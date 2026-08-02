@@ -15,13 +15,14 @@ docs/         → Setup guides for different tools
 
 ## Skills by Phase
 
-**Define:** interview-me, idea-refine, spec-driven-development, sketch
-**Plan:** planning-and-task-breakdown, jira-auto-sync
-**Build:** incremental-implementation, subagent-driven-development, test-driven-development, context-engineering, source-driven-development, doubt-driven-development, frontend-ui-engineering, api-and-interface-design, verification-before-completion
-**Verify:** agent-browser, debugging-and-error-recovery
-**Review:** code-review-and-quality, code-simplification, security-and-hardening, performance-optimization
-**Release:** git-workflow-and-versioning, ci-cd-and-automation, deprecation-and-migration, documentation-and-adrs, shipping-and-launch
-**Meta (always-on):** router, rules
+**Define:** tgd-define-interview, tgd-define-ideate, tgd-define-spec, tgd-define-sketch
+**Plan:** tgd-plan-breakdown, tgd-plan-jira
+**Develop:** tgd-develop-incremental, tgd-develop-subagents, tgd-develop-tdd, tgd-core-context, tgd-develop-source, tgd-core-doubt, tgd-develop-ui, tgd-define-api, tgd-verify-completion
+**Verify:** tgd-verify-browser, tgd-verify-debug
+**Review:** tgd-review-quality, tgd-review-simplify, tgd-review-security, tgd-review-performance
+**Release:** tgd-core-git, tgd-release-ci, tgd-release-migration, tgd-review-adr, tgd-release-ship
+**Support:** tgd-support-wiki
+**Meta (always-on):** tgd-core-router, tgd-core-rules
 
 ## Conventions
 

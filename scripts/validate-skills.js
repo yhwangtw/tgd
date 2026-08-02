@@ -45,7 +45,7 @@ const REQUIRED_SECTIONS = [
 // Every entry must have a documented reason.
 const SECTION_EXEMPT_SKILLS = {
   'tgd-core-router': 'Meta-skill — orchestrates other skills; When-to-Use and Verification are not applicable to a routing document.',
-  'tgd-define-ideate':        'Legacy structure predating skill-anatomy.md — uses How-It-Works/Usage/Anti-patterns instead of standard headings. Tracked for conformance in https://github.com/openclowyhwang-hub/tGD/issues',
+  'tgd-define-ideate':        'Legacy structure predating skill-anatomy.md — uses How-It-Works/Usage/Anti-patterns instead of standard headings. Tracked for conformance in https://github.com/yhwangtw/tgd/issues',
 };
 
 // Regex patterns that indicate an explicit cross-skill reference.

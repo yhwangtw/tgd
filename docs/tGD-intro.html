@@ -91,12 +91,12 @@ if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
     <h2 class="h2 mt-s">Seven stages. Every output feeds the next.</h2>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:28px">
       <div class="phase"><div class="p-icon">🗺️</div><div><div class="p-name">1 · MAP</div><div class="p-desc">Scan the codebase → <b>CONTEXT.md</b></div><div class="p-skills">tgd-core-context + codegraph</div></div></div>
-      <div class="phase"><div class="p-icon">📋</div><div><div class="p-name">2 · DEFINE</div><div class="p-desc"><b>PRD → 0/2/3 design → SPEC</b></div><div class="p-skills">interview → spec-driven + sketch</div></div></div>
+      <div class="phase"><div class="p-icon">📋</div><div><div class="p-name">2 · DEFINE</div><div class="p-desc"><b>PRD → 0/2/3 design → SPEC</b></div><div class="p-skills">tgd-define-interview → tgd-define-spec + tgd-define-sketch</div></div></div>
       <div class="phase"><div class="p-icon">📐</div><div><div class="p-name">3 · PLAN</div><div class="p-desc">Context-grounded breakdown → <b>TASKS.md</b></div><div class="p-skills">planning → jira-sync</div></div></div>
-      <div class="phase"><div class="p-icon">⚡</div><div><div class="p-name">4 · DEVELOP</div><div class="p-desc">Worktree + TDD → <b>src/ + tests/</b></div><div class="p-skills">source-driven → TDD</div></div></div>
+      <div class="phase"><div class="p-icon">⚡</div><div><div class="p-name">4 · DEVELOP</div><div class="p-desc">Worktree + TDD → <b>src/ + tests/</b></div><div class="p-skills">tgd-develop-source → tgd-develop-tdd</div></div></div>
       <div class="phase"><div class="p-icon">🧪</div><div><div class="p-name">5 · VERIFY</div><div class="p-desc">Tests + UI evidence → <b>TEST-REPORT.md</b></div><div class="p-skills">debugging → regression + design QA</div></div></div>
-      <div class="phase"><div class="p-icon">🔎</div><div><div class="p-name">6 · REVIEW</div><div class="p-desc">Code + design conformance → <b>REVIEW.md</b></div><div class="p-skills">code-review → simplification</div></div></div>
-      <div class="phase"><div class="p-icon">🚀</div><div><div class="p-name">7 · RELEASE</div><div class="p-desc">Commit + CI → <b>CHANGELOG + METRICS</b></div><div class="p-skills">git-workflow → catalog</div></div></div>
+      <div class="phase"><div class="p-icon">🔎</div><div><div class="p-name">6 · REVIEW</div><div class="p-desc">Code + design conformance → <b>REVIEW.md</b></div><div class="p-skills">tgd-review-quality → tgd-review-simplify</div></div></div>
+      <div class="phase"><div class="p-icon">🚀</div><div><div class="p-name">7 · RELEASE</div><div class="p-desc">Commit + CI → <b>CHANGELOG + METRICS</b></div><div class="p-skills">tgd-core-git → tgd-release-ship</div></div></div>
       <div class="phase" style="border:1px dashed var(--border-strong);background:transparent"><div class="p-icon">🔁</div><div><div class="p-name">THE LOOP</div><div class="p-desc">Verify fails? Work goes back to Develop.<br>Nothing broken reaches Release.</div></div></div>
     </div>
     <div class="deck-footer"><span>Pipeline — every stage gated</span><span class="slide-number" data-current="4" data-total="13"></span></div>
@@ -311,8 +311,8 @@ Sign-off:
         <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>Terminal</span></div>
 <pre><span class="dim-t"># Clone &amp; install (30s)</span>
 $ git clone https://github.com/\
-  openclawyhwang-hub/tGD.git
-$ cd tGD &amp;&amp; <span class="acc">bash setup.sh</span>
+  yhwangtw/tgd.git
+$ cd tgd &amp;&amp; <span class="acc">bash setup.sh</span>
 
 <span class="dim-t"># Start any agent</span>
 $ claude · codex · gemini
@@ -345,16 +345,16 @@ $ <span class="acc">/tgd-define</span> add user auth</pre>
     <h1 class="h1 anim-fade-up" data-anim="fade-up">Stop vibe-coding.<br><span class="gradient-text">Start shipping.</span></h1>
     <p class="lede mt-m">tGD turns your AI agent from a code generator<br>into a disciplined engineering partner.</p>
     <div class="ask-box mt-l" style="display:inline-block;text-align:left">
-      <pre style="background:transparent;border:none;padding:0;color:rgba(255,255,255,.92);font-size:16px;margin:0">git clone https://github.com/openclawyhwang-hub/tGD.git
-cd tGD && bash setup.sh
+      <pre style="background:transparent;border:none;padding:0;color:rgba(255,255,255,.92);font-size:16px;margin:0">git clone https://github.com/yhwangtw/tgd.git
+cd tgd && bash setup.sh
 claude  # then: /tgd-map</pre>
     </div>
     <div class="row mt-l" style="gap:16px;justify-content:center">
-      <a href="https://github.com/openclawyhwang-hub/tGD" class="pill pill-accent" style="text-decoration:none;font-size:15px">⭐ Star on GitHub</a>
+      <a href="https://github.com/yhwangtw/tgd" class="pill pill-accent" style="text-decoration:none;font-size:15px">⭐ Star on GitHub</a>
       <span class="pill" style="font-size:15px">Apache 2.0</span>
       <span class="pill" style="font-size:15px">6 Platforms</span>
     </div>
-    <div class="deck-footer"><span>openclawyhwang-hub/tGD</span><span class="slide-number" data-current="13" data-total="13"></span></div>
+    <div class="deck-footer"><span>yhwangtw/tgd</span><span class="slide-number" data-current="13" data-total="13"></span></div>
   </section>
 
 </div>

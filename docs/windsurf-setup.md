@@ -30,15 +30,15 @@ Keep `.windsurfrules` focused on 2-3 essential skills to stay within context lim
 # .windsurfrules
 # Essential tGD for this project
 
-[Paste test-driven-development SKILL.md]
+[Paste tgd-develop-tdd SKILL.md]
 
 ---
 
-[Paste incremental-implementation SKILL.md]
+[Paste tgd-develop-incremental SKILL.md]
 
 ---
 
-[Paste code-review-and-quality SKILL.md]
+[Paste tgd-review-quality SKILL.md]
 ```
 
 ## Usage Tips
