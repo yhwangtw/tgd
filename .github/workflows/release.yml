@@ -167,7 +167,7 @@ jobs:
           if [ -n "$PREV_TAG" ]; then
             echo "" >> "${RUNNER_TEMP}/tgd-release-notes.md"
             echo "---" >> "${RUNNER_TEMP}/tgd-release-notes.md"
-            echo "**Full Changelog**: https://github.com/openclawyhwang-hub/tGD/compare/${PREV_TAG}...${VERSION}" >> "${RUNNER_TEMP}/tgd-release-notes.md"
+            echo "**Full Changelog**: https://github.com/yhwangtw/tgd/compare/${PREV_TAG}...${VERSION}" >> "${RUNNER_TEMP}/tgd-release-notes.md"
           fi
 
           echo "Release notes:"
