@@ -4,6 +4,18 @@ All notable changes to tGD will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/). Versions follow [CalVer](https://calver.org/) (YYYY.MM.DD).
 
+## v2026.08.02.1
+
+### 🐛 Bug Fixes
+- point release links to current repository (`e269d72`)
+
+### ♻️ Refactoring
+- centralize artifact templates (`0ab1de1`)
+
+### 🔧 Chores
+- release v2026.08.02 (`015f7e4`)
+- prepare Jira sync release notes (`49c69d0`)
+
 ## v2026.08.02
 
 ### ✨ Features
