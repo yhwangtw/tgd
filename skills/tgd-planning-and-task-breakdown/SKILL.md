@@ -68,6 +68,7 @@ Before writing any code, operate in read-only mode to gather context from all av
 
 > **Corresponding PRD**: [PRD.md](PRD.md)
 > **Tech Stack**: [List from SPEC]
+> **Jira-Source-ID**: tgd-source-[generate one lowercase UUID v4 and preserve it forever]
 
 ## Overview
 [One paragraph summary of what we're building]
@@ -82,6 +83,8 @@ Before writing any code, operate in read-only mode to gather context from all av
 **Status:** pending <!-- pending | in-progress | complete | blocked: <ref>. The ONLY task-state marker: /tgd-develop flips it, resume + re-plan read it. Do not invent checkboxes/emoji variants. -->
 **Spec-Review:** pending <!-- pending | PASS — <one line> | FAIL — <one line>. Flipped by /tgd-develop's two-stage review; /tgd-verify fails closed on a complete task left pending. -->
 **Quality-Review:** pending <!-- same states; flipped after the code-quality review pass. -->
+**Jira:** —
+**Jira-Sync-ID:** —
 
 ### 1. Context & Goal
 [What is the goal of this task? Why is it important?]
@@ -155,6 +158,26 @@ Before writing any code, operate in read-only mode to gather context from all av
 it in — do not invent alternative task layouts; `ac-trace.py` (run by
 `/tgd-verify`) fails closed on task lists without `AC-<task>.<n>` ids.
 
+`> **Jira-Source-ID**:` is the durable namespace for this TASKS document. On
+first creation, replace the template instruction with `tgd-source-` plus one
+lowercase UUID v4 (for example, `tgd-source-123e4567-e89b-42d3-a456-426614174000`).
+It is not a secret. Never derive it from a feature name, repo name, or path,
+and never change it during re-plan or repository moves.
+
+`**Jira:**` stores the verified Jira issue key. `**Jira-Sync-ID:**` stores the
+stable identity used to reconcile that task across repeated syncs. New tasks
+start with an em dash (`—`). Only `scripts/jira-sync.py` may replace those
+placeholders, and only after it verifies the remote issue. Planning must never
+infer, clear, or regenerate either value.
+
+Legacy TASKS.md files may have one standalone Jira key such as `[ENG-1234]` in
+a task heading. During schema migration, preserve that token and add the two
+new Jira fields as `—`. Do not infer ownership or copy the key into the new
+field: `scripts/jira-sync.py` must show a digest-confirmed `adopt`, verify the
+exact Project/key and absence of conflicting tGD ownership, then remove the old
+token while atomically filling both fields. Multiple or unverifiable legacy
+keys fail closed.
+
 ### Step 2: Identify the Dependency Graph
 
 Map what depends on what:
@@ -204,10 +227,11 @@ Each vertical slice delivers working, testable functionality.
 Write each task using the **canonical per-task block from the TASKS.md
 template above** (`**Status:** pending` line → Context & Goal → Technical
 Design → Acceptance Criteria with `AC-<task>.<n>` ids, `[R]` decision, and
-`Test:` field → Files Likely Touched). Do not use a simplified layout — the
-AC ids and `Test:` fields are machine-checked downstream, and the `Status:`
-line is what `/tgd-develop`'s resume rule and `/tgd-plan`'s re-plan protocol
-read; a task without one is invisible to both.
+`Test:` field → Files Likely Touched), including the `**Jira:** —` and
+`**Jira-Sync-ID:** —` placeholders. Do not use a simplified layout — the AC
+ids and `Test:` fields are machine-checked downstream, the `Status:` line is
+what `/tgd-develop`'s resume rule and `/tgd-plan`'s re-plan protocol read, and
+the Jira fields carry stable sync state.
 
 Per-task quality bar (in addition to the template fields):
 - **Verification is explicit**: name the exact command (`npm test -- --grep "x"`),
@@ -294,6 +318,9 @@ When TASKS.md already exists (spec changed mid-flight, scope grew), the default 
 
 Incremental rules:
 - **Completed tasks are immutable**: any task with `**Status:** complete` keeps its Status line, criteria, and `Test:` fields byte-for-byte. (The `Status:` lines are also how the re-plan prompt counts "M 個已完成" — no marker, no count.)
+- **Jira links are immutable across re-plans**: preserve every existing task's `**Jira:**` and `**Jira-Sync-ID:**` values byte-for-byte, regardless of task status. New tasks start with `—`; planning never reassigns or clears a link.
+- **The Jira source namespace is immutable**: preserve the document-level `> **Jira-Source-ID**:` value byte-for-byte. Generate it only when creating a new TASKS.md or migrating a legacy TASKS.md that does not have one.
+- **Legacy Jira heading keys are migration state**: preserve one standalone `[KEY-123]` token and initialize new Jira fields to `—` until the Jira CLI explicitly adopts it. Planning never removes, copies, or silently converts it.
 - **Never renumber existing `AC-<task>.<n>` ids** — tests already reference them.
 - New tasks continue the numbering after the highest existing task.
 - An *unstarted* task invalidated by the spec change may be rewritten in place (same task number, new content, new criterion ids under it).
@@ -349,6 +376,8 @@ Before starting implementation, confirm:
 
 - [ ] Every task has acceptance criteria in BDD format with stable `AC-<task>.<n>` ids (`ac-trace.py` fails closed without them)
 - [ ] Every task has a `**Status:**` line, initialized `pending` (`/tgd-develop` resume and re-plan both read it)
+- [ ] Every task has `**Jira:**` and `**Jira-Sync-ID:**` fields; new unsynced tasks use `—`, and re-plans preserve existing values
+- [ ] TASKS.md has one immutable `> **Jira-Source-ID**: tgd-source-<lowercase UUID v4>` value
 - [ ] Every criterion has an explicit `[R]` Yes/No decision; every `[R]` will get a `Test:` file reference during `/tgd-develop`
 - [ ] Every task has a verification step
 - [ ] Task dependencies are identified and ordered correctly

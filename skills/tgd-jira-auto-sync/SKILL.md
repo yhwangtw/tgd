@@ -1,440 +1,317 @@
 ---
 name: tgd-jira-auto-sync
-description: "Parse TASKS.md and auto-create Jira Data Center issues in a single Sprint. Use as conditional skill in /tgd-plan phase after TASKS.md is generated."
-trigger: "After /tgd-plan generates TASKS.md, when user wants Jira tickets created"
+description: "Preview, confirm, apply, and verify Jira Data Center issue sync from canonical TASKS.md. Use as an opt-in skill after /tgd-plan writes TASKS.md."
+trigger: "After /tgd-plan generates TASKS.md, when the user chooses to preview Jira sync"
 ---
 
-# Jira Auto-Sync (TASKS.md → Jira Sprint)
+# Jira Auto-Sync (TASKS.md → Jira Issues)
 
 ## Overview
 
-Parses the `TASKS.md` produced by `/tgd-plan` and creates Jira issues in the company's **Jira Data Center** instance, all assigned to a single Sprint. Uses `curl` + Jira REST API v2 — no external CLI binary needed, works behind company proxies.
+Use `scripts/jira-sync.py` for the entire Jira sync. The CLI parses canonical
+`TASKS.md`, lists accessible Jira Projects, builds a read-only plan, applies
+only the exact plan the user confirmed, verifies every remote issue, and then
+writes the verified Jira key and stable sync identity back to `TASKS.md`.
+
+No Jira field is special-cased. Required fields are discovered from create
+metadata, shown to the user, and bound into the reviewed plan. Sprint is handled
+like any other field. The workflow does not call Jira Agile APIs and must not be
+reimplemented with ad-hoc `curl`, inline Python, or manual TASKS.md edits.
+
+## Safety Contract
+
+- **No automatic writes.** Listing Projects and dry-run are read-only. Jira
+  mutation requires an explicit apply action plus the displayed plan digest.
+- **Exact Project choice every time.** Always list all accessible Projects and
+  require the user to select one returned key. `JIRA_PROJECT`, if present, is a
+  hint only and never authorizes selection or apply.
+- **PAT is environment-only.** Read `JIRA_TOKEN` only from the process
+  environment. Never accept a token argument, ask the user to paste it into
+  chat, write it to `.env` or another file, or print it in logs/errors.
+- **Generic required fields.** Ask for every non-automatic field marked
+  required by the selected Project and issue type. Use returned choices when
+  available; never guess. Sprint follows this same rule and receives no special
+  rejection or automatic assignment. Do not call `/rest/agile/*`.
+- **Private, digest-bound answers.** Put answers in a new mode-`0600` JSON file,
+  never command arguments. Support defaults plus per-task overrides. Normalize
+  allowed choices to stable Jira references and bind every value into the plan
+  digest before asking for apply confirmation.
+- **Verify before writeback.** After each create or update, GET the issue and
+  verify its Project, stable sync identity, and CLI-owned fields. Only then may
+  the CLI update `**Jira:**` and `**Jira-Sync-ID:**` in `TASKS.md`.
+- **Legacy links require explicit adoption.** A standalone `[ENG-1234]` in an
+  old task heading is a migration candidate, never proof of ownership. The
+  dry-run must show `adopt`; apply must re-check the exact Project/key and that
+  no tGD marker/property owns the issue. Missing, duplicate, or differently
+  owned candidates are conflicts and must never fall through to `create`.
+- **Do not promise exactly-once.** Stable sync IDs make normal retries
+  reconcilable and successful reruns idempotent, but Jira provides no
+  exactly-once guarantee across concurrent clients. Two simultaneous applies
+  can still race before either client observes the other's issue.
 
 ## Prerequisites
 
-The user MUST provide these before the skill runs:
+Resolve `$TGD_REPO_ROOT` per `tgd-rules` and identify:
 
-```
-JIRA_URL      = https://jira.company.com          (Data Center base URL)
-JIRA_TOKEN = Personal Token (PAT)
-JIRA_PROJECT   = Project key (e.g. ENG, FE, BE) — 必填
-```
-
-**Setup (one-time):**
-```bash
-# Test connection (Bearer auth)
-curl -x "" -s -H "Authorization: Bearer $JIRA_TOKEN" "$JIRA_URL/rest/api/2/myself" | python3 -m json.tool
-```
-If it returns user info, auth works. If 401/403, check credentials or proxy settings.
-
-**Priority Mapping:**
-Map TASKS.md priority to Jira priority names (check your instance via `curl -x "" $JIRA_URL/rest/api/2/priority`):
-- High → "High" (or "Highest", "Critical")
-- Medium → "Medium" (or "Normal")
-- Low → "Low" (or "Lowest")
-
-## Proxy / Firewall Handling
-
-Company networks often intercept HTTPS. If curl fails with SSL errors or timeouts:
-
-```bash
-# Option 1: Set proxy (if Jira is external or proxy is required to reach it)
-export HTTPS_PROXY=http://proxy.company.com:8080
-
-# Option 2: Bypass proxy for internal Jira Data Center (if proxy is globally set but Jira is on intranet)
-# Use curl -x "" to bypass the proxy
-curl -x "" -s -H "Authorization: Bearer $JIRA_TOKEN" ...
-
-# Option 3: MITM proxy re-signs TLS — point curl at the company CA bundle
-curl --cacert /path/to/company-ca-bundle.crt ...
-# or: export CURL_CA_BUNDLE=/path/to/company-ca-bundle.crt
+```text
+TASKS_PATH = $TGD_DIR/<feature-name>/TASKS.md
+JIRA_URL   = Jira Data Center base URL (process environment)
+JIRA_TOKEN = Personal Access Token (process environment; secret)
+ANSWERS    = Private JSON file created only when Jira reports extra required fields
 ```
 
-**Never disable certificate verification** (`curl -k`, `NODE_TLS_REJECT_UNAUTHORIZED=0`).
-The request carries your Jira PAT — sending it over an unverified connection hands
-the token to whoever can intercept. Ask IT for the CA bundle path instead.
-
-## TASKS.md Format
-
-The skill parses the **canonical TASKS.md format** defined in
-`tgd-planning-and-task-breakdown` (the only TASKS.md format). Per task section:
+`TASKS.md` must use the canonical `tgd-planning-and-task-breakdown` schema.
+The document has one immutable source namespace and every task includes:
 
 ```markdown
-## Task 1: [User Story Title] (Story ID: US-01)
+> **Jira-Source-ID**: tgd-source-123e4567-e89b-42d3-a456-426614174000
 
-### 1. Context & Goal
-[Goal + **Priority**: High/Medium/Low + **Dependencies**]
-
-### 2. Technical Design
-[Schema / API contract]
-
-### 3. Acceptance Criteria (BDD)
-- **AC-1.1** — **Given** [context] **When** [action] **Then** [result]
-  - **Regression**: Yes [R] / No
-  - **Test**: `tests/path` (present once /tgd-develop has run)
-
-### 4. Files Likely Touched
-- `src/foo.py`
+**Jira:** —
+**Jira-Sync-ID:** —
 ```
 
-Extract per task: number, title (summary), Context & Goal (description),
-Priority, the `AC-<task>.<n>` criteria, and Files Likely Touched. Keep the
-original AC ids — they are the traceability link back to TASKS.md.
+Existing values are durable sync state. Never clear or regenerate them during
+a re-plan. If `JIRA_URL` or `JIRA_TOKEN` is absent, stop and ask the user to
+export it outside the conversation, then resume. Never disable TLS certificate
+verification.
 
-## Execution Steps
+For a migrated legacy task, keep one standalone heading key such as
+`[ENG-1234]` plus `—` placeholders until the CLI proposes an explicit `adopt`.
+Do not copy the old key into `**Jira:**` or remove it by hand. Successful apply
+removes the heading token and fills both fields in one locked atomic writeback.
 
-### Step 1: Parse TASKS.md
+## Workflow
 
-Read `$TGD_DIR/<feature-name>/TASKS.md` and extract each task block:
-- Task number/ID
-- Title (summary)
-- Description
-- Acceptance Criteria (as checklist)
-- Files Likely Touched
-- Estimate (if present)
+### 1. List Projects and require an exact choice
 
-### Step 2: Discover Issue Types and Required Fields (Jira 9.0+ DC Compliant)
-
-**Step 2a: Fetch Available Issue Types for the Project**
-Use the Jira REST API v2 (Jira 9.0+ DC compliant) to get all available issue types for the project.
+Run the CLI's read-only Project listing:
 
 ```bash
-curl -x "" -s \
-  "$JIRA_URL/rest/api/2/issue/createmeta/$JIRA_PROJECT/issuetypes" \
-  -H "Authorization: Bearer $JIRA_TOKEN" \
-  -H "Content-Type: application/json" > /tmp/jira_issuetypes.json
+python3 "$TGD_REPO_ROOT/scripts/jira-sync.py" projects
 ```
 
-**Parse and present issue types:**
-```bash
-# JIRA_PROJECT must be exported to the environment for the heredoc to see it
-python3 << 'PYEOF'
-import json, os
+Present every returned Project as exact key + name using the Selection
+Protocol. Even if `JIRA_PROJECT` is configured, show the full list and require
+a reply. Reject free-typed keys that were not returned by the CLI.
 
-data = json.load(open("/tmp/jira_issuetypes.json"))
-issuetypes = data.get("values", [])
+### 2. Discover required fields and collect answers
 
-print(f"📌 Project: {os.environ['JIRA_PROJECT']}")
-print("Available Issue Types:")
-for i, it in enumerate(issuetypes, 1):
-    print(f"  [{i}] {it['name']} (ID: {it['id']})")
-PYEOF
-```
-
-> 🛑 **Action:** Present the issue type list to the user. Default to **Story** if present. Store their choice as `ISSUE_TYPE_ID`.
-
-**Step 2b: Fetch Required Fields for the Selected Issue Type**
-Query the exact metadata for the chosen `ISSUE_TYPE_ID`. This returns **only** the fields available for that specific issue type in this project, including required flags and allowed values.
+For the selected Project and issue type, run:
 
 ```bash
-curl -x "" -s \
-  "$JIRA_URL/rest/api/2/issue/createmeta/$JIRA_PROJECT/issuetypes/$ISSUE_TYPE_ID" \
-  -H "Authorization: Bearer $JIRA_TOKEN" \
-  -H "Content-Type: application/json" > /tmp/jira_meta.json
+python3 "$TGD_REPO_ROOT/scripts/jira-sync.py" \
+  fields \
+  --project "<PROJECT_KEY>" \
+  --issue-type "<ISSUE_TYPE>"
 ```
 
-**Parse and present required custom fields:**
-```bash
-python3 << 'PYEOF'
-import json, subprocess, os
+The JSON output lists every required field not filled automatically, including
+its exact field id, display name, schema, and `allowed_values`. Ask the user for
+each value. When choices are present, show them and accept only one of those
+choices. When the same answer applies to every new issue, store it under
+`defaults`; use `tasks.<task-number>` only for overrides.
 
-meta = json.load(open("/tmp/jira_meta.json"))
-fields = meta.get("fields", {})
-project_key = os.environ['JIRA_PROJECT']
+Sprint is ordinary metadata here. Ask for it only when Jira marks it required,
+using the same choice/value behavior as every other field. Do not call Agile
+endpoints to invent separate Sprint behavior.
 
-print(f"🔍 Required Custom Fields for {project_key} (IssueType ID: {os.environ['ISSUE_TYPE_ID']}):")
-
-required_fields = []
-for field_id, field_info in fields.items():
-    if field_info.get("required") and field_id not in ("summary", "description", "project", "issuetype", "priority", "labels", "reporter"):
-        required_fields.append({
-            "id": field_id,
-            "name": field_info["name"],
-            "schema": field_info.get("schema", {}),
-            "allowed_values": field_info.get("allowedValues", [])
-        })
-
-for rf in required_fields:
-    schema = rf["schema"]
-    allowed = rf["allowed_values"]
-    field_id = rf["id"]
-    
-    # Case 1: Has static allowedValues (Dropdown, select, components)
-    if allowed:
-        options = [v.get("name", v.get("value", str(v))) for v in allowed]
-        print(f"  • {field_id}: {rf['name']} (type: {schema.get('type')}) - Options: {options}")
-    
-    # Case 2: Dynamic Epic Link / Parent (Fetch existing epics in project)
-    elif "epic" in rf["name"].lower() or "parent" in rf["name"].lower():
-        print(f"  • {field_id}: {rf['name']} (type: {schema.get('type')}) - Dynamic Epic Link")
-        print("    🔍 Querying active Epics in JIRA...")
-        # Run JQL to get Epics
-        try:
-            res = subprocess.run([
-                "curl", "-x", "", "-s", 
-                "-H", f"Authorization: Bearer {os.environ.get('JIRA_TOKEN')}",
-                f"{os.environ.get('JIRA_URL')}/rest/api/2/search?jql=project={project_key}+AND+issuetype=Epic&maxResults=50&fields=key,summary"
-            ], capture_output=True, text=True)
-            epics_data = json.loads(res.stdout)
-            epics = epics_data.get("issues", [])
-            if epics:
-                print("    Available Epics:")
-                for ep in epics:
-                    print(f"      - [{ep['key']}] {ep.get('fields', {}).get('summary')}")
-            else:
-                print("    ⚠️ No Epics found in this project.")
-        except Exception as e:
-            print(f"    ⚠️ Failed to query Epics: {str(e)}")
-    
-    # Case 3: Standard open input (string, date, number)
-    else:
-        print(f"  • {field_id}: {rf['name']} (type: {schema.get('type')}) - [Open text/value input]")
-
-if not required_fields:
-    print("  ✅ No required custom fields.")
-
-print("\n===META_JSON===")
-print(json.dumps(meta))
-PYEOF
-```
-
-> 🛑 **Agent Interaction Guide (Mandatory):**
-> When you find required fields, you MUST ask the user one-by-one or in a clean list. Follow this conversational style:
->
-> ```
-> 🔍 I found the following required fields for project [ENG] with IssueType [Story]:
->
-> 1. customfield_10100: "Component" (type: option)
->    Options: [1] Backend  [2] Frontend  [3] Database
->    👉 Please reply with the number or name to select.
->
-> 2. customfield_10200: "Epic Link" (type: string)
->    Options (Active Epics found via JQL):
->    [1] [ENG-100] User Auth Redesign
->    [2] [ENG-101] Core Database Migration
->    👉 Please reply with the number or Epic Key.
->
-> 3. customfield_10300: "Target Release Date" (type: date)
->    👉 Please reply with the value (Format: YYYY-MM-DD).
-> ```
->
-> **Do not guess or skip.** Store all user answers and dynamically build the payload under `fields`.
-
-### Step 3: Create Issues
-
-For each parsed task, construct a JSON payload and create a Jira issue.
-
-**📝 Summary Format Rule (Mandatory):**
-The summary MUST be structured in the classic User Story format and strictly under 255 characters.
-Format: `[feature-name] As a <user role>, I want <action/goal> so that <benefit>`
-> 💡 Example: `[jwt-auth] As a user, I want to login via email to access my secure dashboard`
-
-**📝 Description Format Rule (Mandatory):**
-The Agent MUST construct the `DESCRIPTION` variable using this Wiki Markup structure. Do NOT deviate from this format.
-```
-h3. Background
-{noformat}
-<Why is this needed? Current pain point or context from PRD/SPEC.>
-{noformat}
-
-h3. Goal
-{noformat}
-<What exactly are we building? The desired measurable outcome.>
-{noformat}
-
-h3. Acceptance Criteria
-{noformat}
-AC-<task>.<n> (copy the exact id from TASKS.md — it is the traceability link):
-Given <initial context>
-When <action occurs>
-Then <expected result>
-{noformat}
-
-h3. Technical Notes
-{noformat}
-Files Likely Touched:
-- <path/to/file1>
-- <path/to/file2>
-Estimate: <X points>
-{noformat}
-```
-
-```bash
-# 1. Export variables for the Python script (avoids bash escaping hell)
-export SUMMARY="[<feature-name>] Task Title"
-export PRIORITY="High"
-export DESCRIPTION="h3. Background..."
-export FEATURE_NAME="<feature-name>"
-
-# 2. Construct the payload via Python
-python3 << 'EOF' > /tmp/jira_payload.json
-import json, os
-
-payload = {
-    "fields": {
-        "project":   { "key": os.environ['JIRA_PROJECT'] },
-        "summary":   os.environ['SUMMARY'],
-        "issuetype": { "id": os.environ['ISSUE_TYPE_ID'] },
-        "priority":  { "name": os.environ['PRIORITY'] },
-        "labels":    ["tgd", os.environ['FEATURE_NAME']],
-        "description": os.environ['DESCRIPTION']
-    }
-}
-
-# Add any custom required fields discovered in Step 2
-# payload['fields']['customfield_XXXX'] = { "value": user_provided_value }
-
-print(json.dumps(payload))
-EOF
-
-# 3. Execute the API call
-curl -x "" -s -X POST \
-  "$JIRA_URL/rest/api/2/issue" \
-  -H "Authorization: Bearer $JIRA_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d @/tmp/jira_payload.json | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('key','ERROR: '+d.get('errorMessages',str(d))[0]))"
-```
-
-### 💉 Custom Field Injection Reference
-
-Mandatory fields vary by company and project. When a field is required, inject it into the JSON payload using the correct data type:
-
-```json
-// Dropdown / Select List (Single Choice)
-"customfield_10100": { "value": "High" },
-
-// Component/s (Multi-select)
-"components": [{ "name": "Backend" }, { "name": "Database" }],
-
-// Fix Version/s (Multi-select)
-"fixVersions": [{ "name": "v1.2.0" }],
-
-// Epic Link / Parent (String)
-"customfield_10011": "PROJ-1001",
-
-// User Picker (Single User)
-"customfield_10300": { "name": "elon.wang" },
-
-// Text / Text Area (String)
-"customfield_10400": "Some internal notes here.",
-
-// Labels
-"labels": ["tgd", "jwt-auth", "urgent"]
-```
-> ⚠️ **Warning:** The `schema.type` returned by `createmeta` determines the structure. 
-> *   `option` → `{ "value": "..." }`
-> *   `array` → `[{ "name": "..." }]`
-> *   `string` → `"..."` directly.
-
-#### 🏆 Golden Example
-
-**Scenario:** `feature-name` = `jwt-auth`, Task = "Implement Login API"
+Create a new private mode-`0600` JSON answers file only when needed:
 
 ```json
 {
-  "fields": {
-    "project": { "key": "ENG" },
-    "summary": "[jwt-auth] As a user, I want to login via email and password to access my dashboard",
-    "issuetype": { "id": "10000" },
-    "priority": { "name": "High" },
-    "labels": ["tgd", "jwt-auth"],
-    "description": "h3. Background\n{noformat}\nCurrently, the system has no authentication. All endpoints are public, causing data leakage risks.\n{noformat}\n\nh3. Goal\n{noformat}\nImplement a secure POST /login endpoint that validates credentials and returns a JWT token valid for 24 hours.\n{noformat}\n\nh3. Acceptance Criteria\n{noformat}\nAC-1.1:\nGiven a registered user with valid credentials\nWhen they POST to /api/login\nThen they receive a 200 OK with a JWT token in the body\n\nAC-1.2:\nGiven an unregistered user or wrong password\nWhen they POST to /api/login\nThen they receive 401 Unauthorized and no token\n{noformat}\n\nh3. Technical Notes\n{noformat}\nFiles:\n- src/auth/login.py\n- tests/test_login.py\n- config/settings.py (JWT_SECRET)\n{noformat}"
+  "defaults": {
+    "customfield_10020": [{"id": "55"}],
+    "customfield_20000": "2026-08-15"
+  },
+  "tasks": {
+    "2": {"customfield_10020": [{"id": "56"}]}
   }
 }
 ```
 
-> ⚠️ **Critical:** The `summary` must always start with `[<feature-name>]` and follow the "As a... I want... So that..." format where possible. Keep it under 255 characters.
+Never place these values directly in CLI arguments. The CLI rejects symlinked,
+non-regular, non-user-owned, group-readable, or world-readable answer files.
 
-**Output:** Print each created issue key (e.g. `ENG-1234`).
+### 3. Build the dry-run plan
 
-### Step 4: Error Handling
+For the selected exact Project key:
 
-If an issue creation fails, the script should:
-- **401/403**: Token expired or invalid → Stop and ask user to re-provide `JIRA_TOKEN`
-- **400 (summary too long)**: Jira limit is 255 chars. Shorten the summary and retry.
-- **400 (missing field)**: Print the error, re-check createmeta for required fields, ask user for value.
-- **400 (invalid priority)**: Fetch valid priorities via `$JIRA_URL/rest/api/2/priority` and retry.
-- **500**: Retry once with `sleep 1`, if still fails skip and continue
-- Continue processing remaining tasks even if one fails
-
-### Step 5: Report
-
-Output a summary table:
-
-```
-| TASKS.md Task | Jira Key | Status |
-|---------------|----------|--------|
-| Task 1: xxx   | ENG-1234 | ✅ Created |
-| Task 2: yyy   | ENG-1235 | ✅ Created |
-| Task 3: zzz   | -        | ❌ Failed: ... |
+```bash
+JIRA_PLAN_DIR="$(mktemp -d "${TMPDIR:-/tmp}/tgd-jira-plan.XXXXXX")"
+JIRA_PLAN_PATH="$JIRA_PLAN_DIR/plan.json"
+JIRA_ANSWERS_PATH="$JIRA_PLAN_DIR/answers.json" # only when answers are required
+python3 "$TGD_REPO_ROOT/scripts/jira-sync.py" \
+  plan \
+  --tasks "$TASKS_PATH" \
+  --project "<PROJECT_KEY>" \
+  --issue-type "<ISSUE_TYPE>" \
+  --answers "$JIRA_ANSWERS_PATH" \
+  --output "$JIRA_PLAN_PATH"
 ```
 
-## Automation Pattern (for /tgd-plan conditional)
+Omit `--answers` when `fields` returned an empty required-field list.
 
-In `/tgd-plan`, add as a conditional skill:
+The `plan` subcommand is the dry-run: Jira access is GET-only, it must not
+create or update Jira issues, and it must not modify `TASKS.md`. Its only local
+write is the reviewable mode-`0600` JSON plan inside the new private temporary
+directory. The CLI refuses symlink targets and existing output files.
+Show the user:
 
-```markdown
-**Conditional (apply when relevant):**
-- User wants Jira tickets? → `tgd-jira-auto-sync`
-  1. Ask for JIRA_URL, JIRA_PROJECT (必填), JIRA_TOKEN.
-  2. Query `createmeta` once to discover issue types + required fields. Let user choose issue type (default: Story). If required custom fields have allowedValues, present options.
-  3. Parse $TGD_DIR/<feature-name>/TASKS.md and create issues via REST API v2.
-  4. Report created issue keys.
+- Jira origin and selected Project key + name
+- plan SHA-256 digest
+- each task's proposed operation: `create`, `adopt`, `update`, `skip`, or `conflict`
+- every required-field answer attached to each proposed `create`
+- totals for every operation and any validation failure
+
+The digest binds the current TASKS.md content, Jira origin, exact Project,
+required-field metadata and answers, resolved issue metadata, and proposed
+operations. Do not hide conflicts or collapse the plan to counts only.
+
+The plan artifact is still written when validation finds a `conflict`, and the
+command exits non-zero so it can be inspected. Show all candidate issue keys,
+but do not continue to apply. Reconcile the conflict and generate a new plan.
+
+`adopt` is a visually distinct, digest-bound migration operation. It is allowed
+only when a task has one unambiguous legacy heading key, that issue exists in
+the chosen Project, and it has no conflicting tGD ownership. The CLI must
+re-check those conditions immediately before mutation.
+
+### 4. Obtain explicit apply confirmation
+
+After showing a conflict-free complete dry-run, ask:
+
+```text
+Apply this exact Jira plan?
+1. Apply to <PROJECT_KEY> (digest: <SHA-256>)
+2. Cancel
+
+Choose one (default 2):
 ```
 
-## Pitfalls
+Only choice 1 authorizes mutation. A vague acknowledgement, prior consent,
+configured credentials, or a saved Project is not confirmation.
 
-### Data Center API Versions
+### 5. Apply the confirmed digest
 
-- **REST API v2** (`/rest/api/2/`) — works on all Data Center versions
-- **REST API v3** (`/rest/api/3/`) — DC 8.0+, uses Atlassian Document Format (ADF) for description fields. If v3, description must be ADF JSON, not wiki markup
-- **Recommendation:** Use v2 with wiki markup (`h3.`, `{noformat}`) — simpler and universally compatible
+Run apply only after explicit confirmation:
 
-### Custom Fields
-
-If the company Jira has **required custom fields** (e.g., Component, Fix Version, Severity), the create payload must include them:
-
-```json
-"customfield_10100": {"value": "High"},
-"components": [{"name": "Backend"}]
+```bash
+python3 "$TGD_REPO_ROOT/scripts/jira-sync.py" \
+  apply \
+  --plan "$JIRA_PLAN_PATH" \
+  --confirm "<SHA-256>"
 ```
 
-**How to discover:** Step 2's createmeta already includes all required fields and allowedValues. Use that result directly.
+The CLI must reject a missing or stale digest, a changed TASKS.md, a different
+Project, or changed plan inputs before performing writes. It owns issue
+creation/update, remote verification, atomic TASKS.md writeback, and its exit
+status. Do not reproduce those operations manually.
 
-### SSL / Proxy Interception
+### 6. Report and reconcile
 
-Company MITM proxies cause `SSL certificate problem`. Solutions:
-1. Set `REQUESTS_CA_BUNDLE` or `CURL_CA_BUNDLE` to the company CA cert path — this is the only acceptable fix.
-2. Never disable verification (`curl -k`, `NODE_TLS_REJECT_UNAUTHORIZED=0`): the request carries your Jira PAT.
+Report each task as one of:
 
-### Rate Limiting
+| Result | Meaning |
+|---|---|
+| `created` | Issue was created and verified remotely; inspect its per-task `writeback` state |
+| `updated` | Existing CLI-owned fields were updated, or a legacy link was explicitly adopted, and verified remotely; inspect `writeback` |
+| `skipped` | Remote owned fields already matched; the local Jira link may still be filled in |
+| `conflicts` | Plan-time ownership or duplicate conflict; apply is refused |
+| `remote_unknown` | Jira may have accepted a write, but safe reconciliation is inconclusive |
+| `failed` | A task or verification failed definitively |
+| `writeback_pending` | Remote issue verified, local locked atomic writeback failed |
+| `aborted` | Tasks not attempted after a systemic Jira failure |
 
-Data Center may throttle bulk creation. If creating 20+ issues:
-- Add `sleep 0.5` between API calls
-- Or batch via `/rest/batch/1.0/issue` (if available on DC 9.0+)
+The wire-format result keys above are canonical; plan operations remain the
+singular verbs `create`, `adopt`, `update`, `skip`, and `conflict`. Any non-zero
+`conflicts`, `remote_unknown`, `failed`, `writeback_pending`, or `aborted`
+makes the sync incomplete and must return non-zero.
+Re-run Project listing and dry-run to reconcile; never blindly retry a create
+or hand-edit the two Jira fields.
+
+After a successful apply or a user cancellation, remove the private answers and
+plan directory. If reconciliation is incomplete, retain the mode-`0600` files
+only until the reported issue keys are reconciled, then remove them.
+
+## Stable Identity and Concurrency
+
+`> **Jira-Source-ID**:` is a lowercase UUID v4 namespace generated once for
+the TASKS document. It prevents same-named features in different repositories
+from sharing task identities and must survive repository moves and re-plans.
+
+`**Jira-Sync-ID:**` is the durable task identity. The CLI stores the same
+identity on the Jira issue and uses it to distinguish create, update, and
+no-op operations. Summary matching alone is forbidden.
+
+For a generated identity, the stable inputs are the exact Project key, immutable
+document source UUID, and immutable task number. Feature, title, Story ID, and
+task content may change during a safe re-plan and therefore must not create a
+new identity while local writeback is pending.
+
+This provides retry safety after a successful verified writeback. It does not
+provide distributed locking or exactly-once creation. If concurrent clients
+race, stop on duplicates or ambiguous state, report the issue keys, and require
+human reconciliation before another apply.
+
+## Interaction with `/tgd-plan`
+
+`/tgd-plan` owns the user prompts and invokes this skill only after writing a
+canonical TASKS.md. The sequence is fixed:
+
+```text
+TASKS.md → choose preview → list Projects → exact Project choice
+→ discover required fields → ask and normalize answers → dry-run
+→ display answers, digest, and actions → explicit apply confirmation → apply
+→ verify remote issues → write back Jira fields → report
+```
+
+Skipping Jira leaves all Jira fields unchanged; only new unsynced tasks remain
+`—`. Skipping does not fail the Plan phase.
 
 ## When to Use
 
-- When `/tgd-plan` generates `TASKS.md`
-- When user wants to sync tasks to Jira Data Center
-- When planning sprint backlog from task breakdown
+- After `/tgd-plan` has produced a canonical `TASKS.md`
+- When the user explicitly chooses to preview a Jira Data Center sync
+- When an earlier verified sync needs a safe update or reconciliation pass
+
+Do not use this skill for one-off manual issue creation, Jira Cloud-only APIs,
+Agile board planning, or automatic background synchronization.
 
 ## Common Rationalizations
 
 | Rationalization | Reality |
 |---|---|
-| "I'll sync to Jira later" | Later never comes. Sync immediately after plan. |
-| "Manual Jira entry is fine" | Manual entry loses the link between TASKS.md and Jira. |
+| "The Project is saved, so selection is unnecessary" | A saved key is only a hint; every run lists Projects and requires an exact choice. |
+| "Credentials are configured, so apply is already authorized" | Credentials grant capability, not user intent. Only the displayed digest confirmation authorizes apply. |
+| "A matching summary is probably the same task" | Summaries change and are not unique. Only the stable sync ID may drive reconciliation. |
+| "A timed-out create is safe to retry" | Jira may already have created it. Reconcile the stable marker first and report an unknown result if it is not unique. |
+| "Sprint needs a separate workflow" | It is just another Jira field. Follow createmeta, ask only when required, and bind the answer into the same plan digest. |
+| "The old `[ENG-1234]` proves ownership" | It is only a migration hint. Show `adopt`, confirm its digest, and re-check Project plus absence of other tGD ownership before writing. |
 
 ## Red Flags
 
-- Tasks created in Jira without corresponding TASKS.md entries
-- Jira issues missing acceptance criteria from TASKS.md
-- Sync run without user confirmation
+- Jira create/update occurs before the dry-run digest is confirmed
+- A configured or saved Project is selected without listing all Projects
+- A PAT appears in chat, command arguments, `.env`, output, logs, or temp files
+- A required field, including Sprint, is rejected, guessed, or silently omitted instead of being asked generically
+- Required-field values appear directly in command arguments or a non-private answers file
+- Jira Agile endpoints are called to special-case a field
+- `TASKS.md` is updated before remote verification succeeds
+- Summary text is treated as the unique sync identity
+- A legacy bracket key silently becomes `create` or is copied into the new fields by hand
+- An entire Jira labels array is rewritten instead of atomically adding only the owned sync label
+- The agent claims exactly-once behavior across concurrent clients
+- A conflict or ambiguous result is silently retried or reported as success
 
 ## Verification
 
-After execution, verify:
-- [ ] All tasks from TASKS.md have corresponding Jira keys
-- [ ] No creation errors in the report
-- [ ] Created issues are viewable in Jira UI
+- [ ] All accessible Projects were listed and the user selected an exact returned key
+- [ ] Dry-run made no Jira or TASKS.md writes
+- [ ] The full action list and SHA-256 digest were shown
+- [ ] Every non-automatic required field was asked, normalized, displayed, and included in the digest for create actions
+- [ ] Apply used the exact confirmed Project and digest
+- [ ] Every written-back Jira key was verified remotely first
+- [ ] `**Jira:**` and `**Jira-Sync-ID:**` were changed only by the CLI
+- [ ] Every legacy heading key was either reported as a conflict or explicitly adopted and removed by verified atomic writeback
+- [ ] Sprint was treated like any other field, no Agile API was used, and no PAT was persisted or exposed
+- [ ] Conflicts, ambiguous results, and writeback failures were reported as incomplete

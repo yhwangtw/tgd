@@ -287,11 +287,14 @@ Für UI-Modi liest er zusätzlich die freigegebene `DESIGN.md` und die echten De
 ### 🎯 3-Option Feature-Naming
 Bei `/tgd-define` schlägt der Agent **drei verschiedene kebab-case-Namen** für Ihr Feature vor und wartet, bis Sie einen wählen (oder einen eigenen vorschlagen). Kein Raten mehr — Sie kontrollieren die Benennung vom ersten Tag an.
 
-### 🔄 Smarte Jira-Integration
-Beim Sync zu Jira erstellt tGD nicht einfach blind Issues. Es:
-- **Erkennt** die Pflichtfelder Ihres Projekts über die `createmeta`-API
-- **Lässt Sie den Issue-Type wählen** (Story, Task, Bug, etc.)
-- **Formatiert** jedes Issue mit strukturierter `As a... I want...`-Zusammenfassung und `Given/When/Then`-Akzeptanzkriterien
+### 🔄 Sichere Jira-Integration
+Jede Jira-Synchronisierung beginnt mit einer Vorschau und erfordert eine ausdrückliche Bestätigung. tGD:
+- **Listet alle zugänglichen Jira-Projekte** auf und verlangt die Auswahl eines exakten Project-Keys aus dieser Liste.
+- **Ermittelt alle Jira-Pflichtfelder** und fragt vor der Planung nach Werten oder den von Jira gelieferten Optionen; gemeinsame Standardwerte und task-spezifische Überschreibungen werden in den Digest aufgenommen.
+- **Erstellt einen Dry-Run-Plan** mit Digest sowie den vorgesehenen Aktionen zum Erstellen, Aktualisieren, Überspringen und für Konflikte.
+- **Wendet den Plan erst nach Bestätigung an**, prüft jedes Jira-Issue und schreibt danach Jira-Key und stabile Sync-ID in `TASKS.md` zurück.
+
+Sprint wird wie jedes andere Jira-Feld behandelt: tGD fragt nur danach, wenn Jira es als Pflichtfeld kennzeichnet. Sprint-spezifisches Verhalten über Jira-Agile-APIs wird nicht verwendet. Setzen Sie `JIRA_URL` und übergeben Sie das PAT ausschließlich über die Umgebungsvariable `JIRA_TOKEN`; tGD speichert es nicht. Stabile Sync-IDs machen normale Wiederholungen idempotent; bei parallelen Clients kann Jira jedoch keine Exactly-once-Garantie geben, daher müssen unklare Ergebnisse abgeglichen werden.
 
 ---
 
@@ -318,7 +321,7 @@ Die `tgd` CLI verwaltet Installation, Updates und Diagnose:
 |---|---|---|---|
 | Projekt verstehen | `/tgd-map` | Kontext vor Änderungen + Live-Dashboard | `tgd-context-engineering` + `codegraph init` + `understand-dashboard` |
 | Definition | `/tgd-define` | PRD → bedingtes 0/2/3-Design → finale SPEC | `tgd-interview-me` → `tgd-idea-refine` → `tgd-spec-driven-development` + `tgd-sketch` (bei Bedarf) |
-| Planung | `/tgd-plan` | CONTEXT + PRD + SPEC + freigegebenes Design → atomare Tasks | `tgd-planning-and-task-breakdown` → `tgd-jira-auto-sync` |
+| Planung | `/tgd-plan` | CONTEXT + PRD + SPEC + freigegebenes Design → atomare Tasks | `tgd-planning-and-task-breakdown` → `tgd-jira-auto-sync` *(nur bei gewählter Jira-Vorschau)* |
 | Sandbox-Bau | `/tgd-develop` | **Pflicht-Worktree** + Intelligentes Routing | `tgd-source-driven-development` → (`subagent` OR `incremental`) → `tgd-test-driven-development` |
 | Beweis erbringen | `/tgd-verify` | Tests sind der Beweis | `tgd-debugging-and-error-recovery` → `tgd-test-driven-development` → **Cross-Feature Regression Gate** |
 | Review vor Merge | `/tgd-review` | Code-Qualität verbessern | `tgd-code-review-and-quality` → `tgd-code-simplification` |
@@ -512,9 +515,9 @@ tGD hat vier menschliche Rollen. Jede Rolle kann nur die für sie relevanten gem
 ## 🔗 Integrationen
 
 ### Jira Data Center
-Wenn `/tgd-plan` eine `TASKS.md` generiert, kann der **`tgd-jira-auto-sync`** Skill automatisch Jira-Issues erstellen:
+Wenn `/tgd-plan` eine `TASKS.md` erzeugt, ermöglicht **`tgd-jira-auto-sync`** eine bestätigungspflichtige Synchronisierung:
 ```
-/tgd-plan → generiert TASKS.md → Benutzer bestätigt → erstellt Jira-Issues
+/tgd-plan → TASKS.md → Jira-Vorschau oder Überspringen wählen → Project-Key wählen → Dry Run + Digest → bestätigen → anwenden → prüfen → zurückschreiben
 ```
 
 ---
@@ -749,7 +752,7 @@ Die obigen Commands sind Einstiegspunkte. Das Paket enthält insgesamt 29 Skills
 | Skill | Zweck |
 |-------|-------|
 | [tgd-planning-and-task-breakdown](skills/tgd-planning-and-task-breakdown/SKILL.md) | In TASKS.md zerlegen |
-| [tgd-jira-auto-sync](skills/tgd-jira-auto-sync/SKILL.md) | Jira-Issues automatisch erstellen |
+| [tgd-jira-auto-sync](skills/tgd-jira-auto-sync/SKILL.md) | Jira-Sync aus TASKS.md anzeigen, bestätigen und prüfen |
 </details>
 
 <details>

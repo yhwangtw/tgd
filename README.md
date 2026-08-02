@@ -291,11 +291,14 @@ For UI modes, it also reads approved `DESIGN.md` plus the actual design-system s
 ### 🎯 3-Option Feature Naming
 When running `/tgd-define`, the agent proposes **three distinct kebab-case names** for your feature and waits for you to pick one (or suggest your own). No more guessing — you control the naming from day one.
 
-### 🔄 Smart Jira Integration
-When syncing to Jira, tGD doesn't just blindly create issues. It:
-- **Discovers** your project's mandatory fields via `createmeta` API.
-- **Lets you choose** the Issue Type (Story, Task, Bug, etc.).
-- **Formats** every issue with a structured `As a... I want...` summary and `Given/When/Then` acceptance criteria.
+### 🔄 Safe Jira Integration
+Every Jira sync is preview-first and confirmation-gated. tGD:
+- **Lists every accessible Project** and requires an exact Project choice.
+- **Discovers every required Jira field** and asks for values or returned choices before planning; defaults and per-task overrides are included in the digest.
+- **Builds a dry-run plan** with a digest and the proposed create, update, skip, and conflict actions.
+- **Applies only after explicit confirmation**, verifies each remote issue, then writes its Jira key and stable sync ID back to `TASKS.md`.
+
+Sprint is treated like any other Jira field: tGD asks for it only when Jira marks it required. No Sprint-specific Agile API behavior is used. Set `JIRA_URL` and provide the PAT only through the `JIRA_TOKEN` environment variable; tGD never saves it. Stable sync IDs make normal retries safe, but Jira cannot guarantee exactly-once creation across concurrent clients; ambiguous results must be reconciled.
 
 ---
 
@@ -322,7 +325,7 @@ The `tgd` CLI manages installation, updates, and diagnostics:
 |---|---|---|---|
 | Understand the project | `/tgd-map` | Context before changes + live dashboard | `tgd-context-engineering` + `codegraph init` + `understand-dashboard` |
 | Define what to build | `/tgd-define` | PRD → conditional 0/2/3 design → final SPEC | `tgd-interview-me` → `tgd-idea-refine` → `tgd-spec-driven-development` + `tgd-sketch` (if needed) |
-| Plan how to build it | `/tgd-plan` | Read CONTEXT + PRD + SPEC + approved design → atomic tasks | `tgd-planning-and-task-breakdown` → `tgd-jira-auto-sync` |
+| Plan how to build it | `/tgd-plan` | Read CONTEXT + PRD + SPEC + approved design → atomic tasks | `tgd-planning-and-task-breakdown` → `tgd-jira-auto-sync` *(only if Jira preview is chosen)* |
 | Develop in sandbox | `/tgd-develop` | **Mandatory Worktree** + smart routing | `tgd-source-driven-development` → (`subagent` OR `incremental`) → `tgd-test-driven-development` |
 | Prove it works | `/tgd-verify` | Tests are proof | `tgd-debugging-and-error-recovery` → `tgd-test-driven-development` → **Cross-Feature Regression Gate** |
 | Review before merge | `/tgd-review` | Improve code health | `tgd-code-review-and-quality` → `tgd-code-simplification` |
@@ -516,9 +519,9 @@ tGD has four human roles. They can use the workflow independently through shared
 ## 🔗 Integrations
 
 ### Jira Data Center
-When `/tgd-plan` generates `TASKS.md`, the **`tgd-jira-auto-sync`** skill can automatically create Jira issues:
+When `/tgd-plan` generates `TASKS.md`, the **`tgd-jira-auto-sync`** skill provides a confirmation-gated sync:
 ```
-/tgd-plan → generates TASKS.md → user confirms → creates Jira issues
+/tgd-plan → TASKS.md → choose Jira preview or skip → choose exact Project → dry-run + digest → confirm → apply → verify → write back
 ```
 
 ---
@@ -740,7 +743,7 @@ The commands above are entry points. The pack includes 29 skills total — 27 li
 | Skill | Purpose |
 |---|---|
 | [tgd-planning-and-task-breakdown](skills/tgd-planning-and-task-breakdown/SKILL.md) | Decompose specs into TASKS.md |
-| [tgd-jira-auto-sync](skills/tgd-jira-auto-sync/SKILL.md) | Auto-create Jira issues from TASKS.md |
+| [tgd-jira-auto-sync](skills/tgd-jira-auto-sync/SKILL.md) | Preview, confirm, and verify Jira issue sync from TASKS.md |
 
 ### ⚡ Develop
 | Skill | Purpose |

@@ -32,7 +32,7 @@ description: Plan — decompose specs into small, verifiable tasks with acceptan
 >
 > Choose one (default 1):
 
-Incremental rules: completed tasks and their `AC-<task>.<n>` ids are immutable — never renumber existing ids; new tasks continue the numbering; an *unstarted* task invalidated by the spec change may be rewritten in place.
+Incremental rules: completed tasks and their `AC-<task>.<n>` ids are immutable — never renumber existing ids; new tasks continue the numbering; an *unstarted* task invalidated by the spec change may be rewritten in place. Preserve the document-level `> **Jira-Source-ID**:` and every existing task's `**Jira:**` and `**Jira-Sync-ID:**` values byte-for-byte, regardless of task status. For a new TASKS.md, generate one `tgd-source-<lowercase UUID v4>` value once; for a legacy TASKS.md without the field, add one during re-plan and then preserve it forever. If an old task heading contains one standalone Jira key such as `[ENG-1234]`, preserve that token and initialize the two new Jira fields to `—`; only the Jira CLI may remove the token after a digest-confirmed, remotely verified `adopt`. Never copy the bracket key into `**Jira:**` manually.
 
 Run the `tgd-planning-and-task-breakdown` skill. Decompose the specification into small, verifiable tasks with acceptance criteria and dependency ordering.
 
@@ -48,15 +48,12 @@ Each task should be implementable in isolation with clear success criteria. Orde
 
 **Multi-Repo Tagging:** If CONTEXT.md lists multiple repos, each task in TASKS.md MUST be prefixed with `[repo-name]`:
 ```markdown
-### Task 1: [my-project-backend] Create auth endpoint
-**Description:** POST /api/auth/login
-**Files Touched:** `src/routes/auth.js`
-
-### Task 2: [my-project-frontend] Login form component
-**Description:** React login form with email/password
-**Files Touched:** `src/components/LoginForm.tsx`
+## Task 1: [my-project-backend] Create auth endpoint (Story ID: US-01)
+...
+## Task 2: [my-project-frontend] Login form component (Story ID: US-02)
+...
 ```
-This ensures each task is assigned to the correct repo and can be executed in the right context.
+These are heading examples only; every task body still uses the complete canonical schema from `tgd-planning-and-task-breakdown`. This ensures each task is assigned to the correct repo and can be executed in the right context.
 
 **If UI feature:** Derive tasks from the approved DESIGN.md sections and the actual design-system sources. Acceptance criteria MUST cover observable runtime states (loading, empty, error, success, disabled), named viewports, keyboard/focus behavior, and every approved deviation that requires implementation. Cite the relevant DESIGN.md heading in each UI task so implementation and review can trace it without interpretation.
 
@@ -66,34 +63,45 @@ This ensures each task is assigned to the correct repo and can be executed in th
 3. New entries start as `Status: planned` — `/tgd-release` flips them to `live`.
 
 **🔗 Jira Integration Gate** → IMMEDIATELY after TASKS.md is written. Do NOT skip this step.
-1. **Load saved config first**: if `$TGD_DIR/.env` exists, source it (`set -a; . "$TGD_DIR/.env"; set +a`) — a previous run may have saved `JIRA_URL`/`JIRA_PROJECT` there. THEN check env vars: `JIRA_URL`, `JIRA_PROJECT`, `JIRA_TOKEN`. (Without this load, values saved "for future runs" are never read and the user gets re-asked every time.)
-2. **If ALL configured:** Run the `tgd-jira-auto-sync` skill automatically. Do NOT ask.
-   - Parse TASKS.md, create issues, report keys (e.g., `ENG-1234`).
-   - Add issue keys back to TASKS.md tasks as `[ENG-1234]`.
-3. **If NOT configured:** Ask via Selection Protocol:
+1. **Never write automatically.** Ask via Selection Protocol even when Jira environment variables are already configured:
    ```
    📋 TASKS.md 已完成（N 個任務）。
-   🔗 要同步到 Jira 嗎？
-   1. 同步（我會逐項問缺少的連線設定）
+   🔗 要預覽 Jira 同步嗎？
+   1. 預覽（只讀，不會建立、更新或回寫）
    2. 略過
 
    Choose one (default 2):
    ```
-   - **If 1:** Ask for each missing value one at a time:
-     - `JIRA_URL`（例：https://jira.company.com）
-     - `JIRA_PROJECT`（例：ENG）
-     - `JIRA_TOKEN`（Personal Access Token）
-     Save `JIRA_URL` and `JIRA_PROJECT` to `$TGD_DIR/.env` for future runs. For `JIRA_TOKEN`, warn the user that `.env` is plaintext and recommend exporting it in their shell profile instead; only write it to `.env` if they explicitly agree. Then run the `tgd-jira-auto-sync` skill.
-   - **If 2:** Skip Jira, proceed to verification.
+2. **If 1, load the `tgd-jira-auto-sync` skill and use only `scripts/jira-sync.py`.** The CLI reads `JIRA_URL` and `JIRA_TOKEN` from the process environment. Never ask the user to paste a PAT into chat, pass it as a CLI argument, log it, or save it in `$TGD_DIR/.env` or any other file. If either required environment variable is missing, STOP and ask the user to export it outside the conversation, then resume this gate.
+3. **Always list Projects before planning a sync.** Show every Jira Project returned by the CLI as exact key + name. A configured `JIRA_PROJECT` may be displayed as a default hint only; never select it silently. Require the user to choose one exact returned Project key.
+4. **Discover and ask every non-automatic required field.** Run the CLI `fields` command for the exact Project and issue type before planning. Project, summary, issue type, description, priority, and stable label are filled automatically. For every other field Jira marks required, ask the user what to enter; if `allowed_values` are returned, present those exact choices, otherwise ask for a value matching the reported schema. Let the user apply one answer to all create tasks or override it per Task. Sprint has no special rule: if Jira metadata marks it required, ask for it exactly like Component, Fix Version, date, or any other field. Do not call Jira Agile APIs or silently invent a value.
+   - Store answers only in a new private mode-`0600` JSON file with `defaults` and `tasks` objects; never put field values directly in command arguments. Pass it to `plan --answers <path>`. If no non-automatic required fields exist, omit `--answers`.
+5. **Dry-run first.** Build a read-only plan for that exact Project and current TASKS.md. It must perform no Jira mutation and no TASKS.md writeback. Show the Project key/name, every required-field answer, plan digest, and every proposed `create` / `adopt` / `update` / `skip` / `conflict` action.
+   - The plan command's only local write is a private mode-`0600` JSON plan artifact; it never overwrites an existing path. If it reports any `conflict` or exits non-zero, show the candidate issue keys, STOP the Jira gate, and reconcile before creating a new dry-run. Never offer apply for a conflicted plan.
+   - `adopt` is only for migrating one unambiguous legacy heading key. It must name that exact issue, verify the selected Project, and show the action explicitly. A missing, duplicate, differently owned, or unverifiable legacy issue is a conflict and must never fall through to `create`.
+6. **Confirm the digest explicitly.** Only after a conflict-free complete dry-run is visible, ask via Selection Protocol:
+   ```
+   套用上面的 Jira 計畫？
+   1. 套用到 <PROJECT_KEY>（digest: <SHA-256>）
+   2. 取消
+
+   Choose one (default 2):
+   ```
+   Only choice 1 authorizes apply. A stale digest, changed TASKS.md, changed Project, or missing confirmation must abort without writes.
+7. **Apply, verify, then write back.** The CLI may create, adopt, or update only after confirmation. It must GET and verify each remote issue, including every required field used during creation, before writing its key and stable identity into that task's `**Jira:**` and `**Jira-Sync-ID:**` fields. A successful legacy adoption also removes the old heading token in the same locked atomic writeback. Use the CLI result keys consistently: `created`, `updated`, `skipped`, `conflicts`, `remote_unknown`, `failed`, `writeback_pending`, and `aborted` (`adopt` is reported under `updated`). Print every successful or pending issue key. Any non-zero `conflicts`, `remote_unknown`, `failed`, `writeback_pending`, or `aborted` result fails the Jira gate and requires reconciliation; do not advance to `/tgd-develop` as if sync succeeded.
+8. **State the concurrency limit honestly.** Stable sync IDs and reconciliation make retries idempotent after a successful writeback, but Jira does not provide an exactly-once guarantee across concurrent clients. Conflicts or ambiguous remote results require reconciliation; do not promise exactly-once delivery.
+9. **If 2 at either prompt:** make no Jira or TASKS.md sync changes and proceed to verification.
 
 **Verification Gate** (runs regardless of whether Jira sync happened):
 - [ ] `$TGD_DIR/<feature-name>/TASKS.md` exists and is non-empty
 - [ ] `python3 "$TGD_REPO_ROOT/scripts/check-doc-sections.py" TASKS "$TGD_DIR/<feature-name>/TASKS.md"` exits 0 — required sections present, ≥1 task, ≥1 checkpoint, ≥1 `**Status:**` line (the `## Sign-off` section feeds `/tgd-release`'s sign-off gate — its absence would silently skip that check). Resolve `$TGD_REPO_ROOT` per `tgd-rules` → **Resolving $TGD_REPO_ROOT**.
-- [ ] If this was a re-plan (TASKS.md pre-existed): every task that had `**Status:** complete` is still present with its Status line and `Test:` fields intact, and no existing `AC-<task>.<n>` id was renumbered
+- [ ] If this was a re-plan (TASKS.md pre-existed): every task that had `**Status:** complete` is still present with its Status line and `Test:` fields intact, no existing `AC-<task>.<n>` id was renumbered, and the existing `> **Jira-Source-ID**:` plus every `**Jira:**` / `**Jira-Sync-ID:**` value was preserved
+- [ ] TASKS.md has exactly one `> **Jira-Source-ID**: tgd-source-<lowercase UUID v4>` value
+- [ ] Every task has `**Jira:**` and `**Jira-Sync-ID:**` fields; unsynced tasks use `—`
 - [ ] Every acceptance criterion carries a stable `AC-<task>.<n>` id in BDD format — check: `grep -qE 'AC-[0-9]+[.][0-9]+' TASKS.md`. Without ids, `/tgd-verify`'s `ac-trace.py` gate fails closed.
 - [ ] Every criterion has an explicit `[R]` Yes/No regression decision
 - [ ] If UI mode is 1–3: DESIGN.md passes its section check, `[x] **DESIGN**: Direction Approved` is present, and every UI task cites the relevant DESIGN.md section/component
 - [ ] If UI mode is 1–3: UI acceptance criteria cover required runtime states, responsive viewports, and keyboard/focus behavior from DESIGN.md
 - [ ] If PRD §6 names new events: each has a `$TGD_DIR/TRACKING-PLAN.md` entry (Status: planned) and an instrumentation task with its own AC
 
-End with the closing report per `tgd-rules` → **Command Closing Report**: 📦 產出 (TASKS.md — N 個任務、M 條驗收標準；Jira keys 或「略過」) · 🔎 檢查 (gate as one line) · ➡️ 下一步 `/tgd-develop` — 實作第一片. Don't paste the raw checklist above.
+End with the closing report per `tgd-rules` → **Command Closing Report**: 📦 產出 (TASKS.md — N 個任務、M 條驗收標準；Jira「已驗證回寫 keys」／「取消」／「略過」／「未完成：<result keys + issue keys>」) · 🔎 檢查 (gate as one line) · ➡️ conflict-free success/cancel/skip 才顯示 `/tgd-develop`；Jira 未完成時顯示「先對帳並重新 dry-run」，不要宣稱 Plan gate 通過. Don't paste the raw checklist above.
