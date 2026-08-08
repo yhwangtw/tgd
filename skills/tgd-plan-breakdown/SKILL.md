@@ -215,7 +215,7 @@ A mis-firing event is worse than a missing one — you will trust a wrong number
 When TASKS.md already exists (spec changed mid-flight, scope grew), the default is an **incremental update**, never a from-scratch rewrite — `/tgd-develop` backfills `Test:` fields and completion state into TASKS.md, and regenerating the file destroys them, breaking `ac-trace.py` and the regression chain downstream.
 
 Incremental rules:
-- **Completed tasks are immutable**: any task with `**Status:** complete` keeps its Status line, criteria, and `Test:` fields byte-for-byte. (The `Status:` lines are also how the re-plan prompt counts "M 個已完成" — no marker, no count.)
+- **Completed tasks are immutable**: any task with `**Status:** complete` keeps its Status line, criteria, and `Test:` fields byte-for-byte. (The `Status:` lines are also how the re-plan prompt counts "M completed" — no marker, no count.)
 - **Jira links are immutable across re-plans**: preserve every existing task's `**Jira:**` and `**Jira-Sync-ID:**` values byte-for-byte, regardless of task status. New tasks start with `—`; planning never reassigns or clears a link.
 - **The Jira source namespace is immutable**: preserve the document-level `> **Jira-Source-ID**:` value byte-for-byte. Generate it only when creating a new TASKS.md or migrating a legacy TASKS.md that does not have one.
 - **Legacy Jira heading keys are migration state**: preserve one standalone `[KEY-123]` token and initialize new Jira fields to `—` until the Jira CLI explicitly adopts it. Planning never removes, copies, or silently converts it.
