@@ -115,6 +115,8 @@ A single-model reviewer shares blind spots with the original author — a colder
 
 **Interactive sessions: always offer. Never silently skip.**
 
+**Speech follows the user's language.** The quoted prompts and announcements below (the cross-model offer, the skip acknowledgements) illustrate intent and coverage, not verbatim text. Deliver them in the language the user is using. In Traditional Chinese, the offer reads roughly「單模型審查完成。要不要換一個不同模型再審一次？可以選 Gemini CLI、Codex CLI、你自己貼去外部審，或跳過。」and the non-interactive skip reads「跨模型已跳過：非互動情境。」
+
 **Step 1: Ask the user**
 
 After the single-model review in Step 3 above, but before RECONCILE, pause and ask:

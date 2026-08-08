@@ -50,7 +50,17 @@ The number forces honesty. If you wrote down a high number but can't actually pr
 
 When confidence is below ~70%, append a brief reason on the same line — what's still unresolved or missing. This tells the user exactly what the interview needs to surface, and prevents the number from being a vague signal.
 
+**Labels and speech acts follow the user's language.** Every English label in the templates below — `HYPOTHESIS`, `CONFIDENCE`, `Q`, `GUESS`, and the restate row names (`Outcome`, `User`, `Why now`, `Success`, `Constraint`, `Out of scope`) — and every quoted sentence the skill tells you to say to the user (e.g. the Step 3 probe) is an illustration of structure and intent, not literal output to copy verbatim. Render all of them in the language the user is using. In Traditional Chinese: labels become `假設` / `把握度` / `問` / `推測` / `結果` / `對象` / `為何現在` / `成功` / `限制` / `不在範圍`, and a probe like "if you didn't have to justify this to anyone, what would you actually want?" becomes「如果不用對任何人交代，你真正想要的是什麼？」. The structure matters; the language doesn't.
+
 ### Step 2: Ask one question at a time, each with a guess attached
+
+Before asking anything, classify each candidate question and choose from the frontier:
+
+- **Fact questions** — answers that exist in the environment (codebase, config, docs, APIs, tool output). Finding these is *your* job, never the user's. Look them up yourself (read files, run commands, inspect config), fold the result in as a settled prerequisite, and do not ask the user. Tell them briefly only if a lookup will take a while.
+- **Decision questions** — no existing answer, requires the user to choose. These are the only ones that enter the interview, one at a time, each with a GUESS.
+- Pick the next question only from the **frontier**: decision questions whose prerequisites (verified facts + decisions the user has already made) are all settled. A decision question that depends on an answer you haven't heard yet belongs to a later turn — don't ask it early.
+- Recompute the frontier after each answer comes in.
+- Don't block: if a fact lookup is running, ask other independent decision questions now; only questions that depend on that fact wait.
 
 Format:
 
@@ -195,6 +205,7 @@ Two questions in, the agent has discovered the actual ask isn't "a dashboard." I
 | "If I attach my guess, I'm leading them" | Leading is the point. Reacting is faster than generating from scratch. The risk is sycophancy, not leading; mitigate by being visibly willing to be wrong. |
 | "We've talked enough, I get it" | Test it: can you predict their reaction to the next three questions? If not, you don't get it yet. |
 | "The user said yes, we're done" | If the yes followed a vague restate or an open-ended "sounds good," the yes is hollow. Restate concretely and re-confirm. |
+| "Just ask the user, it's faster" | No. Asking the user to recall or guess a fact surfaces stale memory, not truth, and outsources work that's yours. Fact questions are yours to resolve before the interview proceeds. |
 
 ## Red Flags
 
@@ -208,6 +219,8 @@ Two questions in, the agent has discovered the actual ask isn't "a dashboard." I
 - A confidence number below ~70% with no reason attached: the user can't help close the gap if they don't know what's missing
 - Writing an intent file unprompted (the deliverable is conversational; a file both implies a confirmation the user didn't give and duplicates what PRD.md will absorb)
 - Skipping the "Out of scope" line in the restate (silent disagreement about non-goals is half of misalignment)
+- Asking a fact question whose answer lives in the environment (you could have looked it up yourself)
+- Asking a decision question whose prerequisites aren't settled yet (wrong order — it belongs to a later turn)
 
 ## Verification
 
@@ -221,3 +234,5 @@ After applying tgd-define-interview:
 - [ ] The user confirmed the restate with an explicit yes (not "whatever you think," not "sounds good," not silence)
 - [ ] At the stop point, the agent could predict reactions to the next three questions it would ask
 - [ ] Any handoff to a downstream skill (`tgd-define-ideate`, `tgd-define-spec`) was framed in terms of the confirmed intent, not the original underspecified ask
+- [ ] No fact question was asked of the user; everything answerable from the environment was looked up first
+- [ ] Every question asked aloud was on the frontier (prerequisites settled)
