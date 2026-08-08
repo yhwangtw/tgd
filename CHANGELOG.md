@@ -4,6 +4,12 @@ All notable changes to tGD will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/). Versions follow [CalVer](https://calver.org/) (YYYY.MM.DD).
 
+## v2026.08.08
+
+### 🐛 Bug Fixes
+- follow user language and add frontier-aware question ordering (`65bb4b4`)
+- canonicalize skill prose to an English base (`0950c77`)
+
 ## v2026.08.03
 
 ### 🐛 Bug Fixes
