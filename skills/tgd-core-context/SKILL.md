@@ -22,7 +22,7 @@ Feed agents the right information at the right time. Context is the single bigge
 **Inside a DOWNSTREAM lifecycle command** (`/tgd-develop`, `/tgd-verify`, or any
 command whose pre-flight found `$TGD_DIR/CONTEXT.md`, **except `/tgd-map` itself**):
 the repo scope was already established by `/tgd-map` Step 1 — **read CONTEXT.md's
-repo list instead of re-asking the user**. Asking "還有其他 repo 嗎" again on
+repo list instead of re-asking the user**. Asking "any other repos?" again on
 every task is noise.
 
 **Exception — `/tgd-map` owns this question.** When this skill runs as part of
@@ -32,7 +32,7 @@ reuse or change it. This skill never overrides that.
 
 **Standalone use only** (no CONTEXT.md exists):
 
-1. Ask the user: "除了當前 repo，還有其他需要參考的 repo 嗎？（local path 或 git URL）"
+1. Ask the user: "Besides the current repo, are there any other repos to reference? (local path or git URL)"
 2. Accept **local paths** (e.g. `~/Projects/wayflow`) — resolve to absolute path
 3. Accept **git URLs** (e.g. `github.com/CopilotKit/CopilotKit`) — clone to `/tmp/tgd-context/<repo-name>`
 4. If user says "no" or provides nothing, proceed with primary repo only

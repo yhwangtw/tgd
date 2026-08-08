@@ -179,18 +179,20 @@ Each lifecycle phase has a distinct communication tone. Follow these when respon
 
 End every lifecycle command with a short, scannable summary — it is the part the human actually reads. Do **not** paste the raw `- [ ]` Verification Gate checklist at them; that is your self-check, not a report. Collapse it. Three parts:
 
-- **📦 產出** — what this phase produced or changed, with a one-line *real* summary (counts, coverage, file — from actual output, never invented; the Verification Iron Law applies here too).
-- **🔎 檢查** — the whole gate as ONE line: `✅ 全數通過` or `❌ N 項未過`. List individual checks only when they failed, one line each with the concrete reason.
-- **➡️ 下一步** — the next command and a short why. Omit it on a failed run — the next step is "fix and re-run this command"; make the header `❌ … 未通過`.
+- **📦 Output** — what this phase produced or changed, with a one-line *real* summary (counts, coverage, file — from actual output, never invented; the Verification Iron Law applies here too).
+- **🔎 Checks** — the whole gate as ONE line: `✅ all passed` or `❌ N failed`. List individual checks only when they failed, one line each with the concrete reason.
+- **➡️ Next** — the next command and a short why. Omit it on a failed run — the next step is "fix and re-run this command"; make the header `❌ … failed`.
 
 Suggested shape (adapt it; this is guidance, not a rigid template):
 
 ```
-✅ /tgd-verify 完成
-📦 產出   TEST-REPORT.md — 142 passed / 0 failed, coverage 87%
-🔎 檢查   ✅ 全數通過（tests · coverage · ac-trace · regression-gate）
-➡️ 下一步  /tgd-review — 檢查程式碼品質
+✅ /tgd-verify done
+📦 Output  TEST-REPORT.md — 142 passed / 0 failed, coverage 87%
+🔎 Checks  ✅ all passed (tests · coverage · ac-trace · regression-gate)
+➡️ Next    /tgd-review — review code quality
 ```
+
+Render the three labels (`Output`, `Checks`, `Next`) and the status phrases (`all passed` / `failed`) in whatever language the user is using; the English above is the canonical wording, not a verbatim token. The emoji and the three-part structure are the fixed part.
 
 `/tgd-map`'s Step 8 Final Report is the fuller, enforced instance of this same shape.
 
