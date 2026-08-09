@@ -43,11 +43,11 @@ The script owns suite detection, report skeleton creation from `$TGD_REPO_ROOT/t
 bash "$TGD_REPO_ROOT/scripts/coverage-check.sh"
 ```
 
-Exit 0 passes; exit 1 fails. **Exit 2 = no coverage tool installed or output unparseable — a configuration problem: install the tool it names (e.g. `npm i -D @vitest/coverage-v8`, `pip install pytest-cov`, `cargo install cargo-tarpaulin`), then re-run. NEVER treat exit 2 as a pass.** Default lines/branches/functions floors are 80/60/90; document environment overrides in `## Coverage Exceptions` with a ramp-up plan.
+Exit 0 passes; exit 1 fails. **Exit 2 = no coverage tool, unparseable output, a required metric unavailable, or invalid floor/mode configuration — fix it and re-run. NEVER treat exit 2 as a pass.** Default lines/branches/functions floors are 80/60/90. For non-critical paths only, a tool-missing branch/function metric may be explicitly listed in `COVERAGE_ALLOW_MISSING_METRICS`; document it and every floor override in `## Coverage Exceptions` with the affected files and a ramp-up plan. For every critical path, run again with `COVERAGE_CRITICAL_PATH=1`; it forces 100% line/branch coverage and rejects missing-metric allowances.
 
 ### AC Traceability Gate (MANDATORY)
 
-Line coverage is not requirement coverage — verify every acceptance criterion has a test:
+Line coverage is not requirement coverage — verify every acceptance criterion has a valid carrier: executable behavior uses an AC-tagged test; documentation-only work uses a valid `Doc:` carrier and cannot be `[R]`:
 
 ```bash
 python3 "$TGD_REPO_ROOT/scripts/ac-trace.py" "$TGD_DIR/<feature-name>/" .

@@ -134,13 +134,25 @@ Run `bash $TGD_REPO_ROOT/scripts/coverage-check.sh`; `$TGD_REPO_ROOT` is the
 cloned tGD repository, not the artifacts directory. The script auto-detects
 `nyc`, `jest --coverage`, `vitest --coverage`, `coverage.py`, `go test -cover`,
 or `cargo tarpaulin`. It is authoritative for floor values and exits `0` only
-when every floor passes; it exits `1` with the failing metric otherwise. The
-table documents its defaults.
+when every reported floor passes; it exits `1` with the failing metric. If the
+tool omits branch or function coverage, the script exits `2` by default rather
+than reporting a false pass.
 
 Projects may override a run with `COVERAGE_LINE_FLOOR`,
 `COVERAGE_BRANCH_FLOOR`, or `COVERAGE_FUNC_FLOOR`. Any override below a default
 must be recorded in TEST-REPORT.md under `## Coverage Exceptions` with a
 ramp-up plan.
+
+For a non-critical path whose tool cannot report branches or functions, list
+only the unavailable metric in `COVERAGE_ALLOW_MISSING_METRICS` and document the
+metric, tool limitation, affected files, and ramp-up plan in the same report
+section. Never allow missing line coverage, or missing line/branch coverage for
+a critical path.
+
+For every critical path, run the gate with `COVERAGE_CRITICAL_PATH=1`. This
+machine mode forces line and branch floors to 100% and rejects every
+missing-metric allowance. Floor environment variables must be finite numeric
+values from 0 through 100; invalid values exit `2` rather than coercing to zero.
 
 If a floor cannot be met, record the metric, files, and exemption reason in the
 same section. `/tgd-review` may reject an undocumented exception. The defaults
@@ -150,10 +162,12 @@ critical-path rule.
 
 ## Requirement Coverage
 
-Every test that verifies a TASKS.md criterion must include its stable
-`AC-<task>.<n>` identifier in the test name, docstring, or a comment. This is
-mandatory: `/tgd-verify` runs `ac-trace.py`, which fails when any acceptance
-criterion lacks a referencing test.
+Every executable TASKS.md criterion must have a verifying test containing its
+stable `AC-<task>.<n>` identifier in the name, docstring, or a comment.
+Documentation-only criteria use the template's `Doc:` carrier instead of a
+fabricated test; the named file and quoted content must exist, and a Doc-carried
+criterion cannot be `[R]`. `/tgd-verify` runs `ac-trace.py` to enforce both
+carrier types.
 
 ## Flaky Test Policy
 
@@ -212,7 +226,8 @@ After completing an implementation, verify:
 - [ ] No tests were skipped, disabled, or deleted to obtain a pass.
 - [ ] Coverage did not decrease when tracked and all coverage gates pass or
       have documented exceptions.
-- [ ] Every TASKS.md criterion has an AC-tagged test reference.
+- [ ] Every executable TASKS.md criterion has an AC-tagged test; every
+      documentation-only criterion has a valid `Doc:` carrier and is not `[R]`.
 - [ ] Any flaky pass is documented and consecutive-feature policy is enforced.
 - [ ] Browser behavior has runtime evidence and respected the untrusted-data
       boundary when applicable.
