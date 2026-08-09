@@ -4,6 +4,41 @@ All notable changes to tGD will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/). Versions follow [CalVer](https://calver.org/) (YYYY.MM.DD).
 
+## v2026.08.09
+
+### 🐛 Bug Fixes
+- add framework maintenance release path (`87b7d78`)
+- unify release rollout policy (`b161837`)
+- keep wiki generation standalone (`7a6775e`)
+- enforce release gate ordering (`97054d0`)
+- close workflow gate edge cases (`dd44ea7`)
+- canonicalize lifecycle language (`d42721a`)
+- enforce skill language contract (`ea9f517`)
+- harden coverage and AC carriers (`6a86e60`)
+- clarify core context boundaries (`9c44fbb`)
+- harden core git safeguards (`cfe964f`)
+
+### ♻️ Refactoring
+- split wiki generation patterns (`bc2c248`)
+- split sketch patterns (`ef26551`)
+- split source grounding patterns (`ebcbc73`)
+- split incremental patterns (`7b252ae`)
+- split subagent prompts (`bcc42a4`)
+- split planning patterns (`1d70245`)
+- split Jira sync patterns (`b569580`)
+- split debugging patterns (`1458361`)
+- split API and UI patterns (`bfacba0`)
+- split release patterns (`65dcd60`)
+- split review patterns (`7120df4`)
+- split tdd testing patterns (`ab2472b`)
+- streamline lifecycle commands (`f0fd3c3`)
+- split core git reference (`c816080`)
+- split core context and doubt references (`8a2f13d`)
+- consolidate core workflow guidance (`2c5223a`)
+
+### ✅ Tests
+- lock workflow semantic contracts (`b2bebb8`)
+
 ## v2026.08.08
 
 ### 🐛 Bug Fixes
