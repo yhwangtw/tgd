@@ -89,4 +89,4 @@ After release, for every TASKS.md Acceptance Criteria marked `[R]`, copy its AC 
 - [ ] CHANGELOG is updated; METRICS/TRACKING-PLAN handling matches signed-off PRD §6.
 - [ ] Every new `[R]` AC is represented in the cumulative catalog.
 
-End with the closing report per `tgd-core-rules` → **Command Closing Report**: 📦 產出 (released version + CHANGELOG/METRICS/REGRESSION-CATALOG updates) · 🔎 檢查 (gate as one line) · ➡️ 下一步 確認 monitoring 已啟動、rollback plan 有記錄（發布是終點,不接下一個命令）. Don't paste the raw checklist above.
+End with the closing report per `tgd-core-rules` → **Command Closing Report**: 📦 Output (released version + CHANGELOG/METRICS/REGRESSION-CATALOG updates) · 🔎 Checks (gate as one line) · ➡️ Next confirm monitoring is active and the rollback plan is recorded (Release is terminal; there is no next command). Don't paste the raw checklist above.

@@ -18,8 +18,8 @@ description: Plan — decompose specs into small, verifiable tasks with acceptan
 Count tasks, completed tasks, and backfilled Test fields, then ask:
 
 ```text
-1. 增量更新 — 保留已完成任務與所有 Test 欄位；只更新受 spec 影響的未完成任務
-2. 整份重來 — 丟棄既有狀態與 Test 回填
+1. Update incrementally — preserve completed tasks and all Test fields; update only unfinished tasks affected by the spec
+2. Start over — discard existing status and Test backfills
 
 Choose one (default 1):
 ```
@@ -40,10 +40,10 @@ Read CONTEXT.md, PRD.md, SPEC.md, and—for UI modes 1–3—DESIGN.md plus the 
 Run this immediately after TASKS.md is written. **Never write automatically.** Ask via Selection Protocol even when Jira environment variables are already configured:
 
 ```text
-📋 TASKS.md 已完成（N 個任務）。
-🔗 要預覽 Jira 同步嗎？
-1. 預覽（只讀，不會建立、更新或回寫）
-2. 略過
+📋 TASKS.md is ready (N tasks).
+🔗 Preview Jira synchronization?
+1. Preview (read-only; creates, updates, and writes back nothing)
+2. Skip
 
 Choose one (default 2):
 ```
@@ -57,9 +57,9 @@ Choice 1 loads `tgd-plan-jira` and uses only `scripts/jira-sync.py`; that skill 
 - Only after a visible, conflict-free plan ask:
 
   ```text
-  套用上面的 Jira 計畫？
-  1. 套用到 <PROJECT_KEY>（digest: <SHA-256>）
-  2. 取消
+  Apply the Jira plan above?
+  1. Apply to <PROJECT_KEY> (digest: <SHA-256>)
+  2. Cancel
 
   Choose one (default 2):
   ```
@@ -75,4 +75,4 @@ Choice 1 loads `tgd-plan-jira` and uses only `scripts/jira-sync.py`; that skill 
 - [ ] Every BDD criterion has stable `AC-<task>.<n>` and `[R]` decision; `grep -qE 'AC-[0-9]+[.][0-9]+' TASKS.md` succeeds.
 - [ ] UI tasks and ACs trace the approved DESIGN; new tracking events have planned entries and instrumentation ACs.
 
-End with the closing report per `tgd-core-rules` → **Command Closing Report**: 📦 產出 (TASKS.md — N 個任務、M 條驗收標準；Jira「已驗證回寫 keys」／「取消」／「略過」／「未完成：<result keys + issue keys>」) · 🔎 檢查 (gate as one line) · ➡️ conflict-free success/cancel/skip 才顯示 `/tgd-develop`；Jira 未完成時顯示「先對帳並重新 dry-run」，不要宣稱 Plan gate 通過. Don't paste the raw checklist above.
+End with the closing report per `tgd-core-rules` → **Command Closing Report**: 📦 Output (TASKS.md — N tasks, M acceptance criteria; Jira `verified writeback keys` / `cancelled` / `skipped` / `incomplete: <result keys + issue keys>`) · 🔎 Checks (gate as one line) · ➡️ Next shows `/tgd-develop` only after conflict-free success/cancel/skip; when Jira is incomplete, say to reconcile and re-run the dry-run without claiming the Plan gate passed. Don't paste the raw checklist above.

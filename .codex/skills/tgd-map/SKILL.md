@@ -49,12 +49,12 @@ If a tier cannot run, you MUST record it in `CONTEXT.md` under `## Degraded Mode
 
 Before analyzing anything, **ask the user — on every `/tgd-map` run**. An existing CONTEXT.md changes the wording of the question, never the requirement to ask (same rule as Step 0b):
 
-- First map: `除了當前 repo，還有其他需要參考的 repo 嗎？（local path 或 git URL）`
+- First map: `Besides the current repo, are there other repos to reference? (local path or git URL)`
 - Re-map: show the previous primary/additional repo list, then ask:
 
   ```text
-  1. 沿用這份清單 (Enter)
-  2. 增加/移除 repo（輸入 local path 或 git URL，或要移除的名稱）
+  1. Reuse this list (Enter)
+  2. Add/remove a repo (enter a local path, git URL, or name to remove)
 
   Choose one (default 1):
   ```
@@ -127,16 +127,16 @@ An unavailable Tier 2 check is N/A only with probe evidence plus its Degraded Mo
 The run's last message must use this filled format. Every line is a real value or `skipped — <reason from Degraded Mode>`.
 
 ```text
-✅ /tgd-map 完成
+✅ /tgd-map complete
 
 📂 $TGD_DIR: <path>
-📚 Repos mapped: <primary> (+ <additional>, or 無)
+📚 Repos mapped: <primary> (+ <additional>, or none)
 📊 Dashboards:
    - <repo-name>: http://localhost:<port>
    or: skipped — <reason from Degraded Mode>
-🧭 Domain: <N domains / M flows — 開 dashboard 的 Domain 視角確認一眼；覺得不對就刪 domain-graph.json 即回復>
+🧭 Domain: <N domains / M flows — inspect the dashboard Domain view; delete domain-graph.json to revert an incorrect derivation>
    or: skipped — <reason from Degraded Mode>
-🔍 繼續探索: /understand-chat <問題> · /understand-explain <檔案> · dashboard Domain 視角
+🔍 Explore further: /understand-chat <question> · /understand-explain <file> · dashboard Domain view
 ⚠️ Degraded Mode: <none / one line per skipped step with reason>
 
 Next: /tgd-define

@@ -96,7 +96,9 @@ artifacts, and applicable verification output before relying on it.
 When the user must choose (for example a feature name, design direction, or UI
 mode), provide a numbered or lettered list and ask for the number or letter.
 Do not require an open-ended answer; allow a typed alternative when appropriate.
-Render choices and labels in the user's language.
+Canonical skill and command sources stay in English. Render every user-facing
+prompt, choice, label, and quoted example in the user's language; English
+templates express structure and intent only.
 
 ## Tone Guide (Phase-Specific)
 

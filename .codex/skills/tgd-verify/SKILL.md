@@ -94,4 +94,4 @@ For PRD UI modes 1–3:
 - [ ] UI modes 1–3 have SHA-bound viewport/state/accessibility evidence with no unapproved deviation.
 - [ ] **Each worktree is clean at the end of this phase: `git status --porcelain` is empty. Any change made during verify (new tests, AC tagging, fixes) MUST be committed on the feature branch — every gate result above must be reproducible from committed state, and untracked tool residue (coverage output, lockfiles from gate attempts) must be removed, or the release merge ships something other than what was verified.**
 
-End with the closing report per `tgd-core-rules` → **Command Closing Report**: 📦 產出 (TEST-REPORT.md — real passed/failed + coverage) · 🔎 檢查 (gate as one line) · ➡️ 下一步 `/tgd-review` — 檢查程式碼品質. Don't paste the raw checklist above.
+End with the closing report per `tgd-core-rules` → **Command Closing Report**: 📦 Output (TEST-REPORT.md — real passed/failed counts + coverage) · 🔎 Checks (gate as one line) · ➡️ Next `/tgd-review` — inspect code quality. Don't paste the raw checklist above.

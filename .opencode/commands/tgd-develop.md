@@ -62,4 +62,4 @@ After every task passes, commit all work on each feature branch and keep its wor
 - [ ] **Each worktree is clean: `git status --porcelain` is empty — everything the gates above certified is committed on the feature branch.**
 - [ ] Verification output was observed, not assumed.
 
-End with the closing report per `tgd-core-rules` → **Command Closing Report**: 📦 產出 (實作的任務數 + 檔案摘要；worktree 保留、未 merge) · 🔎 檢查 (gate as one line) · ➡️ 下一步 `/tgd-verify` — 證明它能動. Don't paste the raw checklist above.
+End with the closing report per `tgd-core-rules` → **Command Closing Report**: 📦 Output (implemented task count + file summary; worktree retained, not merged) · 🔎 Checks (gate as one line) · ➡️ Next `/tgd-verify` — prove it works. Don't paste the raw checklist above.

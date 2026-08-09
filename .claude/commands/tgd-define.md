@@ -78,4 +78,4 @@ After completing the spec, verify the outputs. Resolve `$TGD_REPO_ROOT` per `tgd
 - [ ] For modes 1–3, `python3 "$TGD_REPO_ROOT/scripts/check-doc-sections.py" DESIGN "$TGD_DIR/<feature-name>/DESIGN.md"` exits 0 and `[x] **DESIGN**: Direction Approved` is present.
 - [ ] Variant count matches the mode; each required variant contains `index.html` and README.md. SPEC references approved DESIGN.md decisions.
 
-End with the closing report per `tgd-core-rules` → **Command Closing Report**: 📦 產出 (PRD.md + SPEC.md, and DESIGN.md/prototype if UI) · 🔎 檢查 (gate as one line) · ➡️ 下一步 `/tgd-plan` — 拆解成任務. Don't paste the raw checklist above.
+End with the closing report per `tgd-core-rules` → **Command Closing Report**: 📦 Output (PRD.md + SPEC.md, and DESIGN.md/prototype if UI) · 🔎 Checks (gate as one line) · ➡️ Next `/tgd-plan` — break the work into tasks. Don't paste the raw checklist above.

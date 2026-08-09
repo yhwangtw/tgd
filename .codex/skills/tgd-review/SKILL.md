@@ -55,4 +55,4 @@ If any architectural decisions were made, create an ADR at `$TGD_DIR/<feature-na
 - [ ] REVIEW.md exists, is non-empty, and `python3 "$TGD_REPO_ROOT/scripts/check-doc-sections.py" REVIEW "$TGD_DIR/<feature-name>/REVIEW.md"` exits 0.
 - [ ] UI modes 1–3 show `✅ Pass`, SHA-matched evidence, and `[x] **DESIGN**: Implementation Approved`.
 
-End with the closing report per `tgd-core-rules` → **Command Closing Report**: 📦 產出 (REVIEW.md — 各軸 Pass/Warn/Fail 摘要；ADR 若有) · 🔎 檢查 (gate as one line) · ➡️ 下一步 `/tgd-release` — 部署. Don't paste the raw checklist above.
+End with the closing report per `tgd-core-rules` → **Command Closing Report**: 📦 Output (REVIEW.md — per-axis Pass/Warn/Fail summary; ADR when applicable) · 🔎 Checks (gate as one line) · ➡️ Next `/tgd-release` — deploy. Don't paste the raw checklist above.

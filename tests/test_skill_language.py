@@ -6,10 +6,24 @@ ROOT = Path(__file__).resolve().parents[1]
 SKILLS_DIR = ROOT / "skills"
 
 
+def skill_source_paths() -> list[Path]:
+    patterns = (
+        "skills/*/SKILL.md",
+        ".claude/commands/*.md",
+        ".codex/skills/*/SKILL.md",
+        ".opencode/commands/*.md",
+        ".gemini/commands/*.toml",
+        ".pi/prompts/*.md",
+    )
+    return sorted(path for pattern in patterns for path in ROOT.glob(pattern))
+
+
 class SkillLanguageContractTests(unittest.TestCase):
-    def test_canonical_skill_sources_use_english_letters_only(self) -> None:
+    def test_canonical_and_generated_skill_sources_use_english_letters_only(
+        self,
+    ) -> None:
         violations: list[str] = []
-        for path in sorted(SKILLS_DIR.glob("*/SKILL.md")):
+        for path in skill_source_paths():
             for line_number, line in enumerate(
                 path.read_text(encoding="utf-8").splitlines(), start=1
             ):
@@ -32,7 +46,8 @@ class SkillLanguageContractTests(unittest.TestCase):
             encoding="utf-8"
         )
 
-        self.assertIn("Render choices and labels in the user's language.", core)
+        self.assertIn("Canonical skill and command sources stay in English.", core)
+        self.assertIn("in the user's language; English\ntemplates", core)
         self.assertIn("Labels and speech acts follow the user's language.", interview)
         self.assertIn("never literal\noutput to copy", interview)
         self.assertIn("do not default to English", interview)
