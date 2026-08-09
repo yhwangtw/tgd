@@ -402,7 +402,7 @@ Agent 自動從 SPEC.md 的 tech stack 偵測 test runner：
 
 ### 🧪 Verify：跑測試 + 產報告
 
-Agent 執行全部測試，自動產出 `TEST-REPORT.md`。格式與語言無關：
+對可執行變更，Agent 執行全部測試並自動產出 `TEST-REPORT.md`。格式與語言無關：
 
 ```markdown
 # TEST REPORT: jwt-auth
@@ -438,6 +438,8 @@ Command: pytest -v --tb=short
 
 TEST-REPORT.md 是**自動產生**的，不是手寫的。Agent 解析 test runner 輸出（JSON / TAP / plain text）轉成固定格式。
 
+純文件功能沿用同一份 canonical template，Test Summary 與 Coverage 明確填為 `N/A — documentation-only`。Verify 會記錄 AC trace 與適用的文件 lint、連結或建置證據，不會捏造測試執行。
+
 **Frontend 額外要求：** 若 DESIGN.md 存在，Verify 必須跑 `tgd-verify-browser`，並把指定 viewport、runtime state 與 accessibility 的設計一致性證據寫進 TEST-REPORT.md。
 
 ### 🏷️ Regression：安全網
@@ -466,6 +468,8 @@ Feature 3（payments）:  +6 個 regression 測試  ← Catalog 現有 19 筆
 3. **Release** — 掃描 TASKS.md 的 `[R]` 條目，寫入 `REGRESSION-CATALOG.md`（累積型）
 4. **Release（Catalog Audit）** — 逐條檢查：測試檔案還在嗎？通過嗎？功能已棄用？清除過時條目
 5. **Verify** — 讀取 `REGRESSION-CATALOG.md`，逐條重跑。任何一筆失敗 = 硬性停止
+
+即使功能沒有任何 `[R]`，Release 仍會建立 `REGRESSION-CATALOG.md`。一旦已有真實 release，catalog 遺失就是設定錯誤，不能再當成首次 release。
 
 **如何標記：** Agent 用 stack 對應的標記方式標記驗收等級的測試（見上表）。不是所有測試都是 regression——只有驗證 PRD 驗收條件或關鍵使用者路徑的才是。
 
@@ -501,6 +505,8 @@ REVIEW.md     → QA+DEV 都簽了？  ✅
 全部 ✅ → 執行 Release
 任何 ❌ → 🛑 擋住：「X 還沒簽 Y」
 ```
+
+聊天室裡的同意不能取代 artifact sign-off。所有 artifact gate 通過後，Release 會在 merge 前完成 pre-launch、rollback、monitoring 與 staging 檢查；只 opened 的 PR 仍是 pending；production 必須從已落到 `main` 的 SHA 部署；初始 production 健康檢查通過後才能 cleanup。
 
 ---
 
@@ -567,7 +573,7 @@ Skills 使用**漸進式揭露**——agent 只在需要時載入細節，保持
 | **載入的 Skills** | 29（按需載入，非一次全部） |
 | **Context 使用量** | 每個 skill ~5%（漸進式揭露） |
 | **安裝時間** | < 30 秒 |
-| **第一個功能** | ~15 分鐘（從 `/tgd-define` 到 `/tgd-release`） |
+| **首次流程骨架** | 小型工作約 15 分鐘完成 Define/Plan；驗證、人類 sign-off、CI 與 rollout 依實際 gate 所需時間 |
 
 > Context 用量與時間數字為約略值——取決於你的專案規模、模型與機器。
 

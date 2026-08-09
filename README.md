@@ -392,7 +392,7 @@ The agent auto-detects the test runner from SPEC.md tech stack:
 
 ### 🧪 Verify: Run Tests + Generate Report
 
-Agent runs ALL tests and auto-generates `TEST-REPORT.md`. The format is language-agnostic:
+For executable work, the agent runs ALL tests and auto-generates `TEST-REPORT.md`. The format is language-agnostic:
 
 ```markdown
 # TEST REPORT: jwt-auth
@@ -428,6 +428,8 @@ Command: pytest -v --tb=short
 
 TEST-REPORT.md is **auto-generated** from test runner output, NOT hand-maintained.
 
+Documentation-only features use the same canonical template with Test Summary and Coverage set to `N/A — documentation-only`. Verify records AC trace plus applicable documentation lint, link, or build evidence instead of fabricating a test run.
+
 **Frontend requirement:** If DESIGN.md exists, Verify MUST run `tgd-verify-browser` and append design-conformance evidence for the named viewports, runtime states, and accessibility checks to TEST-REPORT.md.
 
 ### 🏷️ Regression: The Safety Net
@@ -456,6 +458,8 @@ Each feature's Release requires 100% regression pass — not just the new tests,
 3. **Release** — Scans TASKS.md for `[R]` entries, appends to `REGRESSION-CATALOG.md` (cumulative)
 4. **Release (Catalog Audit)** — Every entry checked: test file exists? Passes? Feature deprecated? Stale entries pruned
 5. **Verify** — Reads `REGRESSION-CATALOG.md`, re-runs ALL entries. Any failure = hard stop
+
+Release seeds `REGRESSION-CATALOG.md` even when a feature has zero `[R]` criteria. After a real release, a missing catalog is a configuration failure, not a new first-release state.
 
 **How to mark:** Agent marks acceptance-level tests using the stack-appropriate marker (see table above). Not all tests are regression — only tests that verify PRD acceptance criteria or critical user paths.
 
@@ -491,6 +495,8 @@ REVIEW.md     → QA + DEV signed? ✅
 All ✅ → proceed to Release
 Any ❌ → STOP: "X has not approved Y yet"
 ```
+
+Chat approval does not replace an artifact sign-off. After all artifact gates pass, Release completes pre-launch, rollback, monitoring, and staging checks before merge; an opened PR remains pending; production deploys from the landed `main` SHA; cleanup waits for the initial production health checks.
 
 ---
 
@@ -557,7 +563,7 @@ Skills use **progressive disclosure** — the agent only loads details when need
 | **Skills loaded** | 29 (on-demand, not all at once) |
 | **Context usage** | ~5% per skill (progressive disclosure) |
 | **Setup time** | < 30 seconds |
-| **First feature** | ~15 minutes (from `/tgd-define` to `/tgd-release`) |
+| **First workflow scaffold** | ~15 minutes for Define/Plan on small work; verification, human sign-off, CI, and rollout use their actual gate time |
 
 > Context and timing figures are approximate — they depend on your project size, model, and machine.
 

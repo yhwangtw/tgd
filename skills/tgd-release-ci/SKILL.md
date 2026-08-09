@@ -31,7 +31,7 @@ Execute these decisions in order:
 2. Configure the pipeline to run on every pull request and every push to `main`.
 3. Run the quality gates in this order: lint → type check → unit tests → build → integration tests → optional E2E → security audit → bundle-size check.
 4. Require all configured checks and at least one approval before merge; protect `main` from force-pushes. Auto-merge is allowed only after checks pass and approval exists.
-5. Deploy to staging before production, verify staging manually, then deploy production and monitor it for 15 minutes.
+5. Deploy and verify staging from the release candidate before merge. After the change lands and required CI passes, deploy production from the landed `main` SHA and run at least a 15-minute initial health observation. That observation never authorizes traffic expansion; `tgd-release-ship` owns rollout thresholds and decision windows.
 6. Keep every deployment reversible with a rollback mechanism.
 7. Feed any failure back into the development loop, fix and verify it locally, then push and let CI rerun.
 
@@ -55,19 +55,19 @@ Give every PR a preview deployment for manual testing.
 
 ### Feature Flags
 
-Feature flags decouple deployment from release so code can ship disabled, roll back without redeploying, canary at 1% → 10% → 100% of users, or support an A/B test.
+Feature flags decouple deployment from release so code can ship disabled, roll back without redeploying, follow the staged exposure policy owned by `tgd-release-ship`, or support an A/B test.
 
 **Flag lifecycle:** Create → Enable for testing → Canary → Full rollout → Remove the flag and dead code. Set a cleanup date when creating the flag; permanent flags become technical debt.
 
-### Staged Rollouts and Rollback
+### Deployment Stages and Rollback
 
 The deployment sequence is:
 
-1. Merge the PR to `main`.
-2. Deploy staging automatically and verify it manually.
-3. Deploy production manually, or automatically only after staging.
-4. Monitor for errors for 15 minutes.
-5. Roll back when errors are detected; otherwise complete the release.
+1. Build and deploy the verified release candidate to staging.
+2. Verify staging manually and require all merge checks and approval.
+3. Merge the PR to `main` and wait for the provider to report it landed.
+4. Deploy production from the landed `main` SHA, manually or through the approved pipeline.
+5. Observe initial health for at least 15 minutes and roll back on errors. Passing this observation hands control to `tgd-release-ship`; it does not shorten that skill's longer rollout windows.
 
 Every deployment must be reversible. Keep a manually invokable rollback path that accepts a known previous version.
 
@@ -130,4 +130,5 @@ After setting up or modifying CI:
 - [ ] CI results feed back into the development loop
 - [ ] Secrets are stored in the secrets manager, not in code
 - [ ] Deployment has a rollback mechanism
+- [ ] Staging preceded merge, production used the landed `main` SHA, and the initial health observation did not bypass `tgd-release-ship` rollout gates
 - [ ] Pipeline runs in under 10 minutes for the test suite

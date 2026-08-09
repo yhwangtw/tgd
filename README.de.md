@@ -388,7 +388,7 @@ Der Agent erkennt den Test-Runner automatisch aus dem SPEC.md Tech-Stack:
 
 ### 🧪 Verify: Tests ausführen + Report generieren
 
-Agent führt **alle** Tests aus und generiert automatisch `TEST-REPORT.md`. Das Format ist sprachunabhängig:
+Bei ausführbaren Änderungen führt der Agent **alle** Tests aus und generiert automatisch `TEST-REPORT.md`. Das Format ist sprachunabhängig:
 
 ```markdown
 # TEST REPORT: jwt-auth
@@ -424,6 +424,8 @@ Command: pytest -v --tb=short
 
 TEST-REPORT.md wird **automatisch** aus der Test-Runner-Ausgabe generiert, nicht manuell gepflegt.
 
+Reine Dokumentations-Features verwenden dieselbe kanonische Vorlage; Test Summary und Coverage stehen ausdrücklich auf `N/A — documentation-only`. Verify protokolliert AC Trace sowie passende Dokumentations-, Link- oder Build-Prüfungen, statt einen Testlauf zu erfinden.
+
 **Frontend-Pflicht:** Wenn DESIGN.md existiert, MUSS Verify `tgd-verify-browser` ausführen und Design-Konformität für benannte Viewports, Laufzeitzustände und Accessibility in TEST-REPORT.md belegen.
 
 ### 🏷️ Regression: Das Sicherheitsnetz
@@ -452,6 +454,8 @@ Das Release jedes Features erfordert 100% Regression — nicht nur die neuen Tes
 3. **Release** — Scannt TASKS.md nach `[R]`-Einträgen, hängt an `REGRESSION-CATALOG.md` an (kumulativ)
 4. **Release (Catalog Audit)** — Jeder Eintrag geprüft: Testdatei existiert? Bestanden? Feature deprecated? Veraltete Einträge entfernen
 5. **Verify** — Liest `REGRESSION-CATALOG.md`, führt alle Einträge neu aus. Ein Fehlschlag = Hard Stop
+
+Release legt `REGRESSION-CATALOG.md` auch dann an, wenn ein Feature keine `[R]`-Kriterien hat. Nach einem echten Release ist ein fehlender Catalog ein Konfigurationsfehler und kein neuer First-Release-Zustand.
 
 **So werden Tests markiert:** Der Agent markiert akzeptanznahe Tests mit dem passenden Stack-Marker (siehe Tabelle oben). Nicht alle Tests sind Regression — nur Tests, die PRD-Akzeptanzkriterien oder kritische User-Pfade prüfen.
 
@@ -487,6 +491,8 @@ REVIEW.md     → QA + DEV signed? ✅
 All ✅ → proceed to Release
 Any ❌ → STOP: "X has not approved Y yet"
 ```
+
+Eine Zustimmung im Chat ersetzt keinen Artifact-Sign-off. Nach allen Artifact-Gates führt Release Pre-Launch-, Rollback-, Monitoring- und Staging-Prüfungen vor dem Merge aus; ein nur geöffneter PR bleibt pending; Production wird vom gelandeten `main`-SHA deployt; Cleanup wartet auf die ersten erfolgreichen Production-Health-Checks.
 
 ---
 
@@ -553,7 +559,7 @@ Jeder Skill folgt einer konsistenten Anatomie:
 | **Geladene Skills** | 29 (On-Demand, nicht alle gleichzeitig) |
 | **Kontextnutzung** | ~5% pro Skill (Progressive Disclosure) |
 | **Setup-Zeit** | < 30 Sekunden |
-| **Erstes Feature** | ~15 Minuten (von `/tgd-define` bis `/tgd-release`) |
+| **Erstes Workflow-Gerüst** | ~15 Minuten für Define/Plan bei kleinen Änderungen; Verifikation, menschliche Sign-offs, CI und Rollout benötigen ihre tatsächliche Gate-Zeit |
 
 > Kontext- und Zeitangaben sind Näherungswerte — sie hängen von Projektgröße, Modell und Maschine ab.
 
