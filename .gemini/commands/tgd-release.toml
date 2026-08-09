@@ -7,7 +7,7 @@ prompt = """
 - [ ] Resolve `$TGD_DIR` from its environment variable, then sibling `../<project-name>-tGD/`; require CONTEXT.md or STOP and run `/tgd-map`.
 - [ ] Select `<feature-name>` from non-infrastructure subdirectories containing PRD.md or SPEC.md. None means STOP and run `/tgd-define`; multiple means ask. Require SPEC.md.
 - [ ] **Review passed**: REVIEW.md exists and every 🔴 finding is `fixed`; TEST-REPORT contains passing executable-test/coverage evidence or explicit documentation-only N/A fields with passing AC trace and documentation checks.
-- [ ] When PRD UI mode is 1–3, DESIGN.md exists and REVIEW Design Conformance is `✅ Pass` for the released SHA.
+- [ ] When PRD UI mode is 1–3, DESIGN.md exists and REVIEW Design Conformance is `✅ Pass` for the reviewed feature SHA.
 
 **If missing:** STOP. Tell user: "Review or tests incomplete. Please run `/tgd-review` first."
 
@@ -22,7 +22,7 @@ awk '/^## Sign-off/,0' "$TGD_DIR/<feature-name>/REVIEW.md" | grep -qF '[x] **DEV
 awk '/^## Sign-off/,0' "$TGD_DIR/<feature-name>/PRD.md" | grep -qF '[x] **PM**: Approved'
 ```
 
-Explicit user PM go-ahead in this session may replace the PRD check only when recorded in CHANGELOG. UI modes 1–3 additionally run the same scoped fixed-string check for DESIGN.md `[x] **DESIGN**: Direction Approved` and REVIEW.md `[x] **DESIGN**: Implementation Approved`.
+Chat or session approval does not replace an artifact sign-off and cannot expand Release authority. The PM must update the PM line in PRD.md. UI modes 1–3 additionally run the same scoped fixed-string check for DESIGN.md `[x] **DESIGN**: Direction Approved` and REVIEW.md `[x] **DESIGN**: Implementation Approved`.
 
 **If any grep exits non-zero** (line unchecked, missing, or `Rejected`): 🛑 STOP. List the pending roles and wait — humans review async. Do NOT proceed "provisionally".
 
@@ -31,9 +31,12 @@ Explicit user PM go-ahead in this session may replace the PRD check only when re
 Run the `tgd-release-ship` skill. This is the Release phase. The full pipeline is:
 
 1. Run `tgd-core-git` for clean trunk-based history.
-2. Run the pre-merge Regression Catalog Audit below.
-3. Merge and clean up worktrees below.
-4. Run `tgd-release-ship` for its pre-launch checklist, staged rollout, monitoring, and rollback method.
+2. Load `tgd-release-ship`; complete its Pre-Launch Gates, document rollback triggers and exact steps, confirm monitoring, and configure the feature flag when applicable. These gates happen before merge.
+3. Run the pre-merge Regression Catalog Audit below.
+4. Deploy staging from the verified feature branch; run the full applicable suite and smoke-test critical flows.
+5. Land the feature on `main` using the merge or PR policy below. An opened PR is pending, so wait for merge and required CI.
+6. Record the landed `main` SHA and continue `tgd-release-ship` from that exact SHA: deploy production with the flag off, verify health/error monitoring, then use its staged-rollout thresholds and rollback rules.
+7. Clean up worktrees and landed branches only after the initial production health and rollback-readiness checks pass.
 
 Conditional routing:
 
@@ -50,20 +53,22 @@ Conditional routing:
 3. Exit 0 passes. Exit 1 blocks for regression repair. Exit 2 is an invocation/configuration failure. Exit 3 means no catalog yet.
 4. Continue only with a catalog containing existing, passing tests.
 
-### Merge and cleanup
+### Land, deploy, and cleanup
 
 Repeat per repo with tasks:
 
 1. Require empty `git status --porcelain` in the feature worktree. Commit verified-state changes; delete only tool residue.
 2. Merge `feature/<feature-name>` into `main`, or open a PR per team policy and wait for it to land.
-3. **AFTER the merge lands**, remove the worktree: `git worktree remove ../project-<feature-name>` (multi-repo: `../project-<feature-name>-<repo-name>`). Not before — if the PR's CI fails, the worktree is where you fix it.
-4. Delete the landed branch with `git branch -d feature/<feature-name>`.
+3. Opening a PR is a pending state, not a successful Release gate. Keep the worktree and branch while review or CI is pending; resume only after the provider reports the PR merged and required CI passed.
+4. Record the landed `main` SHA, verify it contains the reviewed feature content, and deploy production from that SHA — never from the feature worktree or an unverified local HEAD.
+5. Run the initial production health, error-monitoring, critical-flow, log, and rollback-readiness checks from `tgd-release-ship`. A failure triggers rollback and blocks cleanup.
+6. **Only after the merge landed and the initial production checks passed**, remove the worktree with `git worktree remove ../project-<feature-name>` (multi-repo: `../project-<feature-name>-<repo-name>`), then delete the landed branch with `git branch -d feature/<feature-name>`.
 
 ## Release artifacts
 
 ### CHANGELOG
 
-After releasing, update `$TGD_DIR/CHANGELOG.md` (create if it doesn't exist) with:
+Before merge, draft the candidate entry in `$TGD_DIR/CHANGELOG.md` (create it from the canonical template when absent) so the pre-launch documentation gate can be reviewed. After the landed SHA passes initial production checks, finalize the release version, date, and reference; never mark it released before production success. Include:
 
 - CalVer: `vYYYY.MM.DD`, adding `.2`, `.3`, and so on for same-day releases.
 - Feature name/summary, ship date, and key changes.
@@ -82,11 +87,13 @@ After release, ensure REGRESSION-CATALOG.md exists. If absent, seed it from `$TG
 ## Verification Gate
 
 - [ ] All role/design sign-offs passed.
+- [ ] `tgd-release-ship` pre-launch/rollback/monitoring gates and staging checks passed before merge.
 - [ ] Pre-merge regression audit passed in every repo.
 - [ ] Git commit created with clean history.
-- [ ] `feature/<feature-name>` merged to `main` (or PR opened), worktree removed, branch deleted.
+- [ ] The change landed on `main`; required CI passed; the recorded landed SHA was the production deployment source. A merely opened PR does not pass.
+- [ ] Initial production health, monitoring, critical-flow, logs, and rollback readiness passed before worktree/branch cleanup.
 - [ ] CHANGELOG is updated; METRICS/TRACKING-PLAN handling matches signed-off PRD §6.
 - [ ] REGRESSION-CATALOG.md exists; every new `[R]` AC is represented in it.
 
-End with the closing report per `tgd-core-rules` → **Command Closing Report**: 📦 Output (released version + CHANGELOG/METRICS/REGRESSION-CATALOG updates) · 🔎 Checks (gate as one line) · ➡️ Next confirm monitoring is active and the rollback plan is recorded (Release is terminal; there is no next command). Don't paste the raw checklist above.
+End with the closing report per `tgd-core-rules` → **Command Closing Report**: 📦 Output (landed SHA + production release + CHANGELOG/METRICS/REGRESSION-CATALOG updates) · 🔎 Checks (gate as one line) · ➡️ Next state the active monitoring window, owner, and rollback trigger (Release is terminal; there is no next lifecycle command). Don't paste the raw checklist above.
 """
