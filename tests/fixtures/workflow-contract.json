@@ -1,0 +1,213 @@
+{
+  "version": 1,
+  "phase_order": ["tgd-map", "tgd-define", "tgd-plan", "tgd-develop", "tgd-verify", "tgd-review", "tgd-release"],
+  "policy": {
+    "contract_kind": "prose contract with independent review",
+    "formal_semantic_proof": false,
+    "owners_are_normative": true,
+    "duplicates_are_removable": true
+  },
+  "stages": {
+    "tgd-map": {
+      "source": ".claude/commands/tgd-map.md",
+      "skills": ["tgd-core-context=skills/tgd-core-context/SKILL.md", "understand@external", "understand-domain@external", "understand-dashboard@external"],
+      "artifacts": ["CONTEXT:produced"],
+      "invariants": ["MAP-DIR", "MAP-REPOS", "MAP-TIERS", "MAP-TIER2-AVAILABLE", "MAP-DEGRADED", "MAP-BOUNDARY", "MAP-OUTPUT", "MAP-HANDOFF"],
+      "scenarios": {
+        "tier-1": ["MAP-TIERS", "MAP-OUTPUT"],
+        "tier-2-available": ["MAP-TIERS", "MAP-TIER2-AVAILABLE"],
+        "tier-2-unavailable-degraded": ["MAP-TIERS", "MAP-DEGRADED"]
+      },
+      "next": "tgd-define"
+    },
+    "tgd-define": {
+      "source": ".claude/commands/tgd-define.md",
+      "skills": ["tgd-define-interview=skills/tgd-define-interview/SKILL.md", "tgd-define-ideate=skills/tgd-define-ideate/SKILL.md", "tgd-define-spec=skills/tgd-define-spec/SKILL.md", "tgd-define-sketch=skills/tgd-define-sketch/SKILL.md"],
+      "artifacts": ["CONTEXT:consumed", "PRD:produced", "SPEC:produced", "DESIGN:conditional"],
+      "invariants": ["DEFINE-PREFLIGHT", "DEFINE-EXISTING", "DEFINE-NAME", "DEFINE-UI", "DEFINE-MISSING-DESIGN", "DEFINE-DIRECTION-GATE", "DEFINE-ORDER", "DEFINE-NO-GIT", "DEFINE-OUTPUT", "DEFINE-HANDOFF"],
+      "scenarios": {
+        "non-ui": ["DEFINE-UI", "DEFINE-OUTPUT"],
+        "ui-mode-1": ["DEFINE-UI", "DEFINE-ORDER"],
+        "ui-mode-2": ["DEFINE-UI", "DEFINE-ORDER"],
+        "ui-mode-3": ["DEFINE-UI", "DEFINE-ORDER"],
+        "missing-design": ["DEFINE-MISSING-DESIGN"],
+        "direction-not-approved": ["DEFINE-DIRECTION-GATE"],
+        "direction-approved": ["DEFINE-ORDER"]
+      },
+      "next": "tgd-plan"
+    },
+    "tgd-plan": {
+      "source": ".claude/commands/tgd-plan.md",
+      "skills": ["tgd-plan-breakdown=skills/tgd-plan-breakdown/SKILL.md", "tgd-plan-jira=skills/tgd-plan-jira/SKILL.md"],
+      "artifacts": ["CONTEXT:consumed", "PRD:consumed", "SPEC:consumed", "DESIGN:conditional", "TASKS:produced", "TRACKING-PLAN:conditional"],
+      "invariants": ["PLAN-PREFLIGHT", "PLAN-REPLAN", "PLAN-PRESERVE", "PLAN-TASKS", "PLAN-JIRA-PREVIEW", "PLAN-JIRA-PROJECT", "PLAN-JIRA-FIELDS", "PLAN-JIRA-READONLY", "PLAN-JIRA-CONFLICT", "PLAN-JIRA-DIGEST", "PLAN-JIRA-SKIP", "PLAN-HANDOFF"],
+      "scenarios": {
+        "new": ["PLAN-TASKS"],
+        "replan": ["PLAN-REPLAN", "PLAN-PRESERVE"],
+        "jira-skip": ["PLAN-JIRA-PREVIEW", "PLAN-JIRA-SKIP"],
+        "jira-required-fields": ["PLAN-JIRA-PROJECT", "PLAN-JIRA-FIELDS"],
+        "jira-conflict": ["PLAN-JIRA-CONFLICT"],
+        "jira-stale-digest": ["PLAN-JIRA-DIGEST"]
+      },
+      "next": "tgd-develop"
+    },
+    "tgd-develop": {
+      "source": ".claude/commands/tgd-develop.md",
+      "skills": ["tgd-core-context=skills/tgd-core-context/SKILL.md", "tgd-develop-source=skills/tgd-develop-source/SKILL.md", "tgd-develop-subagents=skills/tgd-develop-subagents/SKILL.md", "tgd-develop-incremental=skills/tgd-develop-incremental/SKILL.md", "tgd-develop-tdd=skills/tgd-develop-tdd/SKILL.md", "tgd-verify-completion=skills/tgd-verify-completion/SKILL.md"],
+      "artifacts": ["PRD:consumed", "SPEC:consumed", "TASKS:mutated"],
+      "invariants": ["DEVELOP-PREFLIGHT", "DEVELOP-WORKTREE", "DEVELOP-MODE", "DEVELOP-DELEGATION-DISPATCH", "DEVELOP-DELEGATION-FALLBACK", "DEVELOP-RESUME", "DEVELOP-REVIEWS", "DEVELOP-BLOCKED", "DEVELOP-CLEAN", "DEVELOP-NO-MERGE", "DEVELOP-HANDOFF"],
+      "scenarios": {
+        "delegation-available": ["DEVELOP-MODE", "DEVELOP-DELEGATION-DISPATCH"],
+        "delegation-unavailable-inline": ["DEVELOP-DELEGATION-FALLBACK", "DEVELOP-REVIEWS"],
+        "dirty-worktree": ["DEVELOP-CLEAN"],
+        "blocked-task": ["DEVELOP-BLOCKED"],
+        "resume": ["DEVELOP-RESUME"],
+        "two-stage-reviews": ["DEVELOP-REVIEWS"]
+      },
+      "next": "tgd-verify"
+    },
+    "tgd-verify": {
+      "source": ".claude/commands/tgd-verify.md",
+      "skills": ["tgd-verify-debug=skills/tgd-verify-debug/SKILL.md", "tgd-develop-tdd=skills/tgd-develop-tdd/SKILL.md", "tgd-verify-browser=skills/tgd-verify-browser/SKILL.md"],
+      "artifacts": ["PRD:consumed", "TASKS:consumed", "DESIGN:conditional", "TEST-REPORT:produced"],
+      "invariants": ["VERIFY-PREFLIGHT", "VERIFY-TESTS", "VERIFY-TEST-FAILURE", "VERIFY-DOCS-ONLY", "VERIFY-COVERAGE", "VERIFY-AC", "VERIFY-MISSING-AC", "VERIFY-REGRESSION", "VERIFY-CATALOG-ABSENCE", "VERIFY-UI", "VERIFY-UI-EVIDENCE", "VERIFY-CLEAN", "VERIFY-HANDOFF"],
+      "scenarios": {
+        "test-failure": ["VERIFY-TESTS", "VERIFY-TEST-FAILURE"],
+        "documentation-only": ["VERIFY-DOCS-ONLY", "VERIFY-AC"],
+        "missing-ac": ["VERIFY-AC", "VERIFY-MISSING-AC"],
+        "missing-ui-evidence": ["VERIFY-UI", "VERIFY-UI-EVIDENCE"],
+        "regression": ["VERIFY-REGRESSION", "VERIFY-CATALOG-ABSENCE"],
+        "success": ["VERIFY-CLEAN", "VERIFY-HANDOFF"]
+      },
+      "next": "tgd-review"
+    },
+    "tgd-review": {
+      "source": ".claude/commands/tgd-review.md",
+      "skills": ["tgd-review-quality=skills/tgd-review-quality/SKILL.md", "tgd-review-simplify=skills/tgd-review-simplify/SKILL.md", "tgd-review-security=skills/tgd-review-security/SKILL.md", "tgd-review-performance=skills/tgd-review-performance/SKILL.md", "tgd-review-adr=skills/tgd-review-adr/SKILL.md"],
+      "artifacts": ["TEST-REPORT:consumed", "DESIGN:conditional", "REVIEW:produced", "ADR:conditional"],
+      "invariants": ["REVIEW-PREFLIGHT", "REVIEW-DOCS-ONLY", "REVIEW-WORKTREE", "REVIEW-CORE", "REVIEW-CONDITIONAL", "REVIEW-BLOCKERS", "REVIEW-RETEST", "REVIEW-OUTPUT", "REVIEW-HANDOFF"],
+      "scenarios": {
+        "general": ["REVIEW-CORE", "REVIEW-OUTPUT"],
+        "documentation-only": ["REVIEW-DOCS-ONLY", "REVIEW-RETEST"],
+        "conditional-security": ["REVIEW-CONDITIONAL"],
+        "conditional-performance": ["REVIEW-CONDITIONAL"],
+        "conditional-adr": ["REVIEW-CONDITIONAL"],
+        "blocking-finding": ["REVIEW-BLOCKERS"]
+      },
+      "next": "tgd-release"
+    },
+    "tgd-release": {
+      "source": ".claude/commands/tgd-release.md",
+      "skills": ["tgd-core-git=skills/tgd-core-git/SKILL.md", "tgd-release-ship=skills/tgd-release-ship/SKILL.md", "tgd-release-ci=skills/tgd-release-ci/SKILL.md", "tgd-release-migration=skills/tgd-release-migration/SKILL.md", "tgd-review-adr=skills/tgd-review-adr/SKILL.md"],
+      "artifacts": ["PRD:consumed", "TASKS:consumed", "TEST-REPORT:consumed", "REVIEW:consumed", "DESIGN:conditional", "CHANGELOG:produced", "METRICS:conditional", "REGRESSION-CATALOG:produced", "TRACKING-PLAN:mutated"],
+      "invariants": ["RELEASE-PATH-ROUTING", "RELEASE-MAINTENANCE-IDENTITY", "RELEASE-MAINTENANCE-PR", "RELEASE-MAINTENANCE-NATIVE", "RELEASE-PREFLIGHT", "RELEASE-DOCS-ONLY", "RELEASE-SIGNOFF", "RELEASE-SIGNOFF-SOURCE", "RELEASE-PRELAUNCH", "RELEASE-REGRESSION", "RELEASE-LANDED", "RELEASE-PRODUCTION", "RELEASE-MERGE", "RELEASE-ROUTING", "RELEASE-MIGRATION", "RELEASE-SUCCESS", "RELEASE-CHANGELOG", "RELEASE-METRICS", "RELEASE-CATALOG", "RELEASE-CATALOG-SEED", "RELEASE-HANDOFF"],
+      "scenarios": {
+        "signoffs": ["RELEASE-SIGNOFF", "RELEASE-SIGNOFF-SOURCE"],
+        "documentation-only": ["RELEASE-DOCS-ONLY"],
+        "regression": ["RELEASE-REGRESSION", "RELEASE-CATALOG", "RELEASE-CATALOG-SEED"],
+        "metrics": ["RELEASE-METRICS"],
+        "merge": ["RELEASE-PRELAUNCH", "RELEASE-LANDED", "RELEASE-MERGE"],
+        "release": ["RELEASE-ROUTING", "RELEASE-CHANGELOG", "RELEASE-HANDOFF"],
+        "migration": ["RELEASE-MIGRATION"],
+        "successful-deploy": ["RELEASE-PRODUCTION", "RELEASE-SUCCESS", "RELEASE-HANDOFF"],
+        "framework-maintenance": ["RELEASE-PATH-ROUTING", "RELEASE-MAINTENANCE-IDENTITY", "RELEASE-MAINTENANCE-PR", "RELEASE-MAINTENANCE-NATIVE", "RELEASE-HANDOFF"]
+      },
+      "next": null
+    }
+  },
+  "behaviors": {
+    "MAP-DIR": {"type": "selection", "owner": ".claude/commands/tgd-map.md", "clause": "**No env var → MUST ask. Always.** This is not only for first-time setup — an env var does not persist between sessions, so ask at the start of every `/tgd-map` run that has no env var. **The candidate directory already existing is NOT permission to skip the question** — an existing dir changes the wording, not the requirement:", "anchors": ["Choose one (default 1):"], "opposite_clauses": ["If the candidate directory exists, skip confirmation."]},
+    "MAP-REPOS": {"type": "selection", "owner": ".claude/commands/tgd-map.md", "clause": "Before analyzing anything, **ask the user — on every `/tgd-map` run**. An existing CONTEXT.md changes the wording of the question, never the requirement to ask (same rule as Step 0b):", "anchors": ["Choose one (default 1):"]},
+    "MAP-TIERS": {"type": "routing", "owner": ".claude/commands/tgd-map.md", "clause": "Probe the environment BEFORE starting, and decide which tiers run. Do this explicitly — steps must never be silently skipped:", "anchors": ["Tier 1 — Core", "Tier 2 — Deep scan + dashboards"]},
+    "MAP-TIER2-AVAILABLE": {"type": "routing", "owner": ".claude/commands/tgd-map.md", "clause": "If Tier 2 is available (see Step 0.5), you MUST continue to Step 3 (CodeGraph) and Step 4 (Understand-Anything) before producing CONTEXT.md.", "anchors": ["If Tier 2 is unavailable, proceed to Step 6"]},
+    "MAP-DEGRADED": {"type": "gate", "owner": ".claude/commands/tgd-map.md", "clause": "If a tier cannot run, you MUST record it in `CONTEXT.md` under `## Degraded Mode` — which steps were skipped, why (missing tool), and how to enable them later. A skipped step that is not logged is a verification failure.", "anchors": ["Silent skipping is the failure mode"]},
+    "MAP-BOUNDARY": {"type": "boundary", "owner": ".claude/commands/tgd-map.md", "clause": "$TGD_DIR is where ALL tGD artifacts live. It is a **sibling directory** outside your code repo.", "anchors": []},
+    "MAP-OUTPUT": {"type": "gate", "owner": ".claude/commands/tgd-map.md", "clause": "**No blank sections, no placeholder text left in.** Every heading below gets real content.", "anchors": ["$TGD_REPO_ROOT/templates/CONTEXT.md.tmpl"]},
+    "MAP-HANDOFF": {"type": "handoff", "owner": ".claude/commands/tgd-map.md", "clause": "Next: /tgd-define", "anchors": []},
+
+    "DEFINE-PREFLIGHT": {"type": "gate", "owner": ".claude/commands/tgd-define.md", "clause": "If neither exists: STOP — run `/tgd-map` first.", "anchors": ["`$TGD_DIR/CONTEXT.md` exists"]},
+    "DEFINE-EXISTING": {"type": "selection", "owner": ".claude/commands/tgd-define.md", "clause": "Never silently create a second directory for what is the same feature under a new name.", "anchors": ["Existing-feature check (do this BEFORE proposing names)"]},
+    "DEFINE-NAME": {"type": "selection", "owner": ".claude/commands/tgd-define.md", "clause": "**Wait for the user to select one by number or provide their own before proceeding.** Once locked, create `$TGD_DIR/<feature-name>/`.", "anchors": ["propose 3 distinct kebab-case `<feature-name>` options"]},
+    "DEFINE-UI": {"type": "selection", "owner": ".claude/commands/tgd-define.md", "clause": "After PRD.md is written and before SPEC.md is finalized, ask which route matches the feature:", "anchors": ["generate **0 variants**", "generate **2 variants**", "generate **3 variants**", "No user-facing UI"]},
+    "DEFINE-MISSING-DESIGN": {"type": "gate", "owner": ".claude/commands/tgd-define.md", "clause": "PRD.md exists and its `## UI Design` status is `pending`, or the required DESIGN.md is missing → resume at UI Design Routing; do not rewrite the approved PRD.", "anchors": []},
+    "DEFINE-DIRECTION-GATE": {"type": "gate", "owner": ".claude/commands/tgd-define.md", "clause": "DESIGN.md remains pending until its `## Sign-off` contains `[x] **DESIGN**: Direction Approved`; then update PRD `## UI Design` Status to `direction-approved`.", "anchors": [], "opposite_clauses": ["Finalize SPEC.md before design direction approval."]},
+    "DEFINE-ORDER": {"type": "gate", "owner": ".claude/commands/tgd-define.md", "clause": "Only after direction approval, write/finalize SPEC.md and reconcile its components, API/data contracts, states, events, and testing strategy against DESIGN.md.", "anchors": ["`[x] **DESIGN**: Direction Approved"]},
+    "DEFINE-NO-GIT": {"type": "boundary", "owner": ".claude/commands/tgd-define.md", "clause": "**🌿 No git operations in this phase.** PRD/SPEC live in `$TGD_DIR` (outside the code repo) — there is nothing to commit yet.", "anchors": ["branch is created by `/tgd-develop`'s worktree step"], "opposite_clauses": ["Commit the spec during Define."]},
+    "DEFINE-OUTPUT": {"type": "gate", "owner": ".claude/commands/tgd-define.md", "clause": "After completing the spec, verify the outputs.", "anchors": ["check-doc-sections.py\" PRD", "check-doc-sections.py\" SPEC"]},
+    "DEFINE-HANDOFF": {"type": "handoff", "owner": ".claude/commands/tgd-define.md", "clause": "End with the closing report per `tgd-core-rules` → **Command Closing Report**: 📦 Output (PRD.md + SPEC.md, and DESIGN.md/prototype if UI) · 🔎 Checks (gate as one line) · ➡️ Next `/tgd-plan` — break the work into tasks. Don't paste the raw checklist above.", "anchors": []},
+
+    "PLAN-PREFLIGHT": {"type": "gate", "owner": ".claude/commands/tgd-plan.md", "clause": "**If a required design artifact or direction approval is missing:** STOP. Tell user: \"Design direction is incomplete. Resume `/tgd-define`; this is a role handoff inside Define, not a new lifecycle phase.\"", "anchors": ["`$TGD_DIR/<feature-name>/PRD.md` exists", "`$TGD_DIR/<feature-name>/SPEC.md` exists"]},
+    "PLAN-REPLAN": {"type": "selection", "owner": ".claude/commands/tgd-plan.md", "clause": "**🔁 Re-plan check (BEFORE writing anything):** if `$TGD_DIR/<feature-name>/TASKS.md` already exists, do NOT regenerate it from scratch — `/tgd-develop` backfills `Test:` fields and flips `**Status:**` lines in it, and a fresh rewrite destroys them (breaking the `ac-trace` / regression chain).", "anchors": ["Choose one (default 1):"]},
+    "PLAN-PRESERVE": {"type": "boundary", "owner": "skills/tgd-plan-breakdown/SKILL.md", "clause": "**Completed tasks are immutable**: any task with `**Status:** complete` keeps its Status line, criteria, and `Test:` fields byte-for-byte.", "anchors": ["Never renumber existing `AC-<task>.<n>` ids"], "duplicates": [".claude/commands/tgd-plan.md"], "duplicate_clause": "`**Status:** complete`"},
+    "PLAN-TASKS": {"type": "gate", "owner": ".claude/commands/tgd-plan.md", "clause": "Every criterion has an explicit `[R]` Yes/No regression decision", "anchors": ["check-doc-sections.py\" TASKS"]},
+    "PLAN-JIRA-PREVIEW": {"type": "selection", "owner": ".claude/commands/tgd-plan.md", "clause": "**Never write automatically.** Ask via Selection Protocol even when Jira environment variables are already configured:", "anchors": ["Choose one (default 2):"], "opposite_clauses": ["Write Jira issues automatically when credentials are configured."]},
+    "PLAN-JIRA-PROJECT": {"type": "selection", "owner": "skills/tgd-plan-jira/SKILL.md", "clause": "Even if `JIRA_PROJECT` is configured, show the full list and require a reply. Reject free-typed keys that were not returned by the CLI.", "anchors": ["List Projects and require an exact choice"], "duplicates": [".claude/commands/tgd-plan.md"], "duplicate_clause": "returned Project"},
+    "PLAN-JIRA-FIELDS": {"type": "gate", "owner": "skills/tgd-plan-jira/SKILL.md", "clause": "Ask for every non-automatic field marked required by the selected Project and issue type. Use returned choices when available; never guess. Sprint follows this same rule and receives no special rejection or automatic assignment.", "anchors": [], "duplicates": [".claude/commands/tgd-plan.md"], "duplicate_clause": "non-automatic required field", "opposite_clauses": ["Assign Sprint automatically."]},
+    "PLAN-JIRA-READONLY": {"type": "boundary", "owner": "skills/tgd-plan-jira/SKILL.md", "clause": "The `plan` subcommand is the dry-run: Jira access is GET-only, it must not create or update Jira issues, and it must not modify `TASKS.md`.", "anchors": [], "duplicates": [".claude/commands/tgd-plan.md"], "duplicate_clause": "dry-run", "opposite_clauses": ["The dry-run may update Jira issues."]},
+    "PLAN-JIRA-CONFLICT": {"type": "gate", "owner": "skills/tgd-plan-jira/SKILL.md", "clause": "Show all candidate issue keys, but do not continue to apply. Reconcile the conflict and generate a new plan.", "anchors": ["must never fall through to `create`"], "duplicates": [".claude/commands/tgd-plan.md"], "duplicate_clause": "must never fall through to `create`"},
+    "PLAN-JIRA-DIGEST": {"type": "gate", "owner": "skills/tgd-plan-jira/SKILL.md", "clause": "The CLI must reject a missing or stale digest, a changed TASKS.md, a different Project, or changed plan inputs before performing writes.", "anchors": ["Only choice 1 authorizes mutation"], "duplicates": [".claude/commands/tgd-plan.md"], "duplicate_clause": "stale digest", "opposite_clauses": ["Prior consent authorizes mutation."]},
+    "PLAN-JIRA-SKIP": {"type": "boundary", "owner": "skills/tgd-plan-jira/SKILL.md", "clause": "Skipping Jira leaves all Jira fields unchanged; only new unsynced tasks remain `—`. Skipping does not fail the Plan phase.", "anchors": [], "duplicates": [".claude/commands/tgd-plan.md"], "duplicate_clause": "no Jira or TASKS.md"},
+    "PLAN-HANDOFF": {"type": "handoff", "owner": ".claude/commands/tgd-plan.md", "clause": "End with the closing report per `tgd-core-rules` → **Command Closing Report**: 📦 Output (TASKS.md — N tasks, M acceptance criteria; Jira `verified writeback keys` / `cancelled` / `skipped` / `incomplete: <result keys + issue keys>`) · 🔎 Checks (gate as one line) · ➡️ Next shows `/tgd-develop` only after conflict-free success/cancel/skip; when Jira is incomplete, say to reconcile and re-run the dry-run without claiming the Plan gate passed. Don't paste the raw checklist above.", "anchors": []},
+
+    "DEVELOP-PREFLIGHT": {"type": "gate", "owner": ".claude/commands/tgd-develop.md", "clause": "**If missing:** STOP. Tell user: \"Specs are missing. Please run `/tgd-define` first.\"", "anchors": ["`$TGD_DIR/<feature-name>/TASKS.md` exists", "`$TGD_DIR/<feature-name>/SPEC.md` exists"]},
+    "DEVELOP-WORKTREE": {"type": "boundary", "owner": ".claude/commands/tgd-develop.md", "clause": "All coding, testing, and commits MUST happen inside the worktree of the repo the current task is tagged for. A `[shop-frontend]` task implemented in the backend worktree is a routing failure, not a detail.", "anchors": ["one worktree PER repo with tasks"]},
+    "DEVELOP-MODE": {"type": "routing", "owner": ".claude/commands/tgd-develop.md", "clause": "Route on risk first, then size:", "anchors": ["Otherwise, **< 3 tasks**", "Otherwise (**≥ 3 tasks**)"]},
+    "DEVELOP-DELEGATION-DISPATCH": {"type": "routing", "owner": ".claude/commands/tgd-develop.md", "clause": "Otherwise (**≥ 3 tasks**) → `tgd-develop-subagents`. Dispatch subagents to implement and review within the worktree directory.", "anchors": []},
+    "DEVELOP-DELEGATION-FALLBACK": {"type": "routing", "owner": ".claude/commands/tgd-develop.md", "clause": "Each task's two-stage review (spec-compliance first, then code-quality — run both INLINE if you cannot dispatch subagents; per `tgd-core-rules`, inability to delegate moves *where* work runs, never *whether*) records its outcome in the task's `Spec-Review:` and `Quality-Review:` fields: `PASS — <one line>` or `FAIL — <one line>` (fix, re-review, then flip to PASS).", "anchors": []},
+    "DEVELOP-RESUME": {"type": "boundary", "owner": ".claude/commands/tgd-develop.md", "clause": "**Resume rule**: tasks with `**Status:** complete` in TASKS.md (with their `Test:` fields filled) are SKIPPED — re-entering `/tgd-develop` continues from the first task whose Status is `pending`/`in-progress`; it never redoes or rewrites finished ones. `blocked` tasks stay skipped until their blocker is cleared (see the blocked handling below).", "anchors": []},
+    "DEVELOP-REVIEWS": {"type": "gate", "owner": ".claude/commands/tgd-develop.md", "clause": "A task is not complete while either field reads `pending` — `/tgd-verify` fails closed on it.", "anchors": ["spec-compliance first, then code-quality"], "duplicates": ["skills/tgd-develop-subagents/SKILL.md"], "duplicate_clause": "Spec-Review:"},
+    "DEVELOP-BLOCKED": {"type": "gate", "owner": ".claude/commands/tgd-develop.md", "clause": "A blocked task is recorded progress, never a passing Develop gate: do not hand off to Verify while any in-scope task remains blocked.", "anchors": ["continue only with independent non-blocked tasks", "`blocked` is a failed gate, not a pass"], "opposite_clauses": ["all criteria Test fields and task Status values are complete or explicitly blocked"]},
+    "DEVELOP-CLEAN": {"type": "gate", "owner": ".claude/commands/tgd-develop.md", "clause": "Each worktree is clean: `git status --porcelain` is empty — everything the gates above certified is committed on the feature branch", "anchors": []},
+    "DEVELOP-NO-MERGE": {"type": "boundary", "owner": ".claude/commands/tgd-develop.md", "clause": "**Do NOT merge to `main` here.** Merging happens in `/tgd-release`, after verify and review pass.", "anchors": [], "opposite_clauses": ["Merge to `main` during Develop."]},
+    "DEVELOP-HANDOFF": {"type": "handoff", "owner": ".claude/commands/tgd-develop.md", "clause": "On a passing gate, end with the closing report per `tgd-core-rules` → **Command Closing Report**: 📦 Output (implemented task count + file summary; worktree retained, not merged) · 🔎 Checks (gate as one line) · ➡️ Next `/tgd-verify` — prove it works. If any task is blocked, report the failed gate and omit Next. Don't paste the raw checklist above.", "anchors": []},
+
+    "VERIFY-PREFLIGHT": {"type": "gate", "owner": ".claude/commands/tgd-verify.md", "clause": "a pending review field means `/tgd-develop` skipped its two-stage review. 🛑 STOP: send it back to `/tgd-develop`; do not verify unreviewed work.", "anchors": ["verifying only one repo is a partial verify"]},
+    "VERIFY-TESTS": {"type": "gate", "owner": ".claude/commands/tgd-verify.md", "clause": "**Exit 0** = tests passed, raw output captured. Use the real numbers from the meta-comment in the Summary table below — do NOT invent counts.", "anchors": ["capture-test-output.sh"]},
+    "VERIFY-TEST-FAILURE": {"type": "gate", "owner": ".claude/commands/tgd-verify.md", "clause": "**Exit 1** = tests failed, raw output still captured. Fix the failures, re-run, only then proceed.", "anchors": []},
+    "VERIFY-DOCS-ONLY": {"type": "routing", "owner": ".claude/commands/tgd-verify.md", "clause": "Classify the feature as **documentation-only** only when every acceptance-criterion block declares a standalone `Doc:` carrier and none declares `[R]` or `Test:`. Mixed or ambiguous features are executable.", "anchors": ["do not run `capture-test-output.sh`", "`N/A — documentation-only`", "documentation lint, link, or build checks"]},
+    "VERIFY-COVERAGE": {"type": "gate", "owner": ".claude/commands/tgd-verify.md", "clause": "Exit 2 = no coverage tool, unparseable output, a required metric unavailable, or invalid floor/mode configuration — fix it and re-run. NEVER treat exit 2 as a pass.", "anchors": ["coverage-check.sh", "COVERAGE_ALLOW_MISSING_METRICS", "COVERAGE_CRITICAL_PATH=1"]},
+    "VERIFY-AC": {"type": "gate", "owner": ".claude/commands/tgd-verify.md", "clause": "Line coverage is not requirement coverage — verify every acceptance criterion has a valid carrier: executable behavior uses an AC-tagged test; documentation-only work uses a valid `Doc:` carrier and cannot be `[R]`:", "anchors": ["AC Traceability Gate (MANDATORY)", "ac-trace.py"]},
+    "VERIFY-MISSING-AC": {"type": "gate", "owner": ".claude/commands/tgd-verify.md", "clause": "**Exit 2** = TASKS.md missing or carries no AC ids. A plan without AC ids fails closed — fix TASKS.md (see `tgd-plan-breakdown`).", "anchors": ["untraced criteria or `[R]` entries without valid `Test:` files"]},
+    "VERIFY-REGRESSION": {"type": "gate", "owner": ".claude/commands/tgd-verify.md", "clause": "**Exit 1** = an entry failed twice, is stale, or lacks a `Test:` reference. 🛑 STOP. Do NOT proceed to review. Report which prior feature's regression broke.", "anchors": ["regression-gate.sh"], "opposite_clauses": ["Proceed to review after a regression failure."]},
+    "VERIFY-CATALOG-ABSENCE": {"type": "gate", "owner": ".claude/commands/tgd-verify.md", "clause": "Exit 3 is legitimate only before any release has been recorded; the script rejects a missing catalog once CHANGELOG contains a real release.", "anchors": ["verified exit 3 before any recorded release"]},
+    "VERIFY-UI": {"type": "gate", "owner": ".claude/commands/tgd-verify.md", "clause": "**Frontend/UI/DOM?** → **MUST run `tgd-verify-browser`**. Unit tests are NOT sufficient for UI verification.", "anchors": ["do not silently rewrite DESIGN.md during Verify"]},
+    "VERIFY-UI-EVIDENCE": {"type": "gate", "owner": ".claude/commands/tgd-verify.md", "clause": "Evidence MUST identify the tested commit SHA and viewport/state; a statement such as \"looks correct\" is not evidence.", "anchors": []},
+    "VERIFY-CLEAN": {"type": "boundary", "owner": ".claude/commands/tgd-verify.md", "clause": "Each worktree is clean at the end of this phase: `git status --porcelain` is empty. Any change made during verify (new tests, AC tagging, fixes) MUST be committed on the feature branch — every gate result above must be reproducible from committed state, and untracked tool residue (coverage output, lockfiles from gate attempts) must be removed, or the release merge ships something other than what was verified.", "anchors": []},
+    "VERIFY-HANDOFF": {"type": "handoff", "owner": ".claude/commands/tgd-verify.md", "clause": "End with the closing report per `tgd-core-rules` → **Command Closing Report**: 📦 Output (TEST-REPORT.md — real passed/failed counts + coverage, or explicit documentation-only N/A evidence) · 🔎 Checks (gate as one line) · ➡️ Next `/tgd-review` — inspect code quality. Don't paste the raw checklist above.", "anchors": []},
+
+    "REVIEW-PREFLIGHT": {"type": "gate", "owner": ".claude/commands/tgd-review.md", "clause": "**If missing:** STOP. Report the specific missing artifact: test evidence returns to `/tgd-verify`; UI classification or direction returns to `/tgd-define`.", "anchors": ["`$TGD_DIR/<feature-name>/TEST-REPORT.md` exists"]},
+    "REVIEW-DOCS-ONLY": {"type": "routing", "owner": ".claude/commands/tgd-review.md", "clause": "Executable work requires passing feature-test and coverage evidence; documentation-only work requires explicit N/A test/coverage fields, passing documentation checks, and a passing AC trace.", "anchors": ["do not fabricate a test run or coverage number"]},
+    "REVIEW-WORKTREE": {"type": "boundary", "owner": ".claude/commands/tgd-review.md", "clause": "Multi-repo features (TASKS.md has `[repo-name]` prefixes) have one worktree PER repo (`../project-<feature-name>-<repo-name>`) — review EACH repo's diff; a repo with tagged tasks but an unreviewed diff fails the gate.", "anchors": ["review the code inside that worktree"]},
+    "REVIEW-CORE": {"type": "routing", "owner": ".claude/commands/tgd-review.md", "clause": "Run the `tgd-review-quality` skill. This is the REVIEW phase. The full pipeline is:", "anchors": ["`tgd-review-simplify`"]},
+    "REVIEW-CONDITIONAL": {"type": "routing", "owner": ".claude/commands/tgd-review.md", "clause": "If any architectural decisions were made, create an ADR at `$TGD_DIR/<feature-name>/decisions/ADR-NNN-<decision>.md` using the **canonical ADR template in the `tgd-review-adr` skill** — it is the single source; do not hand-roll a different shape.", "anchors": ["Security concerns? → `tgd-review-security`", "Performance concerns? → `tgd-review-performance`"]},
+    "REVIEW-BLOCKERS": {"type": "gate", "owner": ".claude/commands/tgd-review.md", "clause": "Code review feedback addressed — every 🔴 Critical row in the findings table reads `fixed`; 🟠 deferred rows carry a justification", "anchors": ["No critical security or performance warnings remain"]},
+    "REVIEW-RETEST": {"type": "gate", "owner": ".claude/commands/tgd-review.md", "clause": "**🔁 Re-test after review changes:** if executable code changed, **commit it on the feature branch first**, then re-run the capture in the affected worktree BEFORE sign-off — `bash \"$TGD_REPO_ROOT/scripts/capture-test-output.sh\" \"$TGD_DIR/<feature-name>/TEST-REPORT.md\"` (multi-repo: repo name as the 3rd arg).", "anchors": ["For documentation-only changes, commit first, then re-run AC trace"]},
+    "REVIEW-OUTPUT": {"type": "gate", "owner": ".claude/commands/tgd-review.md", "clause": "After completing the review, create `$TGD_DIR/<feature-name>/REVIEW.md` using this template:", "anchors": ["$TGD_REPO_ROOT/templates/REVIEW.md.tmpl", "check-doc-sections.py\" REVIEW"]},
+    "REVIEW-HANDOFF": {"type": "handoff", "owner": ".claude/commands/tgd-review.md", "clause": "End with the closing report per `tgd-core-rules` → **Command Closing Report**: 📦 Output (REVIEW.md — per-axis Pass/Warn/Fail summary; ADR when applicable) · 🔎 Checks (gate as one line) · ➡️ Next `/tgd-release` — deploy. Don't paste the raw checklist above.", "anchors": []},
+
+    "RELEASE-PATH-ROUTING": {"type": "routing", "owner": ".claude/commands/tgd-release.md", "clause": "Classify the release before resolving `$TGD_DIR`. The default is the downstream feature path; the framework maintenance path is available only when every condition below is true:", "anchors": ["If the user or current workflow selected one, the downstream path wins even when its artifacts are incomplete.", "Missing lifecycle artifacts alone never qualify a release for this path.", "Do not run both paths."], "opposite_clauses": ["Missing lifecycle artifacts automatically qualify a release for framework maintenance."]},
+    "RELEASE-MAINTENANCE-IDENTITY": {"type": "gate", "owner": ".claude/commands/tgd-release.md", "clause": "One resolved repository root contains all six canonical tGD markers:", "anchors": ["git rev-parse --show-toplevel", "every marker must be a tracked regular file at that exact root", "skills/tgd-core-rules/SKILL.md", ".claude/commands/tgd-release.md", "scripts/generate-mirrors.py", "scripts/release.sh", ".github/workflows/release.yml", "VERSION", "not for a downstream product that uses tGD"]},
+    "RELEASE-MAINTENANCE-PR": {"type": "gate", "owner": ".claude/commands/tgd-release.md", "clause": "Record the reviewed PR head SHA. Require a PR targeting `main` whose body states Summary, Impact, Verification, and `Framework maintenance release exception`; require it to be ready for review (not draft), mergeable, free of unresolved required reviews, and green on every required check for that exact head SHA.", "anchors": ["An opened PR remains pending.", "Record the landed `main` SHA and prove that the reviewed PR content landed"]},
+    "RELEASE-MAINTENANCE-NATIVE": {"type": "gate", "owner": ".claude/commands/tgd-release.md", "clause": "Publishing starts only after the VERSION-changing release commit reaches `main`.", "anchors": ["bash scripts/release.sh --dry-run", "bash scripts/release.sh --yes", "The script prepares and pushes the VERSION/CHANGELOG release commit; it does not publish a tag or GitHub Release", "the immutable tag resolves to that release commit", "the GitHub Release exists at a recorded URL"]},
+    "RELEASE-PREFLIGHT": {"type": "gate", "owner": ".claude/commands/tgd-release.md", "clause": "**If missing:** STOP. Tell user: \"Review or tests incomplete. Please run `/tgd-review` first.\"", "anchors": ["Review passed"]},
+    "RELEASE-DOCS-ONLY": {"type": "routing", "owner": ".claude/commands/tgd-release.md", "clause": "TEST-REPORT contains passing executable-test/coverage evidence or explicit documentation-only N/A fields with passing AC trace and documentation checks.", "anchors": []},
+    "RELEASE-SIGNOFF": {"type": "gate", "owner": ".claude/commands/tgd-release.md", "clause": "**If any grep exits non-zero** (line unchecked, missing, or `Rejected`): 🛑 STOP. List the pending roles and wait — humans review async. Do NOT proceed \"provisionally\".", "anchors": ["Sign-off Gate (HARD GATE)"], "opposite_clauses": ["Proceed provisionally when a sign-off is pending."]},
+    "RELEASE-SIGNOFF-SOURCE": {"type": "boundary", "owner": ".claude/commands/tgd-release.md", "clause": "Chat or session approval does not replace an artifact sign-off and cannot expand Release authority. The PM must update the PM line in PRD.md.", "anchors": [], "opposite_clauses": ["Explicit user PM go-ahead in this session may replace the PRD check"]},
+    "RELEASE-PRELAUNCH": {"type": "gate", "owner": ".claude/commands/tgd-release.md", "clause": "Load `tgd-release-ship`; complete its Pre-Launch Gates, document rollback triggers and exact steps, confirm monitoring, and configure the feature flag when applicable. These gates happen before merge.", "anchors": ["Deploy staging from the verified feature branch"]},
+    "RELEASE-REGRESSION": {"type": "gate", "owner": ".claude/commands/tgd-release.md", "clause": "**🧹 Regression Catalog Audit — BEFORE merging** (MANDATORY if `$TGD_DIR/REGRESSION-CATALOG.md` exists). Run it in the worktree (`../project-<feature-name>`; multi-repo features have one per repo — `../project-<feature-name>-<repo-name>` — audit each), so a failure stops the release before anything lands on `main`:", "anchors": ["regression-gate.sh"]},
+    "RELEASE-LANDED": {"type": "gate", "owner": ".claude/commands/tgd-release.md", "clause": "Opening a PR is a pending state, not a successful Release gate. Keep the worktree and branch while review or CI is pending; resume only after the provider reports the PR merged and required CI passed.", "anchors": [], "opposite_clauses": ["`feature/<feature-name>` merged to `main` (or PR opened)"]},
+    "RELEASE-PRODUCTION": {"type": "gate", "owner": ".claude/commands/tgd-release.md", "clause": "Record the landed `main` SHA and continue `tgd-release-ship` from that exact SHA: deploy production with the flag off, verify health/error monitoring, then use its staged-rollout thresholds and rollback rules.", "anchors": ["never from the feature worktree or an unverified local HEAD"]},
+    "RELEASE-MERGE": {"type": "boundary", "owner": ".claude/commands/tgd-release.md", "clause": "**Only after the merge landed and the initial production checks passed**, remove the worktree with `git worktree remove ../project-<feature-name>` (multi-repo: `../project-<feature-name>-<repo-name>`), then delete the landed branch with `git branch -d feature/<feature-name>`.", "anchors": ["A failure triggers rollback and blocks cleanup"]},
+    "RELEASE-ROUTING": {"type": "routing", "owner": ".claude/commands/tgd-release.md", "clause": "Run the `tgd-release-ship` skill. This is the Release phase. The full pipeline is:", "anchors": ["CI/CD pipeline work? → `tgd-release-ci`", "Removing old systems? → `tgd-release-migration`"]},
+    "RELEASE-MIGRATION": {"type": "routing", "owner": ".claude/commands/tgd-release.md", "clause": "Removing old systems? → `tgd-release-migration`", "anchors": []},
+    "RELEASE-SUCCESS": {"type": "gate", "owner": "skills/tgd-release-ship/SKILL.md", "clause": "In the first hour after launch:", "anchors": ["Check health endpoint returns 200", "Confirm rollback mechanism works"]},
+    "RELEASE-CHANGELOG": {"type": "gate", "owner": ".claude/commands/tgd-release.md", "clause": "Before merge, draft the candidate entry in `$TGD_DIR/CHANGELOG.md` (create it from the canonical template when absent) so the pre-launch documentation gate can be reviewed. After the landed SHA passes initial production checks, finalize the release version, date, and reference; never mark it released before production success.", "anchors": ["CalVer: `vYYYY.MM.DD`"]},
+    "RELEASE-METRICS": {"type": "gate", "owner": ".claude/commands/tgd-release.md", "clause": "Skip this step entirely if PRD §6 is `N/A` (with its PM sign-off) — do NOT generate an empty sheet.", "anchors": ["Status: planned` to `Status: live"]},
+    "RELEASE-CATALOG": {"type": "gate", "owner": ".claude/commands/tgd-release.md", "clause": "This catalog is cumulative — every shipped feature's `[R]` tests are preserved for future regression checks. Future features will re-run ALL catalog entries during `/tgd-verify` (and again in this command's pre-merge audit).", "anchors": ["Acceptance Criteria marked `[R]`"]},
+    "RELEASE-CATALOG-SEED": {"type": "gate", "owner": ".claude/commands/tgd-release.md", "clause": "A release with no `[R]` criteria still leaves the empty seeded catalog so a later missing file cannot masquerade as a first release.", "anchors": ["ensure REGRESSION-CATALOG.md exists"]},
+    "RELEASE-HANDOFF": {"type": "handoff", "owner": ".claude/commands/tgd-release.md", "clause": "End with the closing report per `tgd-core-rules` → **Command Closing Report**: 📦 Output (landed SHA + production release + CHANGELOG/METRICS/REGRESSION-CATALOG updates) · 🔎 Checks (gate as one line) · ➡️ Next state the active monitoring window, owner, and rollback trigger (Release is terminal; there is no next lifecycle command). Don't paste the raw checklist above.", "anchors": []}
+  },
+  "forbidden": [
+    {"id": "NO-DESIGN-COMMAND", "absent": ".claude/commands/tgd-design.md"}
+  ]
+}

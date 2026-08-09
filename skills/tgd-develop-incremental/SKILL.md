@@ -7,240 +7,123 @@ description: Delivers changes incrementally. Use when implementing any feature o
 
 ## Overview
 
-Build in thin vertical slices — implement one piece, test it, verify it, then expand. Avoid implementing an entire feature in one pass. Each increment should leave the system in a working, testable state. This is the execution discipline that makes large features manageable.
+Build one thin, complete slice; test and verify it; commit it; then expand.
+Every increment leaves the project working and independently reviewable.
 
 ## When to Use
 
-- Implementing any multi-file change
-- Building a new feature from a task breakdown
-- Refactoring existing code
-- Any time you're tempted to write more than ~100 lines before testing
+- Any multi-file feature or refactor
+- A planned task that is too large for one safe change
+- Before writing roughly 100 lines without intermediate verification
 
-**When NOT to use:** Single-file, single-function changes where the scope is already minimal.
+Skip only an already-minimal single-file, single-function change.
 
-## The Increment Cycle
+## Increment Cycle
 
-```
-┌──────────────────────────────────────┐
-│                                      │
-│   Implement ──→ Test ──→ Verify ──┐  │
-│       ▲                           │  │
-│       └───── Commit ◄─────────────┘  │
-│              │                       │
-│              ▼                       │
-│          Next slice                  │
-│                                      │
-└──────────────────────────────────────┘
-```
+For each slice, in order:
 
-For each slice:
+1. **Scope:** when `.codegraph/` exists, inspect callers of modified functions;
+   for unfamiliar code, run `understand` first.
+2. **Implement:** make the smallest complete behavior change.
+3. **Test:** write or run the focused test, then relevant existing tests.
+4. **Verify:** observe tests, build, and applicable runtime/manual evidence.
+5. **Commit:** create one descriptive atomic commit per logical change using
+   `tgd-core-git` safeguards.
+6. **Continue:** carry the verified state into the next slice; never restart or
+   batch several unverified slices.
 
-1. **Scope** — if `.codegraph/` exists, run `codegraph callers "<function>"` on any function you're about to modify to know who depends on it. If working on unfamiliar code, run the `understand` skill first to build a knowledge graph.
-2. **Implement** the smallest complete piece of functionality
-3. **Test** — run the test suite (or write a test if none exists)
-4. **Verify** — confirm the slice works as expected (tests pass, build succeeds, manual check)
-5. **Commit** -- save your progress with a descriptive message (see `tgd-core-git` for atomic commit guidance)
-6. **Move to the next slice** — carry forward, don't restart
+## Slicing Strategy
 
-## Slicing Strategies
+Prefer a complete vertical user path across needed layers. When teams can work
+in parallel, define the shared contract first, implement consumers against it,
+then integrate. Put the highest technical uncertainty first so failure is
+discovered before dependent investment.
 
-### Vertical Slices (Preferred)
-
-Build one complete path through the stack:
-
-```
-Slice 1: Create a task (DB + API + basic UI)
-    → Tests pass, user can create a task via the UI
-
-Slice 2: List tasks (query + API + UI)
-    → Tests pass, user can see their tasks
-
-Slice 3: Edit a task (update + API + UI)
-    → Tests pass, user can modify tasks
-
-Slice 4: Delete a task (delete + API + UI + confirmation)
-    → Tests pass, full CRUD complete
-```
-
-Each slice delivers working end-to-end functionality.
-
-### Contract-First Slicing
-
-When backend and frontend need to develop in parallel:
-
-```
-Slice 0: Define the API contract (types, interfaces, OpenAPI spec)
-Slice 1a: Implement backend against the contract + API tests
-Slice 1b: Implement frontend against mock data matching the contract
-Slice 2: Integrate and test end-to-end
-```
-
-### Risk-First Slicing
-
-Tackle the riskiest or most uncertain piece first:
-
-```
-Slice 1: Prove the WebSocket connection works (highest risk)
-Slice 2: Build real-time task updates on the proven connection
-Slice 3: Add offline support and reconnection
-```
-
-If Slice 1 fails, you discover it before investing in Slices 2 and 3.
+Diagrams, code, and prompt shapes are optional examples. Load
+[Incremental Development Patterns](../../references/incremental-development-patterns.md)
+only when a worked slice helps; this skill remains the normative owner.
 
 ## Implementation Rules
 
-### Rule 0: Simplicity First
+### 0. Simplicity First
 
-Before writing any code, ask: "What is the simplest thing that could work?"
+Implement the naive, obviously correct version before abstraction or
+optimization. Ask whether every abstraction earns its complexity, whether the
+same behavior needs fewer lines, and whether it serves the current task rather
+than hypothetical future work. Three clear similar lines beat a premature
+framework.
 
-After writing code, review it against these checks:
-- Can this be done in fewer lines?
-- Are these abstractions earning their complexity?
-- Would a staff engineer look at this and say "why didn't you just..."?
-- Am I building for hypothetical future requirements, or the current task?
+### 0.5. Scope Discipline
 
-```
-SIMPLICITY CHECK:
-✗ Generic EventBus with middleware pipeline for one notification
-✓ Simple function call
+Touch only what the task requires. Do not clean adjacent code, rewrite imports,
+remove unfamiliar comments, modernize read-only files, or add “useful” features.
+Record unrelated opportunities or bugs for a separate task; never silently fix
+them in the current increment.
 
-✗ Abstract factory pattern for two similar components
-✓ Two straightforward components with shared utilities
+### 1. One Logical Change
 
-✗ Config-driven form builder for three forms
-✓ Three form components
-```
+Do not combine a feature, refactor, and configuration change in one increment.
+Separate concerns into independently testable and revertible commits.
 
-Three similar lines of code is better than a premature abstraction. Implement the naive, obviously-correct version first. Optimize only after correctness is proven with tests.
+### 2. Keep It Compilable
 
-### Rule 0.5: Scope Discipline
+After each increment, the build and all existing tests pass. Never leave a
+broken intermediate state for the next slice.
 
-Touch only what the task requires.
+### 3. Hide Incomplete Features
 
-Do NOT:
-- "Clean up" code adjacent to your change
-- Refactor imports in files you're not modifying
-- Remove comments you don't fully understand
-- Add features not in the spec because they "seem useful"
-- Modernize syntax in files you're only reading
+Use a safe-default feature flag when incomplete increments may reach main at
+Release. Work remains on `feature/<name>` until `/tgd-release`; the flag keeps
+unfinished behavior invisible if merged.
 
-If you notice something worth improving outside your task scope, note it — don't fix it:
+### 4. Safe Defaults
 
-```
-NOTICED BUT NOT TOUCHING:
-- src/utils/format.ts has an unused import (unrelated to this task)
-- The auth middleware could use better error messages (separate task)
-→ Want me to create tasks for these?
-```
+New behavior defaults to conservative, opt-in operation. A missing option must
+not silently enable notification, mutation, access, or another risky effect.
 
-### Rule 1: One Thing at a Time
+### 5. Rollback-Friendly Changes
 
-Each increment changes one logical thing. Don't mix concerns:
+Keep edits additive or minimal. Supply rollback migrations for database
+changes. Avoid deleting and replacing a system in one commit; separate the
+steps so each increment can be reverted independently.
 
-**Bad:** One commit that adds a new component, refactors an existing one, and updates the build config.
+## Verification Per Increment
 
-**Good:** Three separate commits — one for each change.
+Use the repository commands from CONTEXT.md or its rules file, not assumed npm
+commands:
 
-### Rule 2: Keep It Compilable
+- [ ] The increment completes one logical behavior.
+- [ ] Focused and all existing tests pass.
+- [ ] Build, types, and lint pass when affected.
+- [ ] Applicable runtime behavior is observed.
+- [ ] A descriptive atomic commit records the slice.
 
-After each increment, the project must build and existing tests must pass. Don't leave the codebase in a broken state between slices.
-
-### Rule 3: Feature Flags for Incomplete Features
-
-If a feature isn't ready for users but its increments will land on the feature branch (and eventually `main` at `/tgd-release`):
-
-```typescript
-// Feature flag for work-in-progress
-const ENABLE_TASK_SHARING = process.env.FEATURE_TASK_SHARING === 'true';
-
-if (ENABLE_TASK_SHARING) {
-  // New sharing UI
-}
-```
-
-This keeps incomplete work invisible to users when the branch merges at release time. (In the tGD flow, increments are committed to `feature/<name>` in the worktree — merging to `main` happens only in `/tgd-release`, after verify and review.)
-
-### Rule 4: Safe Defaults
-
-New code should default to safe, conservative behavior:
-
-```typescript
-// Safe: disabled by default, opt-in
-export function createTask(data: TaskInput, options?: { notify?: boolean }) {
-  const shouldNotify = options?.notify ?? false;
-  // ...
-}
-```
-
-### Rule 5: Rollback-Friendly
-
-Each increment should be independently revertable:
-
-- Additive changes (new files, new functions) are easy to revert
-- Modifications to existing code should be minimal and focused
-- Database migrations should have corresponding rollback migrations
-- Avoid deleting something in one commit and replacing it in the same commit — separate them
-
-## Working with Agents
-
-When directing an agent to implement incrementally:
-
-```
-"Let's implement Task 3 from the plan.
-
-Start with just the database schema change and the API endpoint.
-Don't touch the UI yet — we'll do that in the next increment.
-
-After implementing, run `npm test` and `npm run build` to verify
-nothing is broken."
-```
-
-Be explicit about what's in scope and what's NOT in scope for each increment.
-
-## Increment Checklist
-
-After each increment, verify (commands below are npm examples — use the project's actual commands from CONTEXT.md / the rules file):
-
-- [ ] The change does one thing and does it completely
-- [ ] All existing tests still pass (e.g. `npm test`)
-- [ ] The build succeeds (e.g. `npm run build`)
-- [ ] Type checking passes (e.g. `npx tsc --noEmit`)
-- [ ] Linting passes (e.g. `npm run lint`)
-- [ ] The new functionality works as expected
-- [ ] The change is committed with a descriptive message
-
-**Note:** Run each verification command after a change that could affect it. After a successful run, don't repeat the same command unless the code has changed since — re-running on unchanged code adds no information.
+Run a gate again only after a change that could affect it. Repeating the same
+command on unchanged code adds no evidence.
 
 ## Common Rationalizations
 
 | Rationalization | Reality |
 |---|---|
-| "I'll test it all at the end" | Bugs compound. A bug in Slice 1 makes Slices 2-5 wrong. Test each slice. |
-| "It's faster to do it all at once" | It *feels* faster until something breaks and you can't find which of 500 changed lines caused it. |
-| "These changes are too small to commit separately" | Small commits are free. Large commits hide bugs and make rollbacks painful. |
-| "I'll add the feature flag later" | If the feature isn't complete, it shouldn't be user-visible. Add the flag now. |
-| "This refactor is small enough to include" | Refactors mixed with features make both harder to review and debug. Separate them. |
-| "Let me run the build command again just to be sure" | After a successful run, repeating the same command adds nothing unless the code has changed since. Run it again after subsequent edits, not as reassurance. |
+| "Test everything at the end" | An early defect invalidates later slices. |
+| "One big change is faster" | Large diffs hide cause and block rollback. |
+| "These edits are too small to separate" | Concern-separated commits are cheap evidence. |
+| "Add the feature flag later" | Incomplete behavior must remain invisible now. |
+| "Include this nearby refactor" | Mixed concerns weaken review and diagnosis. |
+| "Run the same build again" | Unchanged input produces no new evidence. |
 
 ## Red Flags
 
-- More than 100 lines of code written without running tests
-- Multiple unrelated changes in a single increment
-- "Let me just quickly add this too" scope expansion
-- Skipping the test/verify step to move faster
-- Build or tests broken between increments
-- Large uncommitted changes accumulating
-- Building abstractions before the third use case demands it
-- Touching files outside the task scope "while I'm here"
-- Creating new utility files for one-time operations
-- Running the same build/test command twice in a row without any intervening code change
+- More than roughly 100 changed lines without a test run
+- Multiple concerns, scope expansion, or unrelated cleanup in one slice
+- Broken tests/build between increments or large uncommitted accumulation
+- Premature abstractions or one-use utility files
+- Missing safe flag/default or rollback path
+- Repeated identical verification without intervening change
 
 ## Verification
 
-After completing all increments for a task:
-
-- [ ] Each increment was individually tested and committed
-- [ ] The full test suite passes
-- [ ] The build is clean
-- [ ] The feature works end-to-end as specified
-- [ ] No uncommitted changes remain
+- [ ] Every increment was independently tested, verified, and committed.
+- [ ] The full test suite and build pass after integration.
+- [ ] The specified feature works end-to-end.
+- [ ] No uncommitted changes remain.

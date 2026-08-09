@@ -16,9 +16,9 @@ Use tGD's 7-stage PDLC pipeline in Claude Desktop — no terminal required.
 | **Define** | Runs PRD → 0/2/3 UI design routing → final SPEC in one stage | PM and DESIGN answer/review their own handoffs |
 | **Plan** | Decomposes work into `TASKS.md` with BDD acceptance criteria | Review & sign off |
 | **Develop** | Generates code + tests as artifacts | Copy code to your IDE, run tests, paste results back |
-| **Verify** | Analyzes tests and UI design-conformance evidence, produces `TEST-REPORT.md` | Run tests/browser checks, paste output and evidence |
+| **Verify** | Analyzes executable-test or documentation-only evidence plus UI conformance when applicable, produces `TEST-REPORT.md` | Run the applicable test/browser or documentation checks, paste output and evidence |
 | **Review** | 5-axis code review plus conditional design conformance, produces `REVIEW.md` | Paste `git diff` or PR content; DESIGN reviews built UI if applicable |
-| **Release** | Produces `CHANGELOG.md` + `METRICS.md`, guides deployment | Run CI/CD, final sign-off |
+| **Release** | Produces release artifacts and guides pre-launch → staging → landed-SHA production rollout | Update artifact sign-offs and run CI/CD/deployment gates |
 
 ---
 
@@ -196,9 +196,9 @@ You are a tGD pipeline assistant. tGD is an Agentic PDLC (Product Development Li
 | 02 | Define | CONTEXT.md + intent | PRD.md → DESIGN.md/prototype (if UI) → SPEC.md | Interviews, routes 0/2/3 design, finalizes spec | PM owns product; DESIGN approves UI direction |
 | 03 | Plan | CONTEXT.md · PRD.md · DESIGN.md (if UI) · SPEC.md | TASKS.md + BDD AC | Context-grounded decomposition | DEV signs off TASKS.md |
 | 04 | Develop | TASKS.md · SPEC.md + src/ | src/ + tests/ | TDD in sandbox | Reviews code, signs off |
-| 05 | Verify | src/ · tests/ + REGRESSION-CATALOG.md | TEST-REPORT.md | Tests + E2E + regression + UI evidence | QA signs off or blocks |
+| 05 | Verify | src/docs · applicable tests + REGRESSION-CATALOG.md | TEST-REPORT.md | Executable tests or docs-only evidence + regression + conditional UI evidence | QA signs off or blocks |
 | 06 | Review | src/ · TEST-REPORT.md | REVIEW.md — 5-axis + design conformance | Code quality and UI conformance review | QA + DEV; DESIGN if UI |
-| 07 | Release | All signed-off artifacts | CHANGELOG.md · METRICS.md + deploy | Commit → CI → deploy | Final sign-off |
+| 07 | Release | All artifact sign-offs | CHANGELOG.md · conditional METRICS.md · REGRESSION-CATALOG.md + deploy | Pre-launch/staging → merge + CI → landed-SHA production rollout | Humans update their own sign-offs and run external deployment actions |
 
 ## Intent Mapping
 
@@ -261,9 +261,9 @@ Since this is Claude Desktop (not a coding agent), adapt each stage:
 | Define | Ask questions, produce PRD.md → conditional DESIGN/prototype → SPEC.md | PM and DESIGN review their handoffs |
 | Plan | Decompose into TASKS.md with BDD acceptance criteria | Review and sign off |
 | Develop | Generate code + tests as Artifacts | User copies to IDE, runs tests, reports back |
-| Verify | Analyze test results and UI evidence, produce TEST-REPORT.md | Run tests/browser checks, paste output and evidence |
+| Verify | Analyze executable-test or documentation-only evidence and conditional UI evidence, produce TEST-REPORT.md | Run applicable test/browser or documentation checks, paste output and evidence |
 | Review | 5-axis review plus conditional design conformance | Paste git diff/PR; DESIGN reviews the UI evidence |
-| Release | Produce CHANGELOG.md + METRICS.md, guide deployment | Run CI/CD, sign off |
+| Release | Produce release artifacts and guide pre-launch/staging/landed-SHA deployment | Update artifact sign-offs and run CI/CD/deployment gates |
 
 ## Artifact Format
 

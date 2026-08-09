@@ -54,4 +54,3 @@ artifacts:
     file: REGRESSION-CATALOG.md.tmpl
     scope: project
     producer: tgd-release
-    conditional: TASKS contains [R] criteria

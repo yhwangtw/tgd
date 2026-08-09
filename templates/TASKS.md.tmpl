@@ -39,7 +39,7 @@
 
 ### 3. Acceptance Criteria (BDD)
 - Every task must use **BDD** (Given/When/Then) format — this ensures all criteria are behavior-level, testable, and consistent with REGRESSION-CATALOG entries.
-- Every criterion carries a **stable ID**: `AC-<task>.<n>` (AC-1.1, AC-1.2, …). The verifying test MUST mention this ID in its name, docstring, or a comment — `ac-trace.py` cross-references them during `/tgd-verify`.
+- Every criterion carries a **stable ID**: `AC-<task>.<n>` (AC-1.1, AC-1.2, …). An executable criterion's verifying test MUST mention this ID in its name, docstring, or a comment. A documentation-only criterion uses the `Doc:` carrier below instead — never fabricate a test for static documentation.
 
 - **AC-1.1** — **Given** [initial context] **When** [event happens] **Then** [expected outcome]
   - **Regression**: [Yes `[R]` / No]

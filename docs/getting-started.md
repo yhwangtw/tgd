@@ -35,15 +35,15 @@ Copy the relevant `SKILL.md` content into your agent's system prompt, rules file
 
 **Conversation:** Reference the skill when giving instructions: "Follow the tgd-develop-tdd process for this change."
 
-### 4. Use the meta-skill for discovery
+### 4. Use the core rules and intent router
 
-Start with the `tgd-core-router` skill loaded. It contains a flowchart that maps task types to the appropriate skill.
+Load `tgd-core-rules` before any tGD action. When no lifecycle command already supplies the pipeline and the request still needs routing, load `tgd-core-router` after the core rules and use its single Intent Routing table to select the applicable skill.
 
 ## Recommended Setup
 
 ### Minimal (Start here)
 
-Load three essential skills into your rules file:
+Load `tgd-core-rules`, plus three essential capability skills into your rules file:
 
 1. **tgd-define-spec** — For defining what to build
 2. **tgd-develop-tdd** — For proving it works
@@ -53,13 +53,10 @@ These three cover the most critical quality gaps in AI-assisted development.
 
 ### Full Lifecycle
 
-For comprehensive coverage, load skills by phase:
+For comprehensive coverage, invoke the seven canonical lifecycle commands in order. Each command owns its complete phase pipeline, including its pre-flight checks, gates, and transition:
 
 ```
-Starting a project:  tgd-define-spec → tgd-plan-breakdown
-During development:  tgd-develop-incremental + tgd-develop-tdd
-Before merge:        tgd-review-quality + tgd-review-security
-Before deploy:       tgd-release-ship
+/tgd-map → /tgd-define → /tgd-plan → /tgd-develop → /tgd-verify → /tgd-review → /tgd-release
 ```
 
 ### Context-Aware Loading
@@ -103,15 +100,17 @@ Load an agent definition when you need specialized review. For example, ask your
 
 The `.claude/commands/` directory contains slash commands for Claude Code. The same commands are available on all platforms — Hermes Agent registers them via a Python plugin, Codex/OpenCode use `.md` prompts, Gemini uses `.toml`, and Pi uses a TypeScript extension.
 
-| Command | Skill Invoked |
-|---------|---------------|
-| `/tgd-map` | tgd-core-context + codegraph init |
-| `/tgd-define` | tgd-define-spec |
-| `/tgd-plan` | tgd-plan-breakdown |
-| `/tgd-develop` | tgd-develop-source + tgd-develop-incremental + tgd-develop-tdd + tgd-verify-completion |
-| `/tgd-verify` | tgd-verify-debug + tgd-develop-tdd + **Cross-Feature Regression Gate** |
-| `/tgd-review` | tgd-review-quality + tgd-review-simplify |
-| `/tgd-release` | tgd-core-git + tgd-release-ship + **Regression Catalog Update + Audit** |
+| Command | Canonical responsibility |
+|---------|--------------------------|
+| `/tgd-map` | Map project context and establish the evidence tier |
+| `/tgd-define` | Resolve intent and produce the approved specification |
+| `/tgd-plan` | Produce verifiable tasks and conditionally preview or sync Jira |
+| `/tgd-develop` | Implement the plan, test each task, and record review evidence |
+| `/tgd-verify` | Prove acceptance criteria and cross-feature regression status |
+| `/tgd-review` | Review quality and all applicable specialist axes |
+| `/tgd-release` | Enforce sign-offs, merge, release, and update operational records |
+
+The commands decide **when** a phase capability runs. Skills define **how** that capability works. Do not reconstruct a lifecycle command by chaining entries from the router's Intent Routing table.
 
 ## Using References
 

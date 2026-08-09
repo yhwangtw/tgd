@@ -43,15 +43,14 @@
 #   1 = one or more catalog entries failed, are stale, or cannot be executed
 #   2 = usage error — artifacts dir unresolvable, client repo missing,
 #       no test runner detected
-#   3 = no catalog file yet (legitimate before the first /tgd-release)
+#   3 = no catalog file yet and no release recorded in CHANGELOG
 #
-#   Callers (/tgd-verify) treat 3 as "first release, nothing to gate yet"
-#   and MUST treat 2 as a configuration failure to fix, not a pass.
+#   Callers (/tgd-verify) may treat 3 as "first release, nothing to gate yet"
+#   and MUST treat 2 as a configuration failure to fix, not a pass. Once a
+#   release is recorded, a missing catalog exits 2 instead of masquerading as
+#   a new project.
 
 set -e
-
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-TGD_REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 
 CLIENT_REPO="${1:-$(pwd)}"
 ARTIFACTS_DIR="${2:-${TGD_DIR:-}}"
@@ -82,9 +81,39 @@ fi
 
 CATALOG="$ARTIFACTS_DIR/REGRESSION-CATALOG.md"
 if [ ! -f "$CATALOG" ]; then
+    CHANGELOG="$ARTIFACTS_DIR/CHANGELOG.md"
+    if [ -f "$CHANGELOG" ] && grep -Eq '^## v[0-9]{4}[.][0-9]{2}[.][0-9]{2}([.][0-9]+)?([[:space:]]|$)' "$CHANGELOG"; then
+        echo "❌ REGRESSION-CATALOG.md is missing after a recorded release: $CATALOG"
+        echo "   Restore or seed the catalog; this is not a first-release state."
+        exit 2
+    fi
     echo "ℹ️  No REGRESSION-CATALOG.md at $CATALOG"
-    echo "   Legitimate before the first /tgd-release seeds it."
+    echo "   No release is recorded yet; there is nothing historical to gate."
     exit 3
+fi
+
+# Parse before runner detection. A deliberately seeded empty catalog is valid
+# for projects whose released features have no [R] criteria and needs no test
+# runner merely to prove that it contains zero entries.
+ENTRY_TSV=$(python3 - "$CATALOG" <<'PYEOF'
+import re, sys, pathlib
+text = pathlib.Path(sys.argv[1]).read_text(encoding="utf-8")
+# Entries: "### [feature] Title" followed by "- **Test:** `path`" (or "Test: path")
+blocks = re.split(r"(?m)^### ", text)[1:]
+for b in blocks:
+    title = b.splitlines()[0].strip()
+    # Tolerate both markdown stylings: "**Test:** `x`" and "**Test**: `x`"
+    m = re.search(r"Test\*{0,2}:\*{0,2}\s*`?([^`\n]+)`?", b)
+    test = m.group(1).strip() if m else ""
+    rm = re.search(r"Repo\*{0,2}:\*{0,2}\s*`?([^`\n]+)`?", b)
+    repo = rm.group(1).strip() if rm else ""
+    print(f"{title}\t{test}\t{repo}")
+PYEOF
+)
+
+if [ -z "$ENTRY_TSV" ]; then
+    echo "ℹ️  Catalog exists with 0 entries; no released [R] criteria to run."
+    exit 0
 fi
 
 cd "$CLIENT_REPO"
@@ -129,30 +158,6 @@ run_one() {
             cargo test --test "$stem" ;;
     esac
 }
-
-# === Parse catalog entries ===
-
-ENTRY_TSV=$(python3 - "$CATALOG" <<'PYEOF'
-import re, sys, pathlib
-text = pathlib.Path(sys.argv[1]).read_text(encoding="utf-8")
-# Entries: "### [feature] Title" followed by "- **Test:** `path`" (or "Test: path")
-blocks = re.split(r"(?m)^### ", text)[1:]
-for b in blocks:
-    title = b.splitlines()[0].strip()
-    # Tolerate both markdown stylings: "**Test:** `x`" and "**Test**: `x`"
-    m = re.search(r"Test\*{0,2}:\*{0,2}\s*`?([^`\n]+)`?", b)
-    test = m.group(1).strip() if m else ""
-    rm = re.search(r"Repo\*{0,2}:\*{0,2}\s*`?([^`\n]+)`?", b)
-    repo = rm.group(1).strip() if rm else ""
-    print(f"{title}\t{test}\t{repo}")
-PYEOF
-)
-
-if [ -z "$ENTRY_TSV" ]; then
-    echo "⚠️  Catalog exists but has 0 entries. Nothing to verify."
-    echo "   Unusual — every release should add at least one [R] entry."
-    exit 0
-fi
 
 TOTAL=0; PASSED=0; FAILED=0; STALE=0; FLAKY=0; SKIPPED=0
 FAILED_LIST=""; STALE_LIST=""; FLAKY_LIST=""; SKIPPED_LIST=""

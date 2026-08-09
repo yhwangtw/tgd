@@ -3,7 +3,8 @@
 generate-wiki.py — Compile Understand-Anything + CodeGraph outputs into a
 self-contained static wiki under $TGD_DIR/wiki/.
 
-Called by /tgd-map Step 6 (via the tgd-support-wiki skill).
+Invoked manually by the standalone tgd-support-wiki skill after /tgd-map has
+produced the requested scan artifacts; /tgd-map never calls this generator.
 
 Two outputs, one data model:
 

@@ -1,265 +1,183 @@
 ---
 name: tgd-core-rules
-description: Core tGD rules that MUST be followed at all times — the Verification Iron Law, per-phase tone, the Command Closing Report, and human sign-off. Load this at the start of every tGD session (the session-start meta-skill tgd-core-router points here) and whenever a command references it. Do not skip, do not rationalize exceptions.
+description: Core tGD rules that MUST be followed at all times — lifecycle order, the Verification Iron Law, selection protocol, per-phase tone, the Command Closing Report, and human sign-off. Load this at the start of every tGD action and whenever a command references it.
 ---
 
 # tGD Core Rules
 
 ## Overview
 
-Core rules that MUST be followed at all times in every tGD session. These rules enforce evidence-based verification, prevent rationalization, and maintain workflow integrity across all 7 lifecycle phases.
+This skill is the unique owner of rules that apply across every tGD phase.
+Exact phase pipelines belong to `.claude/commands/tgd-*.md`; artifact schemas
+and scope belong to `templates/manifest.yaml` and its indexed templates.
 
 ## When to Use
 
-- At the start of every tGD session: the session-start meta-skill (`tgd-core-router`, injected by the hook/plugin platforms) and the generated session preamble (Pi/Hermes) both direct you to load this skill first
-- Referenced by all 7 `/tgd-*` lifecycle commands
-- Any time an agent is about to claim completion, skip a step, or rationalize an exception
+- Before any tGD action, including a lifecycle command or routed skill.
+- Before a completion claim, phase transition, or human sign-off decision.
 
-## Repository Overview
+## Resolving `$TGD_REPO_ROOT`
 
-A collection of skills for Claude.ai and Claude Code for senior software engineers. Skills are packaged instructions and scripts that extend Claude and your coding agents capabilities.
+Gate scripts live under `$TGD_REPO_ROOT/scripts/`, not in the artifact-only
+`$TGD_DIR`. Resolve the repo root once, in this order:
 
-## Resolving $TGD_REPO_ROOT
+1. `$TGD_REPO_ROOT`, when set.
+2. `~/tGD`, the default clone location.
+3. The real path of an installed tGD skill symlink. Strip the trailing skill
+   path (for example `/skills/tgd-core-rules`, or `/skills` when a platform
+   links the whole tGD skill directory).
 
-Several commands run gate scripts that live in the **tGD repo clone itself** (`$TGD_REPO_ROOT/scripts/…`) — NOT in `$TGD_DIR`, which holds artifacts only. Resolve it once, in this order:
+The resolved directory MUST contain `scripts/generate-mirrors.py`. If no
+candidate does, STOP, report that the tGD clone cannot be located, and do not
+skip or substitute any gate script.
 
-1. Env var `$TGD_REPO_ROOT`, if set.
-2. `~/tGD` — the default clone location from the install instructions.
-3. Resolve an installed skill symlink back to the clone, e.g.
-   `python3 -c "import os;print(os.path.realpath(os.path.expanduser('~/.claude/skills/tgd-core-rules')))"`
-   → strip the trailing `/skills/tgd-core-rules` to get the repo root. (Codex/OpenCode/Gemini/Pi link the whole folder as `skills/tGD` — realpath it and strip `/skills`.)
+## Global Operating Invariants
 
-If none resolves to a directory containing `scripts/generate-mirrors.py`, STOP and tell the user the tGD clone can't be located — do NOT skip a gate because its script "wasn't found".
+- **Execute applicable skills.** Before any work, check whether a skill
+  applies. A matching skill is a required workflow: load it, satisfy its
+  prerequisites, and follow its steps in order before implementation.
+- **Surface non-obvious assumptions.** State assumptions that affect
+  requirements, architecture, or scope before acting; do not silently turn
+  uncertainty into fact.
+- **Resolve conflicts.** When sources disagree or a requirement is ambiguous,
+  STOP the work, name the conflict, present the tradeoff or question, and wait
+  for resolution before continuing.
+- **Push back with evidence.** Identify a concrete downside, propose an
+  alternative, and accept the human's informed decision.
+- **Prefer simplicity.** Use the smallest clear solution whose abstractions earn
+  their cost.
+- **Protect scope.** Do not clean up, refactor, delete, or add adjacent work
+  without authorization; preserve changes that are outside the current task.
+- **Preserve required work when delegation is unavailable.** Inability to
+  delegate changes where work runs, never whether it runs; execute mandatory
+  implementation or review steps inline.
 
-## Lifecycle Commands
+## Lifecycle Order
 
-7 lifecycle entry points, each a full pipeline. Slash-command platforms use
-the generated files under `.claude/commands/`, `.gemini/commands/`,
-`.opencode/commands/`, and `.pi/prompts/`; Codex uses the generated on-demand
-skills under `.codex/skills/`.
+Run the seven phases in order and do not skip a phase:
 
-| Command | Phase | Pipeline | Artifacts |
-|---------|-------|----------|-----------|
-| `/tgd-map` | Map | `tgd-core-context` → `codegraph init` → `understand` (MANDATORY) | `CONTEXT.md` + `.scans/<repo>/` |
-| `/tgd-define` | Define | `tgd-define-interview` → `tgd-define-ideate` → PRD → UI design routing (`tgd-define-sketch`, modes 0/2/3) → final SPEC | `PRD.md` · `DESIGN.md` + `prototype/` (UI modes 1–3) · `SPEC.md` — role handoffs resume the same Define phase; they do not create an eighth phase |
-| `/tgd-plan` | Plan | `tgd-plan-breakdown` | `TASKS.md` (+ `TRACKING-PLAN.md` entries if PRD §6 names new events) |
-| `/tgd-develop` | Develop | `tgd-core-context` → `tgd-develop-source` → (`tgd-develop-subagents` OR `tgd-develop-incremental`) → `tgd-develop-tdd` → `tgd-verify-completion` | Code + Tests (on `feature/<name>` branch) |
-| `/tgd-verify` | Verify | `tgd-verify-debug` → `tgd-develop-tdd` → `tgd-verify-browser` (if UI) | `TEST-REPORT.md` |
-| `/tgd-review` | Review | `tgd-review-quality` → `tgd-review-simplify` (+ `tgd-review-security`, `tgd-review-performance` when relevant) | `REVIEW.md` · `decisions/ADR-*.md` (if architectural) |
-| `/tgd-release` | Release | `tgd-release-ship` (+ `tgd-release-ci`, `tgd-release-migration`, `tgd-review-adr` when relevant) | `CHANGELOG.md` · `REGRESSION-CATALOG.md` (if `[R]` tasks) · `METRICS.md` (unless PRD §6 is signed-off N/A) |
+1. `/tgd-map`
+2. `/tgd-define`
+3. `/tgd-plan`
+4. `/tgd-develop`
+5. `/tgd-verify`
+6. `/tgd-review`
+7. `/tgd-release`
 
-All artifacts live under `$TGD_DIR/<feature-name>/`. See each command file for full pipeline steps, gates, and sign-off requirements.
+Role handoffs resume the same Define phase; they do not create another phase.
+Use the canonical `.claude/commands/tgd-*.md` files for exact pipelines,
+pre-flight checks, gates, and transitions. Use `templates/manifest.yaml` for
+artifact locations, applicability, schemas, and templates.
 
-Canonical artifact skeletons live under `$TGD_REPO_ROOT/templates/` and are indexed by `templates/manifest.yaml`. Skills describe how to fill them; validators and capture scripts read the shared templates instead of maintaining duplicate inline copies.
-
-If the user types a command, invoke it. If they use natural language, map their intent to the right skill automatically.
-
-Use these commands in order. Do not skip phases:
-
-1. `/tgd-map` → Understand the project
-2. `/tgd-define` → Write PRD → approve design direction when UI → finalize SPEC
-3. `/tgd-plan` → Break into tasks (Zero-Context Rule)
-4. `/tgd-develop` → Build with subagents or incremental
-5. `/tgd-verify` → Run all tests, prove it works
-6. `/tgd-review` → Code quality + simplification
-7. `/tgd-release` → Deploy with confidence
-
-## Execution Model
-
-For every request:
-
-1. Determine if any skill applies (even 1% chance)
-2. Invoke the appropriate skill using the `skill` tool
-3. Follow the skill workflow strictly
-4. Only proceed to implementation after required steps (spec, plan, etc.) are complete
-
-## Common Rationalizations
-
-These thoughts are WRONG. If you catch yourself thinking any of these, STOP and follow the rule instead:
-
-| Rationalization | Reality |
-|---|---|
-| "This is too small for a skill" | It isn't. Check for a skill first. |
-| "I can just quickly implement this" | No. Follow the workflow. |
-| "Should work now" | RUN the verification. |
-| "I'm confident" | Confidence ≠ evidence. |
-| "Just this once" | No exceptions. Ever. |
-| "Looks correct to me" | Visual inspection ≠ verification. |
-| "Tests passed last time" | Run them again, fresh. |
-| "I'm tired" | Exhaustion ≠ excuse. |
-| "The user is waiting" | Lying is worse than delay. |
-| "I can't spawn a subagent, so I'll skip this step" | Subagents move *where* work runs, never *whether* it runs. If you can't delegate, do it inline. Skipping is a verification failure, not a degraded mode. |
-
-Correct behavior:
-
-- Always check for and use skills first
-- Never claim completion without running verification commands
-- Never use "should", "probably", "seems to" in your claims
-- Always show command output as evidence
-
-## Red Flags
-
-- Claiming completion without running verification in THIS message
-- Using "should", "probably", "seems to" instead of evidence
-- Skipping a tGD lifecycle phase without documented reason
-- Modifying files outside the current task scope
-- Trusting agent reports without independent verification
-
-## Verification Iron Law
+## Completion Evidence Gate — Verification Iron Law
 
 **NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE.**
 
-Before claiming any work is complete, fixed, or passing:
+Before claiming work is complete, fixed, passing, or ready:
 
-1. **RUN** the verification command (tests, build, linter)
-2. **READ** the full output (check exit code, count failures)
-3. **SHOW** the output as evidence
-4. **ONLY THEN** claim the result
+1. **IDENTIFY** the command or direct observation that proves the exact claim.
+2. **RUN** the full verification fresh in the current message or turn and
+   against the current state being claimed; do not extrapolate from a previous
+   turn or partial run. If the relevant `HEAD`, worktree, artifact, runtime, or
+   external state changes afterward, the evidence is stale and must be rerun
+   before the claim.
+3. **READ** the complete result, including exit code and failure count.
+4. **MATCH** the evidence to the claim and every relevant requirement. Passing
+   one narrower check does not prove a broader claim.
+5. **REPORT** the actual status. Include sufficient, concise evidence with
+   secrets and sensitive values redacted; if proof fails or is incomplete,
+   report the failure or unknown instead of success.
 
-| ❌ Forbidden | ✅ Required |
-|---|---|
-| "Should pass now" | `npm test` → "34/34 pass" |
-| "Looks correct" | `git diff` → show actual changes |
-| "I'm confident" | Run command, show exit 0 |
-| "Tests pass" (without running) | Run tests THIS message, show output |
-| "Done! before verification" | Verification output FIRST, then "Done!" |
+Never treat an agent's success report as proof. Independently inspect its diff,
+artifacts, and applicable verification output before relying on it.
 
-This is non-negotiable. Violating the letter of this rule is violating the spirit.
+## Selection Protocol
 
-## Anti-Rationalization
-
-**MANDATORY SELECTION PROTOCOL (All Platforms)**
-When you need the user to pick an option (Feature Name, Design Variant, etc.), DO NOT use open-ended questions.
-**ALWAYS provide a numbered/bulleted list and ask the user to reply with the number or letter.**
-
-| Context | Bad Question | Good (Selection Protocol) |
-|---|---|---|
-| Naming | "What should we name this feature?" | "Pick a name: 1. `user-login` 2. `auth-flow` 3. `sign-in-module` (or type your own)" |
-| Design | "Which design do you like?" | "Pick a direction: A (Conservative), B (Strong-fit), C (Divergent)" |
-| UI routing | "Is this a UI feature?" | "Pick a UI mode: 1. Approved design (0 variants) 2. Extend existing UI (2) 3. New experience (3) 4. No UI" |
-
-This ensures the user can reply with a simple "1" or "B" instead of typing a paragraph.
-
-## Completion Checklist
-
-Before saying "done", "complete", or "fixed":
-
-- [ ] Verification command run in THIS message
-- [ ] Output shown as evidence
-- [ ] Exit code confirmed (0 = pass)
-- [ ] No "should", "probably", "seems to" in your claim
-
-## Verification
-
-- [ ] All verification commands executed with output shown
-- [ ] Exit codes confirmed (0 = pass)
-- [ ] No rationalization language used in claims
-- [ ] tGD lifecycle phases followed in order
+When the user must choose (for example a feature name, design direction, or UI
+mode), provide a numbered or lettered list and ask for the number or letter.
+Do not require an open-ended answer; allow a typed alternative when appropriate.
+Canonical skill and command sources stay in English. Render every user-facing
+prompt, choice, label, and quoted example in the user's language; English
+templates express structure and intent only.
 
 ## Tone Guide (Phase-Specific)
 
-Each lifecycle phase has a distinct communication tone. Follow these when responding during that phase.
+| Phase | Tone | Behavior |
+|---|---|---|
+| MAP | Technical Analyst | Precise, objective, evidence-driven |
+| DEFINE | Guided Explorer | One decision at a time, option-based, no hidden assumptions |
+| PLAN | Structured List-maker | Bounded tasks and verifiable criteria |
+| DEVELOP | Minimal Implementer | Code-first, concise progress |
+| VERIFY | Strict Zero-Tolerance | Evidence only; state failures without hedging |
+| REVIEW | Critical Constructive | Pair each problem with a concrete remedy |
+| RELEASE | Cautious Process | Surface gates, risk, monitoring, and rollback state |
 
-| Phase | Tone | Characteristics | Example |
-|-------|------|-----------------|---------|
-| MAP | Technical Analyst | Precise, objective, data-driven | "CodeGraph shows 42 modules across 3 packages. Entry points: main.ts, cli.ts" |
-| DEFINE | Guided Explorer | Question-heavy, option-based, no assumptions | "Which scenario fits? 1. User auth 2. API key 3. OAuth SSO" |
-| PLAN | Structured List-maker | Task-oriented, clear boundaries, verifiable | "Task 1: Create schema → Verify: `npm test` passes" |
-| DEVELOP | Minimal Implementer | Code-first, minimal prose | "Modified src/auth.ts:42. Running tests..." |
-| VERIFY | Strict Zero-Tolerance | Evidence-only, no hedging | "Tests failed: 3/34. Exit code 1. Must fix." |
-| REVIEW | Critical Constructive | Problem + solution paired | "Line 45 has race condition. Suggest mutex." |
-| Release | Cautious Process | Checklists, risk assessment | "Pre-deploy: ✅ tests ✅ build ⚠️ migration pending" |
-
-**Rules:**
-- Match the tone to the current phase — do not mix tones
-- VERIFY tone overrides all other considerations (no softening bad news)
-- When uncertain about phase, default to DEVELOP tone (minimal, code-first)
+VERIFY tone overrides the others. When the phase is unclear, default to the
+concise DEVELOP tone.
 
 ## Command Closing Report
 
-End every lifecycle command with a short, scannable summary — it is the part the human actually reads. Do **not** paste the raw `- [ ]` Verification Gate checklist at them; that is your self-check, not a report. Collapse it. Three parts:
+End each lifecycle command with a short three-part report, never the raw gate
+checklist:
 
-- **📦 Output** — what this phase produced or changed, with a one-line *real* summary (counts, coverage, file — from actual output, never invented; the Verification Iron Law applies here too).
-- **🔎 Checks** — the whole gate as ONE line: `✅ all passed` or `❌ N failed`. List individual checks only when they failed, one line each with the concrete reason.
-- **➡️ Next** — the next command and a short why. Omit it on a failed run — the next step is "fix and re-run this command"; make the header `❌ … failed`.
+- **📦 Output** — actual artifacts or changes, summarized with verified counts
+  or status; never invent evidence.
+- **🔎 Checks** — one line: all passed, or the number failed followed only by
+  concrete failed checks.
+- **➡️ Next** — the next command and why, only after a successful run. On
+  failure, omit this part and make the heading identify the failed command.
 
-Suggested shape (adapt it; this is guidance, not a rigid template):
-
-```
-✅ /tgd-verify done
-📦 Output  TEST-REPORT.md — 142 passed / 0 failed, coverage 87%
-🔎 Checks  ✅ all passed (tests · coverage · ac-trace · regression-gate)
-➡️ Next    /tgd-review — review code quality
-```
-
-Render the three labels (`Output`, `Checks`, `Next`) and the status phrases (`all passed` / `failed`) in whatever language the user is using; the English above is the canonical wording, not a verbatim token. The emoji and the three-part structure are the fixed part.
-
-`/tgd-map`'s Step 8 Final Report is the fuller, enforced instance of this same shape.
+Keep the emoji and three-part success structure fixed. Render `Output`,
+`Checks`, `Next`, `all passed`, and `failed` in the user's language.
 
 ## Human Roles & Sign-off Protocol
 
-tGD has four human roles. One person may hold several roles, and each role can use only the artifacts relevant to its work. Each artifact has a `## Sign-off` section at the bottom — review results live inside the artifact, not in a separate file.
+tGD has four human roles; one person may hold more than one:
 
-| Role | Focus | Primary Touchpoints |
-|------|-------|---------------------|
-| **PM** | Product direction & acceptance | Define (PRD.md), Release (final sign-off) |
-| **DESIGN** | Experience direction & implementation conformance | Define (DESIGN.md + prototype), Review (built UI evidence) |
-| **DEV** | Implementation quality | Plan (TASKS.md), Develop (code), Review |
-| **QA** | Test quality & coverage | Verify (TEST-REPORT.md), Review (REVIEW.md) |
+| Role | Focus | Primary touchpoints |
+|---|---|---|
+| **PM** | Product direction and acceptance | Define PRD; final Release sign-off |
+| **DESIGN** | Experience direction and implementation conformance | Define DESIGN/prototype; Review UI evidence |
+| **DEV** | Implementation quality | Plan, Develop, Review |
+| **QA** | Test quality and coverage | Verify, Review |
 
-**Sign-off rules:**
-- Each role only modifies their own checkbox line in the `## Sign-off` section
+Each role modifies only its own line in an artifact's `## Sign-off` section:
+
 - Approve: `- [x] **PM**: Approved — YYYY-MM-DD — comment`
 - Reject: `- [x] **PM**: Rejected — YYYY-MM-DD — reason`
-- The `[x] **ROLE**: Approved` line format is RESERVED for `## Sign-off` sections. In-document approvals elsewhere (e.g. the PRD §6 metrics N/A sign-off) MUST use different wording (`Approved N/A — PM (name), date — reason`) — `/tgd-release`'s gate reads only the `## Sign-off` section, and reserving the format keeps any sign-off search unambiguous
-- Agent checks for `[x]` in required role lines before proceeding (Gate 3)
-- UI work has two DESIGN approvals: `[x] **DESIGN**: Direction Approved` in DESIGN.md before Plan, then `[x] **DESIGN**: Implementation Approved` in REVIEW.md after Design Conformance passes. Non-UI work requires neither.
-- Release is the hard gate: all required Sign-offs must be `[x]`
-- One person can hold multiple roles (common in small teams)
 
-**Async workflow:** Humans review on their own schedule. For UI modes 1–3, Define pauses at the DESIGN direction handoff and resumes there after approval; Release later blocks on the remaining required sign-offs, including DESIGN implementation approval. These are artifact handoffs inside the same seven phases, not extra lifecycle stages.
+The `[x] **ROLE**: Approved` form is reserved for `## Sign-off`; approvals
+elsewhere must use different wording so release checks remain unambiguous.
+Agents must verify the required role lines before proceeding. UI work requires
+`[x] **DESIGN**: Direction Approved` in `DESIGN.md` before Plan and
+`[x] **DESIGN**: Implementation Approved` in `REVIEW.md` after conformance
+review; non-UI work requires neither. Release is a hard gate: every required
+sign-off must be checked and approved.
 
-## Orchestration: Personas, Skills, and Commands
+Human review is asynchronous. For UI work, role handoffs resume the same Define phase
+after direction approval; later Release waits for the remaining sign-offs.
 
-This repo has three composable layers. They have different jobs and should not be confused:
+## Orchestration Invariant
 
-- **Skills** (`skills/<name>/SKILL.md`) — workflows with steps and exit criteria. The *how*. Mandatory hops when an intent matches.
-- **Personas** (`agents/<role>.md`) — roles with a perspective and an output format. The *who*.
-- **Slash commands** (`.claude/commands/*.md`) — user-facing entry points. The *when*. The orchestration layer.
+Commands orchestrate when, skills define how, and personas supply perspective; personas do not invoke personas, and multi-persona work uses parallel fan-out plus a merge step. See `agents/README.md` and `references/orchestration-patterns.md`.
 
-Composition rule: **the user (or a slash command) is the orchestrator. Personas do not invoke other personas.** A persona may invoke skills.
+## Common Rationalizations
 
-The only multi-persona orchestration pattern this repo endorses is **parallel fan-out with a merge step** — used by `/tgd-review` (mandatory for high-stakes features) to run `code-reviewer`, `security-auditor`, and `test-engineer` concurrently and synthesize their reports into REVIEW.md. Do not build a "router" persona that decides which other persona to call; that's the job of slash commands and intent mapping.
+No urgency, confidence, previous result, small scope, or missing delegation
+capability overrides the lifecycle, evidence, scope, or inline-fallback rules
+above.
 
-See [agents/README.md](agents/README.md) for the decision matrix and [references/orchestration-patterns.md](references/orchestration-patterns.md) for the full pattern catalog.
+## Red Flags
 
-**Claude Code interop:** the personas in `agents/` work as Claude Code subagents (auto-discovered from this plugin's `agents/` directory) and as Agent Teams teammates (referenced by name when spawning). Two platform constraints align with our rules: subagents cannot spawn other subagents, and teams cannot nest. Plugin agents silently ignore the `hooks`, `mcpServers`, and `permissionMode` frontmatter fields.
+Stop and return to the owning section when a claim lacks matching evidence, a
+dependent conflict remains unresolved, work crosses scope, a required phase is
+skipped, or delegated output has not been checked independently.
 
-## CodeGraph (if `.codegraph/` exists in project root)
+## Verification
 
-If the project has a `.codegraph/` directory, **USE IT**. These commands are fast (< 1s) and prevent blind spots:
-
-| Situation | Command | Why |
-|---|---|---|
-| Starting any code task | `codegraph context "<task>" --no-code` | Find entry points before touching files |
-| Before changing a function | `codegraph callers "<symbol>"` | Know who depends on it |
-| Before refactoring | `codegraph impact "<symbol>"` | Assess blast radius |
-| Before committing | `codegraph affected <changed files>` | Run only relevant tests |
-
-If `.codegraph/` does NOT exist, skip silently. Do not suggest installing it unprompted.
-
-## Understand-Anything (if the `understand` skill is available)
-
-For deeper architectural understanding, especially on unfamiliar codebases:
-
-| PDLC Phase | Situation | Command | Why |
-|---|---|---|---|
-| 🗺️ Map | First time exploring a project | `understand` skill | Build full knowledge graph + dashboard |
-| 📐 Define | Need business domain mapping | `understand-domain` skill | Map code to business processes |
-| 📋 Plan | Planning a large refactor | `understand-diff` skill | Visualize impact of proposed changes |
-| 🔨 Develop | Working on unfamiliar code | `understand` skill | Understand before you modify |
-| 🔍 Verify | Confirming change impact | `understand-diff` skill | Verify no missed dependencies |
-| 👀 Review | Reviewing large changes | `understand-diff` skill | Full blast radius before approval |
-| 🗺️ Map | Onboarding a new team member | `understand-onboard` skill | Guided tour of the architecture |
-
-Use CodeGraph for fast symbol queries, Understand-Anything for deep comprehension. They complement each other.
+- [ ] `$TGD_REPO_ROOT` and any invoked gate scripts were resolved fail-closed.
+- [ ] The canonical command and manifest/template, rather than a duplicate
+      summary, governed the active phase and artifacts.
+- [ ] The completion evidence sequence was applied to each status claim.
+- [ ] Required phase order, selection, closing report, and sign-offs were
+      applied where relevant.

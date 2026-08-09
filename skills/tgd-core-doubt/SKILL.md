@@ -7,239 +7,172 @@ description: Subjects every non-trivial decision to a fresh-context adversarial 
 
 ## Overview
 
-A confident answer is not a correct one. Long sessions accumulate context that quietly turns assumptions into "facts" without anyone noticing. Doubt-driven development is the discipline of materializing a fresh-context reviewer — biased to **disprove**, not approve — before any non-trivial output stands.
-
-This is not `/review`. `/review` is a verdict on a finished artifact. This is an in-flight posture: non-trivial decisions get cross-examined while course-correction is still cheap.
+Materialize a fresh-context reviewer, biased to disprove rather than approve,
+before a non-trivial output stands. This is an in-flight reasoning check;
+`/review` remains the verdict on a finished artifact.
 
 ## When to Use
 
-A decision is **non-trivial** when at least one of these is true:
+A decision is non-trivial when at least one of these is true:
 
-- It introduces or modifies branching logic
-- It crosses a module or service boundary
-- It asserts a property the type system or compiler cannot verify (thread safety, idempotence, ordering, invariants)
-- Its correctness depends on context the future reader cannot see
-- Its blast radius is irreversible (production deploy, data migration, public API change)
+- It introduces or changes branching logic.
+- It crosses a module or service boundary.
+- It asserts an invariant the type system or compiler cannot verify, such as
+  thread safety, idempotence, or ordering.
+- Its correctness depends on context a future reader cannot see.
+- Its blast radius is irreversible, such as a production deployment, data
+  migration, or public API change.
 
-Apply the skill when:
+Use the skill for architecture under uncertainty, non-trivial code before it is
+committed, non-obvious correctness claims, and unfamiliar code.
 
-- About to make an architectural decision under uncertainty
-- About to commit non-trivial code
-- About to claim a non-obvious fact ("this is safe", "this scales", "this matches the spec")
-- Working in code you don't fully understand
-
-**When NOT to use:**
-
-- Mechanical operations (renaming, formatting, file moves)
-- Following a clear, unambiguous user instruction
-- Reading or summarizing existing code
-- One-line changes with obvious correctness
-- Pure tooling operations (running tests, listing files)
-- The user has explicitly asked for speed over verification
-
-If you doubt every keystroke, you ship nothing. The skill applies only to non-trivial decisions as defined above.
+Do **not** use it for mechanical edits, clear user instructions, reading or
+summarizing code, one-line changes with obvious correctness, pure tooling
+operations, or when the user explicitly prefers speed over verification.
 
 ## Loading Constraints
 
-This skill is designed for the **main-session orchestrator**, where Step 3 (DOUBT, detailed below) can spawn a fresh-context reviewer.
+This skill belongs in the main-session orchestrator because DOUBT requires a
+fresh-context reviewer.
 
-- **Do NOT add this skill to a persona's `skills:` frontmatter.** A persona that follows Step 3 would spawn another persona — the orchestration anti-pattern explicitly forbidden by `references/orchestration-patterns.md` ("personas do not invoke other personas").
-- **If you find yourself applying this skill from inside a subagent context** (where Claude Code prevents nested subagent spawn): the preferred path is to surface to the user that doubt-driven cannot run nested and let the main session handle it. As a last resort only, a degraded self-questioning fallback exists — rewrite ARTIFACT + CONTRACT as a fresh self-prompt with a hard mental separator from your prior reasoning, and walk Steps 1–5. This is **not fresh-context review** (you carry your own context with you), so flag the result as degraded and prefer escalation whenever the user is reachable.
+- Do not add it to a persona's `skills:` frontmatter; personas do not invoke
+  other personas.
+- Inside a subagent that cannot spawn a reviewer, surface that limitation and
+  let the main session run the cycle.
+- Only as a last resort, use degraded self-questioning: rewrite ARTIFACT +
+  CONTRACT as a fresh self-prompt behind a hard mental separator and run the
+  process below. Label the result as degraded because it is not fresh-context
+  review, and prefer escalation whenever the user is reachable.
 
 ## The Process
 
-Copy this checklist when applying the skill:
+### 1. CLAIM — Name what is about to stand
 
-```
-Doubt cycle:
-- [ ] Step 1: CLAIM — wrote the claim + why-it-matters
-- [ ] Step 2: EXTRACT — isolated artifact + contract, stripped reasoning
-- [ ] Step 3: DOUBT — invoked fresh-context reviewer with adversarial prompt
-- [ ] Step 4: RECONCILE — classified every finding against the artifact text
-- [ ] Step 5: STOP — met stop condition (trivial findings, 3 cycles, or user override)
-```
+Write the decision and why it matters in two or three lines. If it cannot be
+stated compactly, clarify the decision before reviewing it.
 
-### Step 1: CLAIM — Surface what stands
+### 2. EXTRACT — Isolate the reviewable unit
 
-Name the decision in two or three lines:
+Prepare the smallest **ARTIFACT** and its **CONTRACT**, not the journey:
 
-```
-CLAIM: "The new caching layer is thread-safe under the
-        read-heavy workload described in the spec."
-WHY THIS MATTERS: a race here corrupts user data and is
-                  hard to detect in QA.
-```
+- Code: the diff or function, not an unrelated whole file.
+- Decision: the proposal plus the constraints it must satisfy.
+- Assertion: the assertion and its supporting evidence, kept distinct from the
+  orchestrator's CLAIM.
 
-If you can't write the claim that compactly, you have a vibe, not a decision. Surface it before scrutinizing it.
+Strip prior reasoning and conclusions. If the artifact is too large for one
+careful read, split it into independent reviewable units before continuing.
 
-### Step 2: EXTRACT — Smallest reviewable unit
+### 3. DOUBT — Invoke an isolated reviewer
 
-A fresh-context reviewer needs the **artifact** and the **contract**, not the journey.
+Spawn a fresh-context reviewer and pass **ARTIFACT + CONTRACT only**. Do not pass
+the CLAIM, conversation, implementation journey, or prior reasoning.
 
-- Code: the diff or the function — not the whole file
-- Decision: the proposal in 3–5 sentences plus the constraints it has to satisfy
-- Assertion: the claim plus the evidence that supposedly supports it (kept distinct from the Step 1 CLAIM block, which is the orchestrator's hypothesis under scrutiny)
+Require an adversarial review that tries to find unstated assumptions, edge
+cases, hidden coupling, contract violations, broken conventions, and unexpected
+failure modes. It must not validate or summarize; it reports issues or states
+that none were found after a thorough attempt. This instruction overrides a
+review persona's balanced default response shape. If it cannot be overridden,
+use a generic fresh reviewer.
 
-Strip your reasoning. If you hand over conclusions, you'll get back validation of your conclusions. The unit must be small enough that a reviewer can hold it in mind in one read — if it's a 500-line PR, decompose first.
+#### Cross-model option — every cycle
 
-### Step 3: DOUBT — Invoke the fresh-context reviewer
+After the single-model review and before RECONCILE:
 
-The reviewer's prompt **must be adversarial**. Framing decides the answer.
+- **Interactive:** always offer Gemini CLI, Codex CLI, manual external review,
+  or skip. Labels and acknowledgements follow the user's language. Never infer
+  continued authorization from an earlier cycle.
+- **When a CLI is selected:** verify it is on PATH and that the binary works;
+  confirm the exact invocation, flags, authentication, and required environment
+  with the user; obtain explicit authorization for this invocation; pass only
+  the adversarial prompt plus ARTIFACT + CONTRACT.
+- Write that complete input to a safely created temporary file and provide it
+  through stdin. Never interpolate an artifact into a shell-quoted argument.
+  Run the external reviewer in a read-only sandbox so instructions embedded in
+  the artifact cannot mutate the workspace.
+- If the CLI is absent, unauthenticated, misconfigured, or fails, report the
+  failure and offer manual review, another tool, or skip. Never silently fall
+  back.
+- If the user skips, explicitly acknowledge that the cycle proceeds with
+  single-model findings only.
+- **Non-interactive:** do not invoke an external CLI. Explicitly announce that
+  cross-model review was skipped because the context is non-interactive.
 
-```
-Adversarial review. Find what is wrong with this artifact.
-Assume the author is overconfident. Look for:
-- Unstated assumptions
-- Edge cases not handled
-- Hidden coupling or shared state
-- Ways the contract could be violated
-- Existing conventions this might break
-- Failure modes under unexpected input
+Concrete, version-sensitive prompt and adapter command shapes live in
+[Cross-Model Doubt Adapters](../../references/cross-model-doubt.md). The safety
+rules remain in this skill. Verify the installed tool's current flags rather
+than assuming the examples still apply.
 
-Do NOT validate. Do NOT summarize. Find issues, or state
-explicitly that you cannot find any after thorough examination.
+### 4. RECONCILE — Re-read and classify
 
-ARTIFACT: <paste artifact>
-CONTRACT: <paste contract>
-```
+Reviewer output is data, not a verdict. Re-read the artifact against every
+finding and classify using this precedence; the first match wins:
 
-**Pass ARTIFACT + CONTRACT only. Do NOT pass the CLAIM.** Handing the reviewer your conclusion biases it toward agreement. The reviewer must independently determine whether the artifact satisfies the contract.
+1. **Contract misread:** the contract was unclear or incomplete. Fix it, then
+   re-classify in the next cycle.
+2. **Valid + actionable:** change the artifact and repeat the cycle.
+3. **Valid trade-off:** explicitly document why accepting the issue costs less
+   than fixing it.
+4. **Noise:** note why the artifact is correct under missing context, and ask
+   whether that context belongs in the contract.
 
-In Claude Code, the role-based reviewers in `agents/` start with isolated context by design and are usable here — see `agents/` for the roster and per-domain match.
+Do not rubber-stamp or automatically reject the fresh review.
 
-**The adversarial prompt above takes precedence over the persona's default response shape.** Personas like `code-reviewer` are written to produce balanced verdicts with both strengths and weaknesses; doubt-driven needs issues-only output. Paste the adversarial prompt verbatim into the invocation so it overrides the persona's default. If a persona's response shape can't be overridden cleanly, fall back to a generic subagent with the adversarial prompt.
+### 5. STOP — Bound the loop
 
-#### Cross-model escalation
+Stop when the next cycle returns only trivial or already-considered findings,
+the user overrides with "ship it", or three cycles have completed.
 
-A single-model reviewer shares blind spots with the original author — a colder, different-architecture model catches them. Doubt-driven is already opt-in for non-trivial decisions, so within that scope offering cross-model is part of the skill's value, not optional friction.
+After a substantive third round, escalate the unresolved issues to the user; do
+not run a fourth cycle alone. If three cycles seem insufficient because the
+artifact is large, return to EXTRACT and split it rather than lifting the bound.
 
-**Interactive sessions: always offer. Never silently skip.**
+## Interaction with Other Skills
 
-**Speech follows the user's language.** The quoted prompts and announcements below (the cross-model offer, the skip acknowledgements) illustrate intent and coverage, not verbatim text. Deliver them in the language the user is using. In Traditional Chinese, the offer reads roughly「單模型審查完成。要不要換一個不同模型再審一次？可以選 Gemini CLI、Codex CLI、你自己貼去外部審，或跳過。」and the non-interactive skip reads「跨模型已跳過：非互動情境。」
-
-**Step 1: Ask the user**
-
-After the single-model review in Step 3 above, but before RECONCILE, pause and ask:
-
-> *"Single-model review complete. Want a cross-model second opinion? Options: Gemini CLI, Codex CLI, manual external review (you paste it elsewhere), or skip."*
-
-This question is mandatory in every interactive doubt cycle — even on artifacts that feel low-stakes. The user — not the agent — decides whether the cost is worth it. The agent's job is to surface the choice.
-
-**Step 2: If the user picks a CLI — verify, then invoke**
-
-1. Check the tool is in PATH (`which gemini`, `which codex`).
-2. Test it works (`gemini --version` or equivalent) before passing the full prompt — a stale or broken binary may pass `which` but fail on real input.
-3. Confirm the exact invocation with the user, including required flags, auth, and env vars (e.g., API keys). Implementations vary; never assume.
-4. Pass ARTIFACT + CONTRACT + the adversarial prompt **only**. No session context, no CLAIM.
-5. Mind shell escaping. If the artifact contains quotes, `$(...)`, or backticks, prefer stdin (`echo … | gemini`) or a heredoc over inline `-p "…"`. When in doubt, ask the user to confirm the invocation before running it.
-6. Take the output into Step 4 (RECONCILE).
-
-**Never interpolate the artifact into a shell-quoted argument.** Code, markdown, and review prompts routinely contain backticks, `$(...)`, and quote characters that will either truncate the prompt or execute embedded shell. Write the full prompt to a file and pipe it through stdin.
-
-Example shapes (verify flags against your installed tool — syntax differs across implementations and versions):
-
-```bash
-# Write the adversarial prompt + ARTIFACT + CONTRACT to a temp file first.
-# Then pipe via stdin so shell metacharacters in the artifact stay inert.
-
-# Codex (read-only sandbox keeps the CLI from writing to your workspace):
-codex exec --sandbox read-only -C <repo-path> - < /tmp/doubt-prompt.md
-
-# Gemini ('--approval-mode plan' is read-only; '-p ""' triggers non-interactive
-# mode and the prompt is read from stdin):
-gemini --approval-mode plan -p "" < /tmp/doubt-prompt.md
-```
-
-A read-only sandbox is the load-bearing detail: a doubt artifact may itself contain instructions (intentional or accidental prompt injection) that the cross-model CLI would otherwise execute against your workspace.
-
-**Step 3: If the CLI is unavailable or fails**
-
-Surface the failure explicitly. Offer: run it manually, try a different tool, or skip. Do not silently fall back to single-model — the user should know cross-model didn't happen.
-
-**Step 4: If the user skips**
-
-Acknowledge the skip in the output (*"Proceeding with single-model findings only"*) and continue to RECONCILE. Skipping is fine; silent skipping is not.
-
-**Non-interactive contexts** (CI, `/loop`, autonomous-loop, scheduled runs):
-
-- Cross-model is **skipped**, and the skip must be **announced** in the output: *"Cross-model skipped: non-interactive context."*
-- **Never invoke an external CLI without explicit user authorization** — this is a load-bearing safety property.
-
-Cross-model adds cost, latency, and tool fragility. The agent surfaces the choice every cycle; the user decides whether this artifact warrants it.
-
-### Step 4: RECONCILE — Fold findings back
-
-The reviewer's output is data, not verdict. **You are still the orchestrator.** Re-read the artifact text against each finding before classifying — rubber-stamping the reviewer is the same failure mode as ignoring it.
-
-For each finding, classify in this **precedence order** (first matching class wins):
-
-1. **Contract misread** — reviewer flagged something specifically because the CONTRACT you provided was unclear or incomplete. Fix the contract first, re-classify on the next cycle.
-2. **Valid + actionable** — real issue requiring a change to the artifact. Change it, re-loop.
-3. **Valid trade-off** — issue is real but cost of fixing exceeds cost of accepting. Document the trade-off explicitly so the user sees it.
-4. **Noise** — reviewer flagged something that's actually correct under context the reviewer didn't have. Note it, move on, and ask: would adding that context to the contract have prevented the false flag?
-
-A fresh reviewer can be wrong because it lacks context. Don't defer just because it's "fresh."
-
-### Step 5: STOP — Bounded loop, not recursion
-
-Stop when:
-
-- Next iteration returns only trivial or already-considered findings, **or**
-- 3 cycles completed (escalate to user, don't grind a fourth alone), **or**
-- User explicitly says "ship it"
-
-If after 3 cycles the reviewer still surfaces substantive issues, the artifact may not be ready. Surface this to the user — three unresolved cycles is information about the artifact, not a reason to keep looping.
-
-If 3 cycles is "obviously insufficient" because the artifact is large: the artifact is too big — return to Step 2 and decompose. Do not lift the bound.
+- **`tgd-review-quality` / `/review`:** final artifact verdict; doubt-driven is
+  the earlier per-decision challenge.
+- **`tgd-develop-source`:** verifies framework facts; doubt-driven verifies how
+  the artifact uses those facts under its contract.
+- **`tgd-develop-tdd`:** a failing test created during RED is the doubt step for
+  that behavioral claim. Do not duplicate it with a reviewer for the same claim.
+- **`tgd-verify-debug`:** use it to localize a failure mode found by the reviewer.
+- **Orchestration rules:** `references/orchestration-patterns.md` prohibits a
+  persona from invoking another persona.
 
 ## Common Rationalizations
 
 | Rationalization | Reality |
 |---|---|
-| "I'm confident, skip the doubt step" | Confidence correlates poorly with correctness on novel problems. Moments of certainty are exactly when blind spots hide. |
-| "Spawning a reviewer is expensive" | Debugging a wrong commit in production is more expensive. The check is bounded; the bug isn't. |
-| "The reviewer will just nitpick" | Only if unscoped. Constrain the prompt to "issues that would make this fail under the contract." |
-| "I'll do doubt at the end with `/review`" | `/review` is a final gate. Doubt-driven catches wrong directions early when course-correction is cheap. By PR time it's too late. |
-| "If I doubt every step I'll never ship" | The skill applies to non-trivial decisions, not every keystroke. Re-read "When NOT to Use." |
-| "Two opinions are always better than one" | Not when the second has less context and produces noise. Reconcile, don't defer. |
-| "The reviewer disagreed so I was wrong" | The reviewer lacks your context — disagreement is information, not verdict. Re-read the artifact, classify, then decide. |
-| "Cross-model is always better" | Cross-model catches blind spots a single model shares with itself, but it adds cost and tool fragility. Offer it every interactive doubt cycle — the user decides whether the artifact warrants it. The agent's job is to surface the choice, not to gate it. |
-| "User said yes once, so I can keep invoking the CLI" | Each invocation is its own authorization. The artifact, the prompt, and the flags change between calls — re-confirm the exact command with the user before every run. |
+| "I'm confident, so review adds nothing" | Novel problems hide blind spots at moments of confidence. |
+| "I'll do it at `/review`" | Waiting until the final gate makes a wrong direction expensive to reverse. |
+| "The reviewer disagreed, so it must be right" | A fresh reviewer lacks context; reconcile findings against the artifact. |
+| "The user authorized the CLI earlier" | Every artifact, prompt, flags, and invocation require fresh authorization. |
+| "Cross-model is always better" | It can add cost, latency, and noise; always surface the option, then let the user decide. |
 
 ## Red Flags
 
-- Spawning a fresh-context reviewer for a one-line rename or formatting change
-- Treating reviewer output as authoritative without re-reading the artifact text
-- Looping >3 cycles without escalating to the user
-- Prompting the reviewer with "is this good?" instead of "find issues"
-- Skipping doubt under time pressure on a high-stakes decision
-- Re-spawning fresh-context on an unchanged artifact (you'll get the same findings; you're stalling)
-- **Doubt theater (checkable signal)**: across 2 or more cycles where the reviewer surfaced substantive findings, zero findings were classified as actionable. You are validating, not doubting. Stop and escalate.
-- Doubting only after committing — that's `/review`, not doubt-driven development
-- Hardcoding an external CLI invocation without confirming with the user that the tool exists, is configured, and accepts that exact syntax
-- **Silently skipping cross-model in an interactive doubt cycle.** Even when not recommending it, the offer must be visible. Skipping is fine; silent skipping is not.
-- Falling back silently when an external CLI errors or is missing — surface the failure and let the user redirect
-- Stripping the contract from the reviewer's input
-- Passing the CLAIM to the reviewer (biases toward agreement)
-
-## Interaction with Other Skills
-
-- **`tgd-review-quality` / `/review`**: complementary. `/review` is post-hoc PR verdict; doubt-driven is in-flight per-decision. Use both.
-- **`tgd-develop-source`**: SDD verifies *facts about frameworks* against official docs. Doubt-driven verifies *your reasoning about the artifact*. SDD checks the API exists; doubt-driven checks you used it correctly under the contract.
-- **`tgd-develop-tdd`**: TDD's RED step is doubt made concrete — a failing test is a disproof attempt. When TDD applies, that failing test *is* the doubt step for behavioral claims.
-- **`tgd-verify-debug`**: when the reviewer surfaces a real failure mode, drop into the debugging skill to localize and fix.
-- **Repo orchestration rules** (`references/orchestration-patterns.md`): this skill orchestrates from the main session. A persona calling another persona is anti-pattern B — see Loading Constraints above.
+- Reviewing a mechanical edit or obvious one-line change
+- Giving the reviewer the CLAIM, journey, conversation, or prior reasoning
+- Asking whether the artifact is "good" instead of adversarially seeking issues
+- Treating reviewer output as authoritative without rereading the artifact
+- Re-reviewing an unchanged artifact or running more than three cycles alone
+- Waiting until after committing to run the first doubt cycle
+- Across two substantive cycles, classifying zero findings as actionable
+- Silently skipping, failing over, or invoking cross-model review
+- Reusing authorization or assuming CLI flags, auth, or binary health
+- Passing an artifact through a shell-quoted argument or granting write access
+- Omitting the CONTRACT from the isolated review
 
 ## Verification
 
-After applying doubt-driven development:
+After applying doubt-driven development, confirm:
 
-- [ ] Every non-trivial decision (per the definition above) was named explicitly as a CLAIM before standing
-- [ ] At least one fresh-context review per non-trivial artifact (a failing test produced by TDD's RED step satisfies this for behavioral claims, per Interaction with Other Skills)
-- [ ] The reviewer received ARTIFACT + CONTRACT — NOT the CLAIM, NOT your reasoning
-- [ ] The reviewer's prompt was adversarial ("find issues"), not validating ("is it good")
-- [ ] Findings were classified against the artifact text (not rubber-stamped) using the precedence: contract misread / actionable / trade-off / noise
-- [ ] A stop condition was met (trivial findings, 3 cycles, or user override)
-- [ ] In interactive mode, cross-model was **explicitly offered** to the user (regardless of artifact stakes) and the response was acknowledged in the output
-- [ ] In non-interactive mode, cross-model was skipped and the skip was announced
-- [ ] Any external CLI invocation was preceded by a PATH check, a working-binary test, syntax confirmation with the user, and explicit authorization to run
+- [ ] Every non-trivial decision was named as a CLAIM before standing
+- [ ] A fresh-context reviewer received only ARTIFACT + CONTRACT, or TDD RED supplied the failing test for the same behavioral claim
+- [ ] The review was adversarial and findings were reconciled in the required precedence order
+- [ ] Oversized artifacts were split and the stop condition was trivial/already-considered findings, user override, or three cycles
+- [ ] Substantive findings after the third cycle were escalated to the user
+- [ ] Interactive cross-model review was offered every cycle in the user's language and the response was acknowledged
+- [ ] Non-interactive cross-model review was skipped and announced
+- [ ] Every external invocation had fresh authorization plus verified binary, flags, authentication, environment, safe file/stdin input, and read-only sandboxing
+- [ ] External-tool failure or skip was explicit rather than silently downgraded

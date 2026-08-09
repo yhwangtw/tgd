@@ -1,236 +1,355 @@
 # Testing Patterns Reference
 
-Quick reference for common testing patterns across the stack. Use alongside the `tgd-develop-tdd` skill.
+Examples and framework recipes for
+[`tgd-develop-tdd`](../skills/tgd-develop-tdd/SKILL.md). The main skill owns all
+testing policy, gates, thresholds, and required workflow. This file is
+illustrative only; use the relevant section when syntax or a worked example is
+helpful, and never treat an example here as an alternative policy.
 
 ## Table of Contents
 
-- [Test Structure (Arrange-Act-Assert)](#test-structure-arrange-act-assert)
-- [Test Naming Conventions](#test-naming-conventions)
+- [TDD Cycle](#tdd-cycle)
+- [Bug Reproduction](#bug-reproduction)
+- [Test Pyramid and Selection](#test-pyramid-and-selection)
+- [State-Based Assertions](#state-based-assertions)
+- [DAMP Test Stories](#damp-test-stories)
+- [Arrange, Act, Assert](#arrange-act-assert)
+- [One Concept and Descriptive Names](#one-concept-and-descriptive-names)
 - [Common Assertions](#common-assertions)
-- [Mocking Patterns](#mocking-patterns)
-- [React/Component Testing](#reactcomponent-testing)
-- [API / Integration Testing](#api--integration-testing)
-- [E2E Testing (Playwright)](#e2e-testing-playwright)
-- [Test Anti-Patterns](#test-anti-patterns)
+- [Test Doubles](#test-doubles)
+- [React and Component Testing](#react-and-component-testing)
+- [API and Integration Testing](#api-and-integration-testing)
+- [E2E Testing with Playwright](#e2e-testing-with-playwright)
+- [Browser Inspection](#browser-inspection)
+- [AC-Tagged Tests](#ac-tagged-tests)
+- [Worked Anti-Patterns](#worked-anti-patterns)
 
-## Test Structure (Arrange-Act-Assert)
+## TDD Cycle
+
+```text
+    RED                GREEN              REFACTOR
+ Write a test    Write minimal code    Clean up the
+ that fails  ──→  to make it pass  ──→  implementation  ──→  repeat
+      │                  │                    │
+      ▼                  ▼                    ▼
+ Correct failure      Test passes         Tests stay green
+```
 
 ```typescript
-it('describes expected behavior', () => {
-  // Arrange: Set up test data and preconditions
-  const input = { title: 'Test Task', priority: 'high' };
+// RED: createTask does not exist yet, so this should fail for that reason.
+it('creates a task with title and default status', async () => {
+  const task = await createTask({ title: 'Buy groceries' });
+  expect(task).toMatchObject({ title: 'Buy groceries', status: 'pending' });
+  expect(task.id).toBeDefined();
+  expect(task.createdAt).toBeInstanceOf(Date);
+});
 
-  // Act: Perform the action being tested
-  const result = createTask(input);
+// GREEN: the smallest implementation that satisfies the test.
+export async function createTask(input: { title: string }): Promise<Task> {
+  const task = {
+    id: generateId(),
+    title: input.title,
+    status: 'pending' as const,
+    createdAt: new Date(),
+  };
+  await db.tasks.insert(task);
+  return task;
+}
+```
 
-  // Assert: Verify the outcome
-  expect(result.title).toBe('Test Task');
-  expect(result.priority).toBe('high');
-  expect(result.status).toBe('pending');
+## Bug Reproduction
+
+```text
+Bug report → failing reproduction → minimum fix → reproduction passes
+           → full suite passes → inspect affected tests and components
+```
+
+```typescript
+// Bug: completing a task does not record completedAt.
+it('sets completedAt when a task is completed', async () => {
+  const task = await createTask({ title: 'Test' });
+  const completed = await completeTask(task.id);
+
+  expect(completed.status).toBe('completed');
+  expect(completed.completedAt).toBeInstanceOf(Date); // Fails before the fix.
+});
+
+export async function completeTask(id: string): Promise<Task> {
+  return db.tasks.update(id, {
+    status: 'completed',
+    completedAt: new Date(),
+  });
+}
+```
+
+An optional reproduction-test subagent can be prompted with only the bug
+description and this output constraint: "Write a test that reproduces the bug
+and fails against the current code." The main agent still observes the failure
+before touching production code.
+
+## Test Pyramid and Selection
+
+```text
+          ╱╲
+         ╱  ╲         E2E
+        ╱────╲        Critical real user flows
+       ╱      ╲       Integration
+      ╱────────╲      Boundaries and component interaction
+     ╱          ╲     Unit
+    ╱────────────╲    Pure isolated logic
+```
+
+The diagram visualizes relative layering only. Use the portfolio targets,
+resource constraints, and selection rules in the main skill.
+
+## State-Based Assertions
+
+```typescript
+// Outcome-focused: survives an internal refactor.
+it('returns newest tasks first', async () => {
+  const tasks = await listTasks({ sortBy: 'createdAt', sortOrder: 'desc' });
+  expect(tasks[0].createdAt.getTime())
+    .toBeGreaterThan(tasks[1].createdAt.getTime());
+});
+
+// Interaction-focused: coupled to the current implementation.
+it('calls db.query with an ORDER BY clause', async () => {
+  await listTasks({ sortBy: 'createdAt', sortOrder: 'desc' });
+  expect(db.query).toHaveBeenCalledWith(
+    expect.stringContaining('ORDER BY created_at DESC'),
+  );
 });
 ```
 
-## Test Naming Conventions
+## DAMP Test Stories
 
 ```typescript
-// Pattern: [unit] [expected behavior] [condition]
-describe('TaskService.createTask', () => {
-  it('creates a task with default pending status', () => {});
-  it('throws ValidationError when title is empty', () => {});
-  it('trims whitespace from title', () => {});
-  it('generates a unique ID for each task', () => {});
+it('rejects tasks with empty titles', () => {
+  const input = { title: '', assignee: 'user-1' };
+  expect(() => createTask(input)).toThrow('Title is required');
+});
+
+it('trims whitespace from titles', () => {
+  const input = { title: '  Buy groceries  ', assignee: 'user-1' };
+  const task = createTask(input);
+  expect(task.title).toBe('Buy groceries');
+});
+```
+
+The repeated input shape keeps both examples readable without tracing a shared
+fixture.
+
+## Arrange, Act, Assert
+
+```typescript
+it('marks a task overdue after its deadline', () => {
+  // Arrange
+  const task = createTask({
+    title: 'Test',
+    deadline: new Date('2025-01-01'),
+  });
+
+  // Act
+  const result = checkOverdue(task, new Date('2025-01-02'));
+
+  // Assert
+  expect(result.isOverdue).toBe(true);
+});
+```
+
+## One Concept and Descriptive Names
+
+```typescript
+// Each name specifies one behavior.
+describe('TaskService.completeTask', () => {
+  it('sets status to completed and records the timestamp', () => {});
+  it('throws NotFoundError for a missing task', () => {});
+  it('is a no-op when the task is already completed', () => {});
+  it('sends a notification to the assignee', () => {});
+});
+
+// The vague name and mixed concepts make failures hard to diagnose.
+it('validates titles correctly', () => {
+  expect(() => createTask({ title: '' })).toThrow();
+  expect(createTask({ title: '  hello  ' }).title).toBe('hello');
+  expect(() => createTask({ title: 'a'.repeat(256) })).toThrow();
 });
 ```
 
 ## Common Assertions
 
 ```typescript
-// Equality
-expect(result).toBe(expected);           // Strict equality (===)
-expect(result).toEqual(expected);        // Deep equality (objects/arrays)
-expect(result).toStrictEqual(expected);  // Deep equality + type matching
+expect(result).toBe(expected);           // strict equality
+expect(result).toEqual(expected);        // deep equality
+expect(result).toStrictEqual(expected);  // deep equality and type matching
 
-// Truthiness
 expect(result).toBeTruthy();
 expect(result).toBeFalsy();
 expect(result).toBeNull();
 expect(result).toBeDefined();
 expect(result).toBeUndefined();
 
-// Numbers
 expect(result).toBeGreaterThan(5);
 expect(result).toBeLessThanOrEqual(10);
-expect(result).toBeCloseTo(0.3, 5);      // Floating point
+expect(result).toBeCloseTo(0.3, 5);
 
-// Strings
 expect(result).toMatch(/pattern/);
 expect(result).toContain('substring');
-
-// Arrays / Objects
 expect(array).toContain(item);
 expect(array).toHaveLength(3);
 expect(object).toHaveProperty('key', 'value');
 
-// Errors
-expect(() => fn()).toThrow();
 expect(() => fn()).toThrow(ValidationError);
-expect(() => fn()).toThrow('specific message');
-
-// Async
 await expect(asyncFn()).resolves.toBe(value);
 await expect(asyncFn()).rejects.toThrow(Error);
 ```
 
-## Mocking Patterns
+## Test Doubles
 
-### Mock Functions
-
-```typescript
-const mockFn = jest.fn();
-mockFn.mockReturnValue(42);
-mockFn.mockResolvedValue({ data: 'test' });
-mockFn.mockImplementation((x) => x * 2);
-
-expect(mockFn).toHaveBeenCalled();
-expect(mockFn).toHaveBeenCalledWith('arg1', 'arg2');
-expect(mockFn).toHaveBeenCalledTimes(3);
-```
-
-### Mock Modules
+The main skill defines when each kind of double is acceptable. These snippets
+only show Jest syntax for a boundary where a double has already been selected.
 
 ```typescript
-// Mock an entire module
+const stub = jest.fn().mockResolvedValue({ data: 'test' });
+expect(stub).toHaveBeenCalledWith('task-1');
+
 jest.mock('./database', () => ({
   query: jest.fn().mockResolvedValue([{ id: 1, title: 'Test' }]),
 }));
 
-// Mock specific exports
 jest.mock('./utils', () => ({
   ...jest.requireActual('./utils'),
   generateId: jest.fn().mockReturnValue('test-id'),
 }));
 ```
 
-### Mock at Boundaries Only
+Typical controllable boundaries include databases, HTTP requests, file-system
+operations, external APIs, and time. Internal utilities, business rules, data
+transforms, validation, and pure functions usually produce a less useful test
+when replaced with interaction mocks.
 
-```
-Mock these:                    Don't mock these:
-├── Database calls             ├── Internal utility functions
-├── HTTP requests              ├── Business logic
-├── File system operations     ├── Data transformations
-├── External API calls         ├── Validation functions
-└── Time/Date (when needed)    └── Pure functions
-```
-
-## React/Component Testing
+## React and Component Testing
 
 ```tsx
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
-describe('TaskForm', () => {
-  it('submits the form with entered data', async () => {
-    const onSubmit = jest.fn();
-    render(<TaskForm onSubmit={onSubmit} />);
+it('submits the task entered by the user', async () => {
+  const onSubmit = jest.fn();
+  render(<TaskForm onSubmit={onSubmit} />);
 
-    // Find elements by accessible role/label (not test IDs)
-    await screen.findByRole('textbox', { name: /title/i });
-    fireEvent.change(screen.getByRole('textbox', { name: /title/i }), {
-      target: { value: 'New Task' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: /create/i }));
-
-    await waitFor(() => {
-      expect(onSubmit).toHaveBeenCalledWith({ title: 'New Task' });
-    });
+  fireEvent.change(screen.getByRole('textbox', { name: /title/i }), {
+    target: { value: 'New Task' },
   });
+  fireEvent.click(screen.getByRole('button', { name: /create/i }));
 
-  it('shows validation error for empty title', async () => {
-    render(<TaskForm onSubmit={jest.fn()} />);
-
-    fireEvent.click(screen.getByRole('button', { name: /create/i }));
-
-    expect(await screen.findByText(/title is required/i)).toBeInTheDocument();
+  await waitFor(() => {
+    expect(onSubmit).toHaveBeenCalledWith({ title: 'New Task' });
   });
 });
 ```
 
-## API / Integration Testing
+## API and Integration Testing
 
 ```typescript
 import request from 'supertest';
 import { app } from '../src/app';
 
-describe('POST /api/tasks', () => {
-  it('creates a task and returns 201', async () => {
-    const response = await request(app)
-      .post('/api/tasks')
-      .send({ title: 'Test Task' })
-      .set('Authorization', `Bearer ${testToken}`)
-      .expect(201);
+it('creates a task and returns 201', async () => {
+  const response = await request(app)
+    .post('/api/tasks')
+    .send({ title: 'Test Task' })
+    .set('Authorization', `Bearer ${testToken}`)
+    .expect(201);
 
-    expect(response.body).toMatchObject({
-      id: expect.any(String),
-      title: 'Test Task',
-      status: 'pending',
-    });
+  expect(response.body).toMatchObject({
+    id: expect.any(String),
+    title: 'Test Task',
+    status: 'pending',
   });
+});
 
-  it('returns 422 for invalid input', async () => {
-    const response = await request(app)
-      .post('/api/tasks')
-      .send({ title: '' })
-      .set('Authorization', `Bearer ${testToken}`)
-      .expect(422);
+it('returns 422 for invalid input', async () => {
+  const response = await request(app)
+    .post('/api/tasks')
+    .send({ title: '' })
+    .set('Authorization', `Bearer ${testToken}`)
+    .expect(422);
 
-    expect(response.body.error.code).toBe('VALIDATION_ERROR');
-  });
+  expect(response.body.error.code).toBe('VALIDATION_ERROR');
+});
 
-  it('returns 401 without authentication', async () => {
-    await request(app)
-      .post('/api/tasks')
-      .send({ title: 'Test' })
-      .expect(401);
-  });
+it('returns 401 without authentication', async () => {
+  await request(app)
+    .post('/api/tasks')
+    .send({ title: 'Test' })
+    .expect(401);
 });
 ```
 
-## E2E Testing (Playwright)
+## E2E Testing with Playwright
 
 ```typescript
 import { test, expect } from '@playwright/test';
 
 test('user can create and complete a task', async ({ page }) => {
-  // Navigate and authenticate
   await page.goto('/');
-  await page.fill('[name="email"]', 'test@example.com');
-  await page.fill('[name="password"]', 'testpass123');
-  await page.click('button:has-text("Log in")');
+  await page.getByLabel('Email').fill('test@example.com');
+  await page.getByLabel('Password').fill('testpass123');
+  await page.getByRole('button', { name: 'Log in' }).click();
 
-  // Create a task
-  await page.click('button:has-text("New Task")');
-  await page.fill('[name="title"]', 'Buy groceries');
-  await page.click('button:has-text("Create")');
+  await page.getByRole('button', { name: 'New Task' }).click();
+  await page.getByLabel('Title').fill('Buy groceries');
+  await page.getByRole('button', { name: 'Create' }).click();
+  await expect(page.getByText('Buy groceries')).toBeVisible();
 
-  // Verify task appears
-  await expect(page.locator('text=Buy groceries')).toBeVisible();
-
-  // Complete the task
-  await page.click('[aria-label="Complete Buy groceries"]');
-  await expect(page.locator('text=Buy groceries')).toHaveCSS(
-    'text-decoration-line', 'line-through'
+  await page.getByLabel('Complete Buy groceries').click();
+  await expect(page.getByText('Buy groceries')).toHaveCSS(
+    'text-decoration-line',
+    'line-through',
   );
 });
 ```
 
-## Test Anti-Patterns
+## Browser Inspection
 
-| Anti-Pattern | Problem | Better Approach |
+```text
+1. REPRODUCE — navigate, trigger the behavior, capture the initial state
+2. INSPECT   — console, DOM, computed styles, network, accessibility
+3. DIAGNOSE  — compare actual and expected HTML, CSS, JS, and data
+4. FIX       — change source code
+5. VERIFY    — reload, capture the result, inspect console, run tests
+```
+
+Useful evidence includes console errors and warnings, network status and payload
+shape, DOM structure and accessibility state, computed styles, performance
+signals such as LCP/CLS/INP and long tasks, and before/after screenshots. Follow
+the browser trust boundary in the main skill while gathering it.
+
+## AC-Tagged Tests
+
+```typescript
+test('AC-1.2: rejects login with an empty password', () => {
+  // ...
+});
+```
+
+```python
+def test_ac_1_2_rejects_empty_password():
+    """AC-1.2: Given empty password, When login, Then return 400."""
+```
+
+## Worked Anti-Patterns
+
+| Example | Failure mode | Illustrative improvement |
 |---|---|---|
-| Testing implementation details | Breaks on refactor | Test inputs/outputs |
-| Snapshot everything | No one reviews snapshot diffs | Assert specific values |
-| Shared mutable state | Tests pollute each other | Setup/teardown per test |
-| Testing third-party code | Wastes time, not your bug | Mock the boundary |
-| Skipping tests to pass CI | Hides real bugs | Fix or delete the test |
-| Using `test.skip` permanently | Dead code | Remove or fix it |
-| Overly broad assertions | Doesn't catch regressions | Be specific |
-| No async error handling | Swallowed errors, false passes | Always `await` async tests |
+| Assert an internal call sequence | Breaks when behavior-preserving refactors change internals | Assert inputs and observable outputs |
+| Snapshot every result | Large diffs become rubber-stamped | Assert specific meaningful values |
+| Share mutable state | Tests pass alone and fail together | Set up and tear down state per test |
+| Test third-party behavior | Spends effort outside application responsibility | Exercise the application's boundary behavior |
+| Mock every collaborator | Suite passes while real integration breaks | Use real code or a faithful fake where practical |
+| Use vague names such as `works` | Failure does not identify the violated behavior | State outcome and condition in the name |
+| Forget to await asynchronous work | Errors are swallowed and false passes occur | Await the operation and its assertion |
+| Permanently skip a failing test | Hides a regression and creates dead coverage | Repair the test or behavior rather than bypassing it |
+
+These are worked examples, not a separate compliance list. Apply the
+rationalizations, red flags, and verification checklist in the main skill.

@@ -7,206 +7,131 @@ description: Compiles CodeGraph + Understand-Anything outputs into a self-contai
 
 ## Overview
 
-Compile the outputs of CodeGraph (`.codegraph/codegraph.db`) and
-Understand-Anything (`.understand-anything/knowledge-graph.json`) for
-**every** repo scanned in `$TGD_DIR/.scans/` into two coordinated outputs
-under `$TGD_DIR/wiki/`:
+Compile every repo graph under `$TGD_DIR/.scans/` into coordinated outputs at
+`$TGD_DIR/wiki/`:
 
-1. **`wiki.html`** — one self-contained HTML file for humans. DeepWiki-style
-   SPA with sidebar navigation, repo switcher, KPI cards, module/flow pages,
-   Mermaid diagrams (renderer inlined), an offline source browser with line
-   anchors, and client-side search. Open it by **double-clicking** — no
-   server, no build, no node/npm, works offline, and can be shared by
-   sending a single file.
+- `wiki.html`: a self-contained, offline human overview with fixed navigation,
+  repo switching, KPIs, module/flow pages, inlined Mermaid, source browser, and
+  client-side search. It opens directly without a server or build step.
+- `docs/`: complete GitHub-flavored Markdown with manifests, repo pages,
+  modules, flows, diagrams, and one explained page per source file.
 
-2. **`docs/`** — plain GitHub-flavored Markdown mirroring the same structure,
-   for agents (via `manifest.json`) and for hosting on GitHub, which renders
-   the Markdown and Mermaid blocks natively.
-
-**Design guarantee — uniform structure:** every project gets the SAME page
-skeleton (home → overview / architecture / onboarding / modules / flows /
-source / search) because the layout lives in the skill's
-`assets/wiki-template.html` and the page set is fixed by
-`scripts/generate-wiki.py`. Only the data varies. Users have no artifact-side
-knob that can change the structure; customization means patching the skill's
-assets.
+Every project uses the same page skeleton from `assets/wiki-template.html` and
+`scripts/generate-wiki.py`; only graph/source data changes. Artifact-side theme
+or structure customization is unsupported—patch the skill assets instead.
 
 ## When to Use
 
-- Invoked **manually / on demand** to build a project wiki from a knowledge graph that `/tgd-map` already produced under `$TGD_DIR/.scans/`. This skill is **not** wired into the `/tgd-map` pipeline — run it yourself when you want the wiki.
-- Called again to regenerate the wiki after code changes (re-run `/tgd-map` first to refresh the knowledge graph)
+Run manually after `/tgd-map` produced graphs, or regenerate after refreshing
+those graphs. This skill is standalone and is **not** part of the Map pipeline.
 
 ## Inputs
 
-Required:
-
-- `$TGD_DIR` — resolved by `/tgd-map` Step 0
-- `$TGD_DIR/.scans/<repo>/.understand-anything/knowledge-graph.json` for each repo
+Required: `$TGD_DIR` and
+`.scans/<repo>/.understand-anything/knowledge-graph.json` for every scanned repo.
 
 Optional:
+- `.scans/<repo>/.codegraph/` when the CodeGraph CLI is available
+- `wiki/wiki-prose.json` authored prose; missing/unreadable content degrades to
+  deterministic graph-derived descriptions, never a hard dependency
+- `--primary <slug>`, `--dashboard-url URL`, and `--max-source-lines N`
+  (`--primary` defaults to the first scan, dashboard URL applies to that repo,
+  and the source cap defaults to 1500 lines per file)
 
-- `$TGD_DIR/.scans/<repo>/.codegraph/` (used if `codegraph` CLI is available)
-- `$TGD_DIR/wiki/wiki-prose.json` — LLM-authored prose sidecar (see below). Absent or unreadable → the generator derives descriptions from graph structure instead. It **never hard-depends** on this file, so it still runs standalone, in CI, and offline.
-- `--primary <slug>` (defaults to first scan), `--dashboard-url URL`,
-  `--max-source-lines N` (default 1500; caps per-file source embedding)
+## Output Contract
 
-## Outputs
+`wiki.html` is the curated, shareable overview. `docs/` is the complete scalable
+reference; its file subtree contains every source file's explanation, symbols,
+and capped source. CONTEXT.md and `.scans/` remain untouched.
 
-```
-$TGD_DIR/
-├── CONTEXT.md                    ← tGD core (untouched)
-├── .scans/                       ← tGD core (untouched)
-└── wiki/
-    ├── wiki.html                 ← THE human-facing wiki: a CURATED overview
-    │                               (system/module/flow prose + diagrams + search)
-    ├── wiki-prose.json           ← LLM prose sidecar (input; see below)
-    └── docs/
-        ├── index.md              ← home: repo table
-        ├── sources.md            ← source inventory
-        ├── manifest.json         ← top-level manifest (all repos)
-        └── repos/<slug>/         ← SAME tree for every repo:
-            ├── index.md          ← repo home (KPIs, module/flow tables)
-            ├── overview.md
-            ├── architecture.md   ← Mermaid fenced blocks (GitHub renders)
-            ├── onboarding.md
-            ├── files.md          ← COMPREHENSIVE index: every source file, explained
-            ├── files/*.md        ← one page PER FILE: explanation + symbols + source
-            ├── modules/*.md      ← one per architectural layer
-            ├── flows/*.md        ← one per tour step
-            ├── diagrams/
-            │   ├── index.md
-            │   ├── architecture.mmd
-            │   └── dependencies.mmd
-            └── manifest.json     ← per-repo manifest
-```
+Each repo always gets home, overview, architecture, onboarding, files, one module
+page per layer, one flow page per tour step, architecture/dependency diagram
+sources, and a manifest. Top-level docs contain home, sources, and a manifest.
 
-**Division of labor** (deliberate): `wiki.html` is the light, shareable, single-file **overview** — you open it, land on home, navigate. The `docs/` Markdown tree is the **complete reference** — the `files/` sub-tree has one explained page per source file, so "all of the code, explained" lives there (multi-file, GitHub-rendered, scales to any repo size) rather than bloating the single HTML file.
+For concrete shapes, optionally load [Wiki Generation
+Patterns](../../references/wiki-generation-patterns.md); this skill owns policy.
 
-## Prose sidecar (`wiki-prose.json`)
+## Prose Sidecar
 
-Every page's prose resolves in this precedence: **Understand-Anything field → `wiki-prose.json` → deterministic derivation from graph structure**. So a description is never blank: if UA left it empty and no sidecar entry exists, the generator writes a true sentence computed from counts and edges (e.g. "2 files; depends on Data; used by Routes.").
+Resolve every prose slot as **Understand-Anything field → `wiki-prose.json` →
+deterministic graph-derived sentence**.
 
-The invoking agent synthesizes the sidecar (read the knowledge graph + source, write explanatory prose) before running the generator. Schema:
+The invoking agent may synthesize sidecar prose from the graph and source before
+generation. Every key is optional. Per-file `hash` enables unchanged summaries
+to be reused. Keep the sidecar under `$TGD_DIR/wiki/`, never the code repo.
 
-```json
-{
-  "version": 1,
-  "repos": {
-    "<repo-slug>": {
-      "overview": "1-2 paragraph: what this repo does and how the layers fit",
-      "architecture": "paragraph: the layering and dominant dependency direction",
-      "onboarding": "narrative: where a new engineer should start",
-      "layers":  { "<layer-name>": "what this layer is responsible for" },
-      "modules": { "<module-slug>": "responsibility prose" },
-      "flows":   { "<flow-slug>": "narrative of the sequence" },
-      "files": {
-        "<file-path>": {
-          "summary": "1-2 sentences: what this file is for",
-          "hash": "<content-hash>",
-          "symbols": { "<symbol-name>": "purpose + gotchas" }
-        }
-      }
-    }
-  }
-}
-```
+All prose is Markdown: `docs/` emits it verbatim for GitHub, while the vendored
+escape-first HTML renderer supports paragraphs, subheadings, emphasis, code,
+lists, blockquotes, and links limited to `#` or HTTP(S); raw HTML is escaped.
+Ground every claim in graph/source evidence—project-agnostic filler is invalid.
 
-Every key is optional — supply what you have, the rest derives. The `hash` per file lets a re-run skip re-synthesizing unchanged files (incremental). Keep it out of the code repo; it lives under `$TGD_DIR/wiki/`.
+Content expectations: overview 2–4 paragraphs; architecture 1–3; onboarding a
+narrated reading path; layers/modules 2–4 sentences; flows a sequence narrative;
+files 1–2 sentences plus public-symbol notes.
 
-**All prose values are Markdown.** `wiki.html` renders them with a small vendored renderer (paragraphs, `##`→`###` headings, bold/italic, inline + fenced code, lists, blockquotes, and links restricted to `#` anchors and http(s)); the `docs/` tree emits them verbatim, where GitHub renders the same Markdown natively. Multi-paragraph prose with subheadings is expected on overview/architecture pages. Per-page content bar: `overview` 2-4 paragraphs (what it does, how the layers/data-path fit, what to know before touching it); `architecture` 1-3 paragraphs (the layering and *why*); `onboarding` a narrated reading path; `layers`/`modules` 2-4 sentences each (responsibility, key files, gotcha); `flows` narrate the sequence; `files` a 1-2 sentence summary per source file with public-symbol notes. If a page's prose would read the same for any project, it's filler — ground every claim in the graph or the source you read. Raw HTML in prose is NOT rendered (it is escaped) — the renderer is escape-first by design.
+The generator prints authored/derived coverage per repo, reports unmatched
+sidecar repo keys, and makes missing/malformed sidecars visible rather than
+silently ignoring them.
 
-The generator prints a **coverage line** per repo so the sidecar's effect is never silent — e.g. `[tGD] prose: 8 slot(s) authored; 3/12 files summarized; rest derived from graph.` A repo key in the sidecar that matches no scanned repo (a typo) is reported as ignored rather than swallowed. If prose was written but the line says "no prose sidecar", the file is in the wrong place or the JSON is malformed.
-
-Entry points:
-
-| Audience | Entry point | Purpose |
-|---|---|---|
-| Human | `$TGD_DIR/wiki/wiki.html` (double-click) | Browse the interactive wiki |
-| Agent | `$TGD_DIR/wiki/docs/manifest.json` | Top-level index of every scanned repo |
-| Agent (per-repo) | `$TGD_DIR/wiki/docs/repos/<slug>/manifest.json` | Deep dive into one repo |
-| tGD stages | `$TGD_DIR/CONTEXT.md` | Top-level summary (unchanged) |
-
-## Execution
+## Execution and Dependencies
 
 ```bash
-python3 <SKILL_DIR>/scripts/generate-wiki.py "$TGD_DIR"
+: "${SKILL_DIR:?resolve the directory containing this SKILL.md}"
+: "${TGD_DIR:?resolve the tGD artifacts directory}"
+python3 "$SKILL_DIR/scripts/generate-wiki.py" "$TGD_DIR"
 ```
 
-`<SKILL_DIR>` resolves to the directory containing this SKILL.md. One
-command, ~1 second, hard-fails only when `$TGD_DIR` or every knowledge
-graph is missing.
-
-## Dependencies
-
-| Tool | Purpose | Required? |
-|---|---|---|
-| Python 3.8+ | Run the generator (stdlib only) | Required — already a tGD prerequisite |
-| codegraph CLI | Symbol-level enrichment | Optional |
-
-There are **no** other dependencies. The Mermaid renderer is vendored at
-`assets/vendor/mermaid.min.js` and inlined into `wiki.html` at generation
-time; if the vendored file is ever missing, diagrams degrade to readable
-Mermaid source text instead of failing.
+Python 3.8+ stdlib is the only required runtime; CodeGraph is optional. Mermaid
+is vendored and inlined, degrading to readable source if absent. The command
+normally takes about a second and hard-fails only when `$TGD_DIR` or every graph
+is missing.
 
 ## Regeneration
 
-Re-running the skill on the same `$TGD_DIR` overwrites `wiki.html` and
-`docs/` in place. `manifest.json` is regenerated fresh — do not hand-edit;
-edits will be lost. Re-running on the same input produces the same structure
-(timestamps aside).
+Regeneration overwrites `wiki.html` and `docs/` and recreates manifests. Never
+hand-edit generated outputs. Identical inputs produce identical structure aside
+from timestamps, and stale generated files must not survive.
 
-## Related Skills
+## Safety and Pitfalls
 
-- `tgd-core-router` — Meta-skill entry point
-- `understand` — Upstream: produces the knowledge graph consumed here
-- `tgd-map` — Produces the `$TGD_DIR/.scans/<repo>/` knowledge graph this skill reads (this skill is standalone and no longer auto-invoked by it)
-
-## Pitfalls
-
-- ❌ **Do not write into the code repo.** All outputs go under `$TGD_DIR/`.
-- ❌ **Do not hand-edit `manifest.json` or `wiki.html`** — regenerated on every run.
-- ❌ **Do not add external requests to the template** — `wiki.html` must stay
-  fully offline: no CDN scripts, fonts, or fetches. Everything is inlined.
-- ❌ **Do not emit raw `</script>` inside the embedded JSON** — the generator
-  escapes `</` as `<\/`; keep that invariant if you touch the embedding code.
-- ❌ **Unbounded source embedding** — huge repos would bloat `wiki.html`;
-  the `--max-source-lines` cap (with a visible "truncated" marker) is mandatory.
+- Write only under `$TGD_DIR/`; never the code repo, home, or unrelated temp paths.
+- Keep `wiki.html` fully offline: no CDN, fonts, fetches, or external scripts.
+- Preserve `</` → `<\/` escaping inside embedded JSON to prevent raw
+  `</script>` termination.
+- Enforce `--max-source-lines` with a visible truncation marker; unbounded source
+  makes the single-file overview unusable.
+- Every manifest lists every page actually written and references only graph
+  nodes that exist.
 
 ## Common Rationalizations
 
 | Rationalization | Reality |
 |---|---|
-| "A static site generator would look nicer." | The template already gives dark mode, Mermaid, search, and a uniform layout — with zero dependencies. An SSG re-adds node/npm, a build step, and version drift for no structural gain. |
-| "Users should be able to customize the theme." | Uniform layout is the design guarantee. Users who want a custom theme fork the skill and patch `assets/wiki-template.html`. |
-| "Embed all source, caps are annoying." | A monorepo with thousands of files would produce a wiki too large to open. Caps with explicit truncation markers keep the single-file promise honest. |
-| "Skip the Markdown tree, HTML is enough." | Agents consume `manifest.json` + `docs/*.md`; GitHub renders them for free. The two outputs share one data model — emitting both is nearly free. |
+| "Use a static-site generator" | It restores dependencies, builds, and version drift. |
+| "Let users theme the artifact" | Uniform structure is the design guarantee. |
+| "Embed all source" | Explicit caps preserve the single-file promise. |
+| "HTML alone is enough" | Agents and GitHub consume the Markdown/manifests. |
 
 ## Red Flags
 
-- Emitting pages that reference nodes not present in the knowledge graph
-- Writing anywhere outside `$TGD_DIR/` (code repo, `$HOME`, `/tmp` beyond scratch)
-- `wiki.html` making any network request when opened
-- Generating `manifest.json` without listing every page written to disk
-- Leaving stale files behind on regeneration
-- Structure varying between projects — the page set is fixed; only data varies
+- Output outside `$TGD_DIR/` or network activity from opened `wiki.html`
+- Missing/stale pages or manifests that disagree with disk
+- Descriptions blank despite the deterministic fallback
+- Project-specific page structures instead of fixed structure
+- Unsafe embedded JSON or uncapped source
 
 ## Verification
 
-After running this skill:
+- [ ] `wiki.html` opens offline without console errors and renders home, overview, architecture Mermaid, modules, flows, source line links, and search.
+- [ ] `docs/index.md`, `docs/manifest.json`, and top-level source inventory exist.
+- [ ] Every scan has repo home/overview/architecture/onboarding/files, one file page per source, modules, optional tour flows, diagrams, and repo manifest.
+- [ ] No description is blank; coverage output identifies authored/derived prose.
+- [ ] Top-level manifest has one repo entry per scan and a `wikiHtml` key.
+- [ ] No output exists outside `$TGD_DIR/`; opened HTML makes no network request.
+- [ ] Re-running identical input is structurally idempotent and leaves no stale files.
 
-- [ ] `$TGD_DIR/wiki/wiki.html` exists and opens in a browser with no console errors
-- [ ] `wiki.html` renders: home (repo grid or repo home), overview, architecture
-      with Mermaid SVGs, module pages with symbol tables, source browser with
-      line highlight (`?L=<n>`), and search returning results
-- [ ] `$TGD_DIR/wiki/docs/index.md` exists (home: repo table)
-- [ ] `$TGD_DIR/wiki/docs/manifest.json` exists with a `repos` array (one entry per scan) and `wikiHtml` key
-- [ ] For each repo scanned:
-  - [ ] `docs/repos/<slug>/index.md`, `overview.md`, `architecture.md`, `onboarding.md` exist
-  - [ ] `docs/repos/<slug>/files.md` exists and `files/` has one page per source file
-  - [ ] No description cell is blank — prose came from the sidecar or was derived
-  - [ ] `docs/repos/<slug>/modules/` contains one page per layer
-  - [ ] `docs/repos/<slug>/flows/` contains one page per tour step (or is empty if no tour)
-  - [ ] `docs/repos/<slug>/diagrams/architecture.mmd` and `dependencies.mmd` exist
-  - [ ] `docs/repos/<slug>/manifest.json` exists
-- [ ] No files were written outside `$TGD_DIR/`
-- [ ] Re-running the skill on the same input produces the same structure (idempotent)
+## Related Skills
+
+- `tgd-map`: produces scans but never auto-invokes this skill
+- `understand`: produces the required knowledge graph
+- `tgd-core-router`: routes explicit standalone wiki requests

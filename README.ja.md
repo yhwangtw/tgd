@@ -362,7 +362,7 @@ BDDはテストコードを生成しません — Develop段階でテストコ�
 
 ### 🧪 Verify: テスト実行 + レポート生成
 
-エージェントが全テストを実行し、`TEST-REPORT.md` を自動生成します。フォーマットは言語非依存です：
+実行可能な変更では、エージェントが全テストを実行し、`TEST-REPORT.md` を自動生成します。フォーマットは言語非依存です：
 
 ```markdown
 # TEST REPORT: jwt-auth
@@ -398,6 +398,8 @@ Command: pytest -v --tb=short
 
 TEST-REPORT.mdはテストランナーの出力から **自動生成** されるもので、手動で管理するものではありません。
 
+ドキュメントのみのフィーチャーも同じ canonical template を使い、Test Summary と Coverage を `N/A — documentation-only` と明記します。Verify は架空のテスト実行を作らず、AC trace と該当するドキュメント lint・リンク・ビルドの証拠を記録します。
+
 **フロントエンドの要件：** DESIGN.md がある場合、Verifyでは必ず `tgd-verify-browser` を実行し、指定viewport、runtime state、アクセシビリティのデザイン適合証拠を TEST-REPORT.md に追加します。
 
 ### 🏷️ リグレッション: 安全ネット
@@ -426,6 +428,8 @@ Feature 3 (payments):  +6 regression tests  ← Catalog は現在 19 エント�
 3. **Release** — TASKS.mdの `[R]` エントリをスキャン、`REGRESSION-CATALOG.md` に追記（累積型）
 4. **Release（Catalog Audit）** — 全エントリ確認：テストファイル存在？パス？機能廃止？古いエントリを削除
 5. **Verify** — `REGRESSION-CATALOG.md` を読み込み、全エントリを再実行。1つでも失敗 = 即停止
+
+`[R]` 基準が0件でも、Release は `REGRESSION-CATALOG.md` を作成します。実際の release 後に catalog がない場合は設定エラーであり、再び初回 release として扱いません。
 
 **マーカーの付け方：** エージェントはスタック適切なマーカーで受入レベルテストをマークします（上記テーブル参照）。すべてのテストがリグレッションになるわけではなく、PRDの受入基準や重要なユーザーパスを検証するテストだけです。
 
@@ -461,6 +465,8 @@ REVIEW.md     → QA +DEV signed? ✅
 All ✅ → proceed to Release
 Any ❌ → STOP: "X has not approved Y yet"
 ```
+
+チャット上の同意は artifact sign-off の代わりになりません。すべての artifact gate 通過後、Release は merge 前に pre-launch・rollback・monitoring・staging を確認します。open されたただけの PR は pending のままで、production は `main` に landed した SHA から deploy し、初期 production health check 後にのみ cleanup します。
 
 ---
 
@@ -527,7 +533,7 @@ tGD には4つの人間ロールがあります。各ロールは共有アーテ
 | **ロードされたスキル** | 29（オンデマンド、全同時ではありません） |
 | **コンテキスト使用量** | スキルあたり約5%（プログレッシブディスクロージャ） |
 | **セットアップ時間** | 30秒未満 |
-| **最初の機能** | 約15分（`/tgd-define` から `/tgd-release` まで） |
+| **最初のワークフロー骨格** | 小規模な変更の Define/Plan は約15分。検証、人間の sign-off、CI、rollout は各 gate に必要な実時間を使います |
 
 > コンテキスト使用量と時間の数値は目安です — プロジェクト規模、モデル、マシンによって変わります。
 
@@ -800,6 +806,8 @@ tGD/
 ### 準備と公開（推奨）
 
 release script は changelog entry を生成し、`VERSION` と `CHANGELOG.md` を更新して、その2ファイルを commit し、現在の branch に push します。その commit が `main` に到達すると、CI が tag を作成して GitHub release を公開します。
+
+tGD 自身の framework repository では、6個すべての canonical repository markers が存在し、下流の `$TGD_DIR` feature が選択されていない場合に限り、`/tgd-release` の厳密に限定された `Framework maintenance` パスを使用できます。このパスが置き換えるのは feature-artifact pre-flight だけです。PR の exact SHA は引き続き required checks を通過し、`main` に merge され、そこで検証されてから release script を実行する必要があります。下流 release には従来どおり artifacts と role sign-offs が必要です。
 
 ```bash
 # 変更せずに生成予定の release entry を確認

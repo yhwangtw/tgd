@@ -17,12 +17,14 @@ docs/         → Setup guides for different tools
 
 **Define:** tgd-define-interview, tgd-define-ideate, tgd-define-spec, tgd-define-sketch
 **Plan:** tgd-plan-breakdown, tgd-plan-jira
-**Develop:** tgd-develop-incremental, tgd-develop-subagents, tgd-develop-tdd, tgd-core-context, tgd-develop-source, tgd-core-doubt, tgd-develop-ui, tgd-define-api, tgd-verify-completion
+**Develop:** tgd-develop-incremental, tgd-develop-subagents, tgd-develop-tdd, tgd-core-context, tgd-develop-source, tgd-core-doubt, tgd-develop-ui, tgd-define-api
 **Verify:** tgd-verify-browser, tgd-verify-debug
 **Review:** tgd-review-quality, tgd-review-simplify, tgd-review-security, tgd-review-performance
 **Release:** tgd-core-git, tgd-release-ci, tgd-release-migration, tgd-review-adr, tgd-release-ship
 **Support:** tgd-support-wiki
-**Meta (always-on):** tgd-core-router, tgd-core-rules
+**Core (load before every tGD action):** tgd-core-rules
+**Intent routing (only outside a lifecycle command):** tgd-core-router
+**Compatibility alias:** tgd-verify-completion
 
 ## Conventions
 
@@ -41,8 +43,9 @@ docs/         → Setup guides for different tools
 ## Boundaries
 
 - Always: Follow the skill-anatomy.md format for new skills
-- Always: When adding or removing a skill, update `skills/tgd-core-router/SKILL.md` (decision tree + Quick Reference), the pipeline table in `skills/tgd-core-rules/SKILL.md`, and the Skills by Phase list above — the router must know every routable skill
-- Always: Edit lifecycle commands in `.claude/commands/` only, then run `python3 scripts/generate-mirrors.py`
+- Always: When adding, removing, or renaming a routable skill, update the single Intent Routing table in `skills/tgd-core-router/SKILL.md` and the Skills by Phase list above
+- Always: Treat `.claude/commands/tgd-*.md` as the canonical owners of lifecycle phase pipelines, pre-flight checks, gates, and transitions; edit them there, then run `python3 scripts/generate-mirrors.py`
+- Always: Keep only cross-phase invariants in `skills/tgd-core-rules/SKILL.md`; do not duplicate command pipelines there
 - Never: Hand-edit the platform mirrors (`.codex/skills/`, `.opencode/commands/`, `.gemini/commands/`, `.pi/prompts/`) — they are generated
 - Never: Add skills that are vague advice instead of actionable processes
 - Never: Duplicate content between skills — reference other skills instead

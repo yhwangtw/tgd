@@ -77,6 +77,11 @@ skills/
 
 ### SKILL.md Format
 
+Write canonical `skills/*/SKILL.md` and `.claude/commands/*.md` source in
+English. Labels, prompts, and quoted speech acts describe structure and intent;
+at runtime, render them in the user's language instead of copying English
+literally. Regenerate lifecycle mirrors after changing a command.
+
 ```markdown
 ---
 name: {skill-name}

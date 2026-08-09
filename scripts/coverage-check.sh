@@ -8,11 +8,15 @@
 # Usage: bash scripts/coverage-check.sh [test-cmd]
 #   test-cmd: optional override. Default: auto-detect npm/pytest/go/cargo
 #             and append the appropriate coverage flag.
+#   COVERAGE_CRITICAL_PATH=1: enforce 100% lines and branches and reject all
+#             missing-metric allowances for a critical-path run.
 #
 # Exit codes:
-#   0 = all floors met
+#   0 = all reported floors met; any unavailable non-critical metric was
+#       explicitly allowed via COVERAGE_ALLOW_MISSING_METRICS
 #   1 = at least one floor missed (prints which)
-#   2 = no coverage tool detected
+#   2 = no coverage tool detected, output unparseable, or a required metric is
+#       unavailable without an explicit allowance
 #
 # Tooling detection:
 #   - npm:   nyc / jest --coverage / vitest --coverage (looks for nyc/jest/vitest
@@ -38,6 +42,82 @@ set -e
 LINE_FLOOR="${COVERAGE_LINE_FLOOR:-80}"
 BRANCH_FLOOR="${COVERAGE_BRANCH_FLOOR:-60}"
 FUNC_FLOOR="${COVERAGE_FUNC_FLOOR:-90}"
+ALLOW_MISSING_RAW="${COVERAGE_ALLOW_MISSING_METRICS:-}"
+ALLOW_MISSING=""
+CRITICAL_PATH="${COVERAGE_CRITICAL_PATH:-0}"
+
+validate_percentage() {
+    awk -v value="$2" 'BEGIN {
+        if (value !~ /^([0-9]+([.][0-9]+)?|[.][0-9]+)$/) exit 1
+        number = value + 0
+        if (number < 0 || number > 100) exit 1
+    }' || {
+        echo "❌ Invalid $1: $2"
+        echo "   Coverage floors must be finite numeric values from 0 through 100."
+        exit 2
+    }
+}
+
+validate_percentage COVERAGE_LINE_FLOOR "$LINE_FLOOR"
+validate_percentage COVERAGE_BRANCH_FLOOR "$BRANCH_FLOOR"
+validate_percentage COVERAGE_FUNC_FLOOR "$FUNC_FLOOR"
+
+case "$CRITICAL_PATH" in
+    0|1) ;;
+    *)
+        echo "❌ Invalid COVERAGE_CRITICAL_PATH: $CRITICAL_PATH (expected 0 or 1)"
+        exit 2
+        ;;
+esac
+
+if [ -n "$ALLOW_MISSING_RAW" ]; then
+    case "$ALLOW_MISSING_RAW" in
+        *$'\n'*|*$'\r'*)
+            echo "❌ Invalid COVERAGE_ALLOW_MISSING_METRICS: line breaks are not allowed"
+            echo "   Allowed values: branches,functions (line coverage is always required)"
+            exit 2
+            ;;
+    esac
+    IFS=',' read -r -a allow_tokens <<< "$ALLOW_MISSING_RAW"
+    for raw_metric in "${allow_tokens[@]}"; do
+        metric=$(printf '%s' "$raw_metric" | sed \
+            -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+        case "$metric" in
+            branches|functions)
+                ALLOW_MISSING="${ALLOW_MISSING:+$ALLOW_MISSING,}$metric"
+                ;;
+            *)
+                echo "❌ Invalid COVERAGE_ALLOW_MISSING_METRICS entry: $raw_metric"
+                echo "   Allowed values: branches,functions (line coverage is always required)"
+                exit 2
+                ;;
+        esac
+    done
+    case "$ALLOW_MISSING_RAW" in
+        *,)
+            echo "❌ Invalid COVERAGE_ALLOW_MISSING_METRICS entry: empty trailing item"
+            echo "   Allowed values: branches,functions (line coverage is always required)"
+            exit 2
+            ;;
+    esac
+fi
+
+if [ "$CRITICAL_PATH" = "1" ]; then
+    if [ -n "$ALLOW_MISSING" ]; then
+        echo "❌ Critical-path coverage cannot allow missing metrics."
+        echo "   Configure a report with line, branch, and function data."
+        exit 2
+    fi
+    LINE_FLOOR=100
+    BRANCH_FLOOR=100
+fi
+
+missing_metric_allowed() {
+    case ",${ALLOW_MISSING}," in
+        *",$1,"*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
 
 TEST_CMD="${1:-}"
 
@@ -105,6 +185,7 @@ echo "🛡️  Coverage gate"
 echo "   Runner:   $RUNNER"
 echo "   Command:  $COV_CMD"
 echo "   Floors:   lines ≥ $LINE_FLOOR%, branches ≥ $BRANCH_FLOOR%, functions ≥ $FUNC_FLOOR%"
+[ "$CRITICAL_PATH" = "1" ] && echo "   Critical: yes — line and branch floors forced to 100%; no missing metrics allowed"
 echo ""
 
 # === Run coverage ===
@@ -131,10 +212,23 @@ BRANCHES="N/A"
 FUNCS="N/A"
 
 num_or_na() {
-    # Echo $1 if it is a number, else "N/A"
+    # Recognized unavailable markers are missing data. Every other nonnumeric
+    # or out-of-range token is malformed coverage output and fails closed.
     case "$1" in
-        ''|*[!0-9.]*) echo "N/A" ;;
-        *) echo "$1" ;;
+        ""|"N/A"|"n/a"|"Unknown"|"unknown"|"-")
+            echo "N/A"
+            ;;
+        *)
+            if awk -v value="$1" 'BEGIN {
+                if (value !~ /^([0-9]+([.][0-9]+)?|[.][0-9]+)$/) exit 1
+                number = value + 0
+                if (number < 0 || number > 100) exit 1
+            }'; then
+                echo "$1"
+            else
+                echo "INVALID"
+            fi
+            ;;
     esac
 }
 
@@ -143,12 +237,9 @@ if [ "$RUNNER" = "npm" ]; then
     # "All files | % Stmts | % Branch | % Funcs | % Lines | Uncovered ..."
     SUMMARY=$(grep -E "All files" "$RAW" | tail -1 || echo "")
     if [ -n "$SUMMARY" ]; then
-        STMTS=$(echo "$SUMMARY"   | awk -F'|' '{gsub(/ /,"",$2); print $2}')
         BRANCHES=$(num_or_na "$(echo "$SUMMARY" | awk -F'|' '{gsub(/ /,"",$3); print $3}')")
         FUNCS=$(num_or_na "$(echo "$SUMMARY"    | awk -F'|' '{gsub(/ /,"",$4); print $4}')")
         LINES=$(num_or_na "$(echo "$SUMMARY"    | awk -F'|' '{gsub(/ /,"",$5); print $5}')")
-        # nyc text-summary variants can have fewer columns — fall back to Stmts
-        [ "$LINES" = "N/A" ] && LINES=$(num_or_na "$STMTS")
     else
         # node:test native coverage — TAP comment table, column order:
         # "# all files | <line %> | <branch %> | <funcs %> |"
@@ -178,11 +269,40 @@ elif [ "$RUNNER" = "cargo" ]; then
     LINES=$(num_or_na "$(grep -oE "[0-9.]+% coverage" "$RAW" | tail -1 | grep -oE "[0-9.]+" | head -1)")
 fi
 
+if [ "$LINES" = "INVALID" ] || [ "$BRANCHES" = "INVALID" ] || [ "$FUNCS" = "INVALID" ]; then
+    echo "❌ Coverage output contains an invalid percentage."
+    echo "   Expected finite numeric values from 0 through 100."
+    rm -f "$RAW"
+    exit 2
+fi
+
 if [ "$LINES" = "N/A" ]; then
     echo "❌ Could not parse a line-coverage number from the tool output."
     echo "   Last 15 lines of output:"
     tail -15 "$RAW" | sed 's/^/   | /'
     echo "   Fix the parser or pass an explicit coverage command. Do NOT treat this as a pass."
+    rm -f "$RAW"
+    exit 2
+fi
+
+MISSING_REQUIRED=""
+if [ "$BRANCHES" = "N/A" ] && ! missing_metric_allowed branches; then
+    MISSING_REQUIRED="branches"
+fi
+if [ "$FUNCS" = "N/A" ] && ! missing_metric_allowed functions; then
+    if [ -n "$MISSING_REQUIRED" ]; then
+        MISSING_REQUIRED="$MISSING_REQUIRED,functions"
+    else
+        MISSING_REQUIRED="functions"
+    fi
+fi
+
+if [ -n "$MISSING_REQUIRED" ]; then
+    echo "❌ Coverage tool did not report required metric(s): $MISSING_REQUIRED"
+    echo "   Configure a tool/report that exposes them, then re-run."
+    echo "   For a non-critical path only, an unavailable metric may be explicitly"
+    echo "   allowed with COVERAGE_ALLOW_MISSING_METRICS=branches,functions and"
+    echo "   documented in TEST-REPORT.md '## Coverage Exceptions'."
     rm -f "$RAW"
     exit 2
 fi
@@ -199,11 +319,11 @@ PASS=1
 FAIL_MSG=""
 
 # Use awk for float comparison (POSIX sh doesn't do floats).
-# N/A metrics are announced and skipped — the tool doesn't report them.
+# N/A metrics reach this function only after an explicit non-critical allowance.
 check_floor() {
     local name=$1 val=$2 floor=$3
     if [ "$val" = "N/A" ]; then
-        echo "   ℹ️  $name: no data from this coverage tool — floor not enforced"
+        echo "   ⚠️  $name: unavailable — explicitly allowed; document the exception"
         return 0
     fi
     if ! awk -v v="$val" -v f="$floor" 'BEGIN { if (v+0 < f+0) exit 1; exit 0 }'; then
@@ -229,8 +349,15 @@ if [ $PASS -eq 0 ]; then
 fi
 
 echo "✅ Coverage gate PASSED"
+if [ -n "$ALLOW_MISSING" ]; then
+    echo "   Allowed missing metrics: $ALLOW_MISSING"
+    echo "   Record each under TEST-REPORT.md '## Coverage Exceptions'."
+fi
 echo ""
-echo "   Note: critical paths (auth, payment, data loss, security) require"
-echo "   100% line + branch coverage. This script does NOT auto-check those —"
-echo "   the agent must declare them and verify manually."
+if [ "$CRITICAL_PATH" = "1" ]; then
+    echo "   Critical-path mode enforced 100% line + branch coverage."
+else
+    echo "   Note: critical paths (auth, payment, data loss, security) require"
+    echo "   a separate run with COVERAGE_CRITICAL_PATH=1."
+fi
 exit 0
