@@ -41,7 +41,7 @@ SCENARIOS = {
     },
     "tgd-release": {
         "signoffs", "documentation-only", "regression", "metrics", "merge",
-        "release", "migration", "successful-deploy",
+        "release", "migration", "successful-deploy", "framework-maintenance",
     },
 }
 ALLOWED_ARTIFACT_ROLES = {"consumed", "produced", "conditional", "mutated"}

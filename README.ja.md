@@ -807,6 +807,8 @@ tGD/
 
 release script は changelog entry を生成し、`VERSION` と `CHANGELOG.md` を更新して、その2ファイルを commit し、現在の branch に push します。その commit が `main` に到達すると、CI が tag を作成して GitHub release を公開します。
 
+tGD 自身の framework repository では、6個すべての canonical repository markers が存在し、下流の `$TGD_DIR` feature が選択されていない場合に限り、`/tgd-release` の厳密に限定された `Framework maintenance` パスを使用できます。このパスが置き換えるのは feature-artifact pre-flight だけです。PR の exact SHA は引き続き required checks を通過し、`main` に merge され、そこで検証されてから release script を実行する必要があります。下流 release には従来どおり artifacts と role sign-offs が必要です。
+
 ```bash
 # 変更せずに生成予定の release entry を確認
 bash scripts/release.sh --dry-run

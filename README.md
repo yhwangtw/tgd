@@ -821,6 +821,13 @@ The release script computes the changelog entry, updates `VERSION` and
 `CHANGELOG.md`, commits those two files, and pushes the current branch. When
 that commit lands on `main`, CI tags and publishes the GitHub release.
 
+For tGD's own framework repository, `/tgd-release` has a narrowly scoped
+`Framework maintenance` path when all six canonical repository markers are
+present and no downstream `$TGD_DIR` feature is selected. It replaces only the
+feature-artifact pre-flight: the exact PR SHA must still pass required checks,
+be merged to `main`, and be verified there before the release script runs.
+Downstream releases still require their normal artifacts and role sign-offs.
+
 ```bash
 # Inspect the generated release entry without changing anything
 bash scripts/release.sh --dry-run

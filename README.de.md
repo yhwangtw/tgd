@@ -845,6 +845,15 @@ Sobald dieser Commit auf `main` landet, erstellt CI den Tag und veröffentlicht
 das GitHub-Release. Das Script selbst bereitet das Release ausschließlich vor;
 es erstellt weder den Tag noch das GitHub-Release.
 
+Für das tGD-Framework-Repository selbst bietet `/tgd-release` nur dann den eng
+begrenzten Pfad `Framework maintenance`, wenn alle sechs kanonischen
+Repository-Marker vorhanden sind und kein nachgelagertes `$TGD_DIR`-Feature
+ausgewählt wurde. Dieser Pfad ersetzt ausschließlich den Feature-Artefakt-
+Preflight: Der exakte PR-SHA muss weiterhin alle erforderlichen Prüfungen
+bestehen, nach `main` gemergt und dort verifiziert werden, bevor das
+Release-Script läuft. Nachgelagerte Releases benötigen weiterhin ihre normalen
+Artefakte und Rollenfreigaben.
+
 ```bash
 # Den erzeugten Release-Eintrag prüfen, ohne etwas zu ändern
 bash scripts/release.sh --dry-run

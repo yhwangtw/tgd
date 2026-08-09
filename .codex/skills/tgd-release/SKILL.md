@@ -3,7 +3,37 @@ name: tgd-release
 description: Release to production — faster is safer
 ---
 
-## Pre-flight
+## Release path selection (HARD ROUTING GATE)
+
+Classify the release before resolving `$TGD_DIR`. The default is the downstream
+feature path; the framework maintenance path is available only when every
+condition below is true:
+
+1. One resolved repository root contains all six canonical tGD markers:
+   `skills/tgd-core-rules/SKILL.md`, `.claude/commands/tgd-release.md`,
+   `scripts/generate-mirrors.py`, `scripts/release.sh`,
+   `.github/workflows/release.yml`, and `VERSION`.
+   Resolve that root with `git rev-parse --show-toplevel`; every marker must be
+   a tracked regular file at that exact root.
+2. The requested release is for that repository's tGD framework, installer,
+   lifecycle commands, skills, templates, mirrors, tests, or documentation —
+   not for a downstream product that uses tGD.
+3. No downstream `$TGD_DIR` feature has been selected for this release. If the
+   user or current workflow selected one, the downstream path wins even when
+   its artifacts are incomplete.
+4. Missing lifecycle artifacts alone never qualify a release for this path.
+   Repository identity and maintenance scope must both be established from
+   current evidence.
+
+This exception changes routing, not evidence standards or authority. Chat
+approval cannot turn a downstream feature into framework maintenance, repair
+missing downstream sign-offs, or authorize merge/publish by itself.
+
+- **Downstream feature** → continue with **Downstream feature pre-flight**.
+- **Framework maintenance** → skip the downstream artifact/sign-off sections
+  and run **Framework maintenance release path**. Do not run both paths.
+
+## Downstream feature pre-flight
 
 - [ ] Resolve `$TGD_DIR` from its environment variable, then sibling `../<project-name>-tGD/`; require CONTEXT.md or STOP and run `/tgd-map`.
 - [ ] Select `<feature-name>` from non-infrastructure subdirectories containing PRD.md or SPEC.md. None means STOP and run `/tgd-define`; multiple means ask. Require SPEC.md.
@@ -26,6 +56,43 @@ awk '/^## Sign-off/,0' "$TGD_DIR/<feature-name>/PRD.md" | grep -qF '[x] **PM**: 
 Chat or session approval does not replace an artifact sign-off and cannot expand Release authority. The PM must update the PM line in PRD.md. UI modes 1–3 additionally run the same scoped fixed-string check for DESIGN.md `[x] **DESIGN**: Direction Approved` and REVIEW.md `[x] **DESIGN**: Implementation Approved`.
 
 **If any grep exits non-zero** (line unchecked, missing, or `Rejected`): 🛑 STOP. List the pending roles and wait — humans review async. Do NOT proceed "provisionally".
+
+## Framework maintenance release path
+
+This path is only for the repository identified by all six markers above. It
+does not use a synthetic `$TGD_DIR`, fabricated feature artifacts, or the
+product-deployment gates in `tgd-release-ship`.
+
+1. Run `tgd-core-git`. Require an attached, intent-named branch based on the
+   repository's current default branch, an empty `git status --porcelain`, and
+   an exact remote branch head equal to local `HEAD`.
+2. Record the reviewed PR head SHA. Require a PR targeting `main` whose body
+   states Summary, Impact, Verification, and `Framework maintenance release
+   exception`; require it to be ready for review (not draft), mergeable, free
+   of unresolved required reviews, and green on every required check for that
+   exact head SHA.
+3. Merge only after step 2 passes, then wait until the provider reports the PR
+   merged. An opened PR remains pending. Record the landed `main` SHA and prove
+   that the reviewed PR content landed; a local merge or an unverified branch
+   head is not release evidence.
+4. From a clean attached branch created at that exact landed `main` state, run
+   `bash scripts/release.sh --dry-run` first. Review the computed immutable
+   CalVer and CHANGELOG entry; the dry run must leave the worktree unchanged.
+5. Run `bash scripts/release.sh --yes` only after the dry run passes. The script
+   prepares and pushes the VERSION/CHANGELOG release commit; it does not publish
+   a tag or GitHub Release. If repository policy does not explicitly permit the
+   release commit to be pushed directly to `main`, prepare it on a dedicated
+   release branch, open a PR, and again wait for merge and required CI.
+6. Publishing starts only after the VERSION-changing release commit reaches
+   `main`. Wait for `.github/workflows/release.yml`, then verify required CI is
+   green, the immutable tag resolves to that release commit, the tag's VERSION
+   and CHANGELOG entry match, and the GitHub Release exists at a recorded URL.
+7. Delete the maintenance/release branches or worktrees only after step 6
+   passes. A failed check, merge, tag, or publication blocks cleanup and the
+   closing report must name the last verified state.
+
+After step 7, continue only to the framework-maintenance verification list and
+the closing report below; do not run the downstream release pipeline.
 
 ## Release pipeline
 
@@ -87,6 +154,10 @@ After release, ensure REGRESSION-CATALOG.md exists. If absent, seed it from `$TG
 
 ## Verification Gate
 
+Apply only the list for the path selected by the routing gate.
+
+### Downstream feature
+
 - [ ] All role/design sign-offs passed.
 - [ ] `tgd-release-ship` pre-launch/rollback/monitoring gates and staging checks passed before merge.
 - [ ] Pre-merge regression audit passed in every repo.
@@ -95,5 +166,14 @@ After release, ensure REGRESSION-CATALOG.md exists. If absent, seed it from `$TG
 - [ ] Initial production health, monitoring, critical-flow, logs, and rollback readiness passed before worktree/branch cleanup.
 - [ ] CHANGELOG is updated; METRICS/TRACKING-PLAN handling matches signed-off PRD §6.
 - [ ] REGRESSION-CATALOG.md exists; every new `[R]` AC is represented in it.
+
+### Framework maintenance
+
+- [ ] All six repository markers and the maintenance-only scope were verified; no selected downstream feature was bypassed.
+- [ ] The exact PR head SHA was pushed, ready, mergeable, and green before merge; the provider then reported it merged to the recorded `main` SHA.
+- [ ] `scripts/release.sh --dry-run` passed without changes before `scripts/release.sh --yes` prepared the release commit.
+- [ ] The VERSION-changing commit landed on `main`; required CI and `release.yml` passed for current evidence.
+- [ ] The immutable tag, tagged VERSION/CHANGELOG, and GitHub Release URL all resolve to the verified release commit.
+- [ ] Cleanup happened only after publication verification passed.
 
 End with the closing report per `tgd-core-rules` → **Command Closing Report**: 📦 Output (landed SHA + production release + CHANGELOG/METRICS/REGRESSION-CATALOG updates) · 🔎 Checks (gate as one line) · ➡️ Next state the active monitoring window, owner, and rollback trigger (Release is terminal; there is no next lifecycle command). Don't paste the raw checklist above.

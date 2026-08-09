@@ -100,7 +100,7 @@
       "source": ".claude/commands/tgd-release.md",
       "skills": ["tgd-core-git=skills/tgd-core-git/SKILL.md", "tgd-release-ship=skills/tgd-release-ship/SKILL.md", "tgd-release-ci=skills/tgd-release-ci/SKILL.md", "tgd-release-migration=skills/tgd-release-migration/SKILL.md", "tgd-review-adr=skills/tgd-review-adr/SKILL.md"],
       "artifacts": ["PRD:consumed", "TASKS:consumed", "TEST-REPORT:consumed", "REVIEW:consumed", "DESIGN:conditional", "CHANGELOG:produced", "METRICS:conditional", "REGRESSION-CATALOG:produced", "TRACKING-PLAN:mutated"],
-      "invariants": ["RELEASE-PREFLIGHT", "RELEASE-DOCS-ONLY", "RELEASE-SIGNOFF", "RELEASE-SIGNOFF-SOURCE", "RELEASE-PRELAUNCH", "RELEASE-REGRESSION", "RELEASE-LANDED", "RELEASE-PRODUCTION", "RELEASE-MERGE", "RELEASE-ROUTING", "RELEASE-MIGRATION", "RELEASE-SUCCESS", "RELEASE-CHANGELOG", "RELEASE-METRICS", "RELEASE-CATALOG", "RELEASE-CATALOG-SEED", "RELEASE-HANDOFF"],
+      "invariants": ["RELEASE-PATH-ROUTING", "RELEASE-MAINTENANCE-IDENTITY", "RELEASE-MAINTENANCE-PR", "RELEASE-MAINTENANCE-NATIVE", "RELEASE-PREFLIGHT", "RELEASE-DOCS-ONLY", "RELEASE-SIGNOFF", "RELEASE-SIGNOFF-SOURCE", "RELEASE-PRELAUNCH", "RELEASE-REGRESSION", "RELEASE-LANDED", "RELEASE-PRODUCTION", "RELEASE-MERGE", "RELEASE-ROUTING", "RELEASE-MIGRATION", "RELEASE-SUCCESS", "RELEASE-CHANGELOG", "RELEASE-METRICS", "RELEASE-CATALOG", "RELEASE-CATALOG-SEED", "RELEASE-HANDOFF"],
       "scenarios": {
         "signoffs": ["RELEASE-SIGNOFF", "RELEASE-SIGNOFF-SOURCE"],
         "documentation-only": ["RELEASE-DOCS-ONLY"],
@@ -109,7 +109,8 @@
         "merge": ["RELEASE-PRELAUNCH", "RELEASE-LANDED", "RELEASE-MERGE"],
         "release": ["RELEASE-ROUTING", "RELEASE-CHANGELOG", "RELEASE-HANDOFF"],
         "migration": ["RELEASE-MIGRATION"],
-        "successful-deploy": ["RELEASE-PRODUCTION", "RELEASE-SUCCESS", "RELEASE-HANDOFF"]
+        "successful-deploy": ["RELEASE-PRODUCTION", "RELEASE-SUCCESS", "RELEASE-HANDOFF"],
+        "framework-maintenance": ["RELEASE-PATH-ROUTING", "RELEASE-MAINTENANCE-IDENTITY", "RELEASE-MAINTENANCE-PR", "RELEASE-MAINTENANCE-NATIVE", "RELEASE-HANDOFF"]
       },
       "next": null
     }
@@ -184,6 +185,10 @@
     "REVIEW-OUTPUT": {"type": "gate", "owner": ".claude/commands/tgd-review.md", "clause": "After completing the review, create `$TGD_DIR/<feature-name>/REVIEW.md` using this template:", "anchors": ["$TGD_REPO_ROOT/templates/REVIEW.md.tmpl", "check-doc-sections.py\" REVIEW"]},
     "REVIEW-HANDOFF": {"type": "handoff", "owner": ".claude/commands/tgd-review.md", "clause": "End with the closing report per `tgd-core-rules` → **Command Closing Report**: 📦 Output (REVIEW.md — per-axis Pass/Warn/Fail summary; ADR when applicable) · 🔎 Checks (gate as one line) · ➡️ Next `/tgd-release` — deploy. Don't paste the raw checklist above.", "anchors": []},
 
+    "RELEASE-PATH-ROUTING": {"type": "routing", "owner": ".claude/commands/tgd-release.md", "clause": "Classify the release before resolving `$TGD_DIR`. The default is the downstream feature path; the framework maintenance path is available only when every condition below is true:", "anchors": ["If the user or current workflow selected one, the downstream path wins even when its artifacts are incomplete.", "Missing lifecycle artifacts alone never qualify a release for this path.", "Do not run both paths."], "opposite_clauses": ["Missing lifecycle artifacts automatically qualify a release for framework maintenance."]},
+    "RELEASE-MAINTENANCE-IDENTITY": {"type": "gate", "owner": ".claude/commands/tgd-release.md", "clause": "One resolved repository root contains all six canonical tGD markers:", "anchors": ["git rev-parse --show-toplevel", "every marker must be a tracked regular file at that exact root", "skills/tgd-core-rules/SKILL.md", ".claude/commands/tgd-release.md", "scripts/generate-mirrors.py", "scripts/release.sh", ".github/workflows/release.yml", "VERSION", "not for a downstream product that uses tGD"]},
+    "RELEASE-MAINTENANCE-PR": {"type": "gate", "owner": ".claude/commands/tgd-release.md", "clause": "Record the reviewed PR head SHA. Require a PR targeting `main` whose body states Summary, Impact, Verification, and `Framework maintenance release exception`; require it to be ready for review (not draft), mergeable, free of unresolved required reviews, and green on every required check for that exact head SHA.", "anchors": ["An opened PR remains pending.", "Record the landed `main` SHA and prove that the reviewed PR content landed"]},
+    "RELEASE-MAINTENANCE-NATIVE": {"type": "gate", "owner": ".claude/commands/tgd-release.md", "clause": "Publishing starts only after the VERSION-changing release commit reaches `main`.", "anchors": ["bash scripts/release.sh --dry-run", "bash scripts/release.sh --yes", "The script prepares and pushes the VERSION/CHANGELOG release commit; it does not publish a tag or GitHub Release", "the immutable tag resolves to that release commit", "the GitHub Release exists at a recorded URL"]},
     "RELEASE-PREFLIGHT": {"type": "gate", "owner": ".claude/commands/tgd-release.md", "clause": "**If missing:** STOP. Tell user: \"Review or tests incomplete. Please run `/tgd-review` first.\"", "anchors": ["Review passed"]},
     "RELEASE-DOCS-ONLY": {"type": "routing", "owner": ".claude/commands/tgd-release.md", "clause": "TEST-REPORT contains passing executable-test/coverage evidence or explicit documentation-only N/A fields with passing AC trace and documentation checks.", "anchors": []},
     "RELEASE-SIGNOFF": {"type": "gate", "owner": ".claude/commands/tgd-release.md", "clause": "**If any grep exits non-zero** (line unchecked, missing, or `Rejected`): 🛑 STOP. List the pending roles and wait — humans review async. Do NOT proceed \"provisionally\".", "anchors": ["Sign-off Gate (HARD GATE)"], "opposite_clauses": ["Proceed provisionally when a sign-off is pending."]},

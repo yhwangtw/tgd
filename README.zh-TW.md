@@ -833,6 +833,13 @@ changelog 條目、更新 `VERSION` 與 `CHANGELOG.md`、commit 這兩個檔案�
 再 push 當前 branch。當該 commit 進入 `main` 後，CI 才會建立 tag 並發布
 GitHub release。
 
+針對 tGD 自身的 framework repository，當六個 canonical repository markers
+全部存在，且未選定任何下游 `$TGD_DIR` feature 時，`/tgd-release` 才能使用
+嚴格限縮的 `Framework maintenance` 路徑。它只取代 feature-artifact
+pre-flight：PR 的 exact SHA 仍須通過 required checks、merge 到 `main`，並在
+該處完成驗證後才能執行 release script。下游 release 仍須具備原本的 artifacts
+與角色 sign-offs。
+
 ```bash
 # 預覽產生的 release 條目，不修改任何內容
 bash scripts/release.sh --dry-run
