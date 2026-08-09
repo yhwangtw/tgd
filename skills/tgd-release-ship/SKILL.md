@@ -7,9 +7,9 @@ description: Prepares production launches. Use when preparing to deploy to produ
 
 ## Overview
 
-Ship with confidence. The goal is not just to deploy — it's to deploy safely, with monitoring in place, a rollback plan ready, and a clear understanding of what success looks like. Every launch should be reversible, observable, and incremental.
+Ship safely with monitoring, a ready rollback plan, and explicit success criteria. Every launch must be reversible, observable, and incremental.
 
-> **Stack note:** Concrete commands in this skill (`npm audit`, `npx prisma migrate ...`, React error boundaries) are Node-ecosystem examples. Substitute the project's actual commands from `$TGD_DIR/CONTEXT.md` — the checklist items are what's mandatory, not the specific tools.
+> **Stack note:** Use the project's actual commands from `$TGD_DIR/CONTEXT.md`. The gates below are mandatory; the Node, React, rollout, and rollback material in [Release and migration patterns](../../references/release-patterns.md) is optional and illustrative only.
 
 ## When to Use
 
@@ -19,7 +19,19 @@ Ship with confidence. The goal is not just to deploy — it's to deploy safely, 
 - Opening a beta or early access program
 - Any deployment that carries risk (all of them)
 
-## The Pre-Launch Checklist
+## Required Workflow
+
+Execute the release in this order:
+
+1. Complete every pre-launch gate below.
+2. Document rollback triggers and steps, confirm monitoring, and configure the feature flag when applicable.
+3. Deploy staging; run the full suite and manually smoke-test critical flows.
+4. Deploy production with the feature flag off; verify the health check and error monitoring.
+5. Enable for the team, then canary and increase exposure only when the decision thresholds pass.
+6. Roll back immediately when a red threshold or critical trigger occurs; otherwise monitor at every stage.
+7. At full rollout, monitor for one week, then remove the feature flag and dead code.
+
+## Pre-Launch Gates
 
 ### Code Quality
 
@@ -76,200 +88,75 @@ Ship with confidence. The goal is not just to deploy — it's to deploy safely, 
 - [ ] Changelog updated
 - [ ] User-facing documentation updated (if applicable)
 
-## Feature Flag Strategy
+For detailed domain checklists, see `references/security-checklist.md`, `references/performance-checklist.md`, and `references/accessibility-checklist.md`.
 
-Ship behind feature flags to decouple deployment from release:
+## Feature Flag Gate
 
-```typescript
-// Feature flag check
-const flags = await getFeatureFlags(userId);
+Feature flags decouple deployment from release. Their lifecycle is:
 
-if (flags.taskSharing) {
-  // New feature: task sharing
-  return <TaskSharingPanel task={task} />;
-}
+1. Deploy with the flag off.
+2. Enable for the team or beta users.
+3. Roll out to 5% → 25% → 50% → 100%.
+4. Monitor error rates, performance, and user feedback at every stage.
+5. Remove the flag and dead code after full rollout.
 
-// Default: existing behavior
-return null;
-```
+Rules:
 
-**Feature flag lifecycle:**
+- Every feature flag has an owner and expiration date.
+- Clean up flags within 2 weeks of full rollout.
+- Do not nest feature flags; nested flags create exponential combinations.
+- Test both on and off states in CI.
 
-```
-1. DEPLOY with flag OFF     → Code is in production but inactive
-2. ENABLE for team/beta     → Internal testing in production environment
-3. GRADUAL ROLLOUT          → 5% → 25% → 50% → 100% of users
-4. MONITOR at each stage    → Watch error rates, performance, user feedback
-5. CLEAN UP                 → Remove flag and dead code path after full rollout
-```
+## Staged Rollout and Decision Gate
 
-**Rules:**
-- Every feature flag has an owner and an expiration date
-- Clean up flags within 2 weeks of full rollout
-- Don't nest feature flags (creates exponential combinations)
-- Test both flag states (on and off) in CI
+1. **Staging:** full test suite and manual smoke test of critical flows.
+2. **Production, flag off:** health check succeeds and monitoring shows no new errors.
+3. **Team:** internal users exercise the feature during a 24-hour monitoring window.
+4. **Canary, 5%:** compare error, latency, behavior, and business metrics against baseline for 24–48 hours. Advance only when all thresholds pass.
+5. **Gradual, 25% → 50% → 100%:** repeat monitoring at each step and retain the ability to return to the previous percentage.
+6. **Full:** monitor for one week, then clean up the flag.
 
-## Staged Rollout
-
-### The Rollout Sequence
-
-```
-1. DEPLOY to staging
-   └── Full test suite in staging environment
-   └── Manual smoke test of critical flows
-
-2. DEPLOY to production (feature flag OFF)
-   └── Verify deployment succeeded (health check)
-   └── Check error monitoring (no new errors)
-
-3. ENABLE for team (flag ON for internal users)
-   └── Team uses the feature in production
-   └── 24-hour monitoring window
-
-4. CANARY rollout (flag ON for 5% of users)
-   └── Monitor error rates, latency, user behavior
-   └── Compare metrics: canary vs. baseline
-   └── 24-48 hour monitoring window
-   └── Advance only if all thresholds pass (see table below)
-
-5. GRADUAL increase (25% -> 50% -> 100%)
-   └── Same monitoring at each step
-   └── Ability to roll back to previous percentage at any point
-
-6. FULL rollout (flag ON for all users)
-   └── Monitor for 1 week
-   └── Clean up feature flag
-```
-
-### Rollout Decision Thresholds
-
-Use these thresholds to decide whether to advance, hold, or roll back at each stage:
+Use these thresholds at every stage:
 
 | Metric | Advance (green) | Hold and investigate (yellow) | Roll back (red) |
-|--------|-----------------|-------------------------------|-----------------|
-| Error rate | Within 10% of baseline | 10-100% above baseline | >2x baseline |
-| P95 latency | Within 20% of baseline | 20-50% above baseline | >50% above baseline |
+|---|---|---|---|
+| Error rate | Within 10% of baseline | 10–100% above baseline | >2x baseline |
+| P95 latency | Within 20% of baseline | 20–50% above baseline | >50% above baseline |
 | Client JS errors | No new error types | New errors at <0.1% of sessions | New errors at >0.1% of sessions |
 | Business metrics | Neutral or positive | Decline <5% (may be noise) | Decline >5% |
 
-### When to Roll Back
+## Failure and Rollback Behavior
 
 Roll back immediately if:
+
 - Error rate increases by more than 2x baseline
 - P95 latency increases by more than 50%
 - User-reported issues spike
-- Data integrity issues detected
-- Security vulnerability discovered
+- Data integrity issues are detected
+- A security vulnerability is discovered
 
-## Monitoring and Observability
+Every deployment needs a documented rollback plan before it happens. The plan must name trigger conditions, exact rollback steps, post-rollback health and monitoring checks, team communication, database rollback/data handling, and expected rollback time. Prefer disabling the feature flag; otherwise deploy or revert to the known previous version.
 
-### What to Monitor
+## Monitoring and Post-Launch Verification
 
-```
-Application metrics:
-├── Error rate (total and by endpoint)
-├── Response time (p50, p95, p99)
-├── Request volume
-├── Active users
-└── Key business metrics (conversion, engagement)
+Monitor all three layers:
 
-Infrastructure metrics:
-├── CPU and memory utilization
-├── Database connection pool usage
-├── Disk space
-├── Network latency
-└── Queue depth (if applicable)
+- Application: total and per-endpoint error rate, p50/p95/p99 response time, request volume, active users, and key business metrics.
+- Infrastructure: CPU, memory, database connection pool, disk, network latency, and queue depth.
+- Client: Core Web Vitals (LCP, INP, CLS), JavaScript errors, client-visible API error rates, and page-load time.
 
-Client metrics:
-├── Core Web Vitals (LCP, INP, CLS)
-├── JavaScript errors
-├── API error rates from client perspective
-└── Page load time
-```
-
-### Error Reporting
-
-```typescript
-// Set up error boundary with reporting
-class ErrorBoundary extends React.Component {
-  componentDidCatch(error: Error, info: React.ErrorInfo) {
-    // Report to error tracking service
-    reportError(error, {
-      componentStack: info.componentStack,
-      userId: getCurrentUser()?.id,
-      page: window.location.pathname,
-    });
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return <ErrorFallback onRetry={() => this.setState({ hasError: false })} />;
-    }
-    return this.props.children;
-  }
-}
-
-// Server-side error reporting
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  reportError(err, {
-    method: req.method,
-    url: req.url,
-    userId: req.user?.id,
-  });
-
-  // Don't expose internals to users
-  res.status(500).json({
-    error: { code: 'INTERNAL_ERROR', message: 'Something went wrong' },
-  });
-});
-```
-
-### Post-Launch Verification
+Error reporting must capture actionable context without exposing internals to users. Logs must be flowing and readable before rollout advances.
 
 In the first hour after launch:
 
-```
-1. Check health endpoint returns 200
-2. Check error monitoring dashboard (no new error types)
-3. Check latency dashboard (no regression)
-4. Test the critical user flow manually
-5. Verify logs are flowing and readable
-6. Confirm rollback mechanism works (dry run if possible)
-```
+1. Check health endpoint returns 200.
+2. Check the error dashboard has no new error types.
+3. Check the latency dashboard has no regression.
+4. Test the critical user flow manually.
+5. Verify logs are flowing and readable.
+6. Confirm rollback mechanism works, using a dry run if practical.
 
-## Rollback Strategy
-
-Every deployment needs a rollback plan before it happens:
-
-```markdown
-## Rollback Plan for [Feature/Release]
-
-### Trigger Conditions
-- Error rate > 2x baseline
-- P95 latency > [X]ms
-- User reports of [specific issue]
-
-### Rollback Steps
-1. Disable feature flag (if applicable)
-   OR
-1. Deploy previous version: `git revert <commit> && git push`
-2. Verify rollback: health check, error monitoring
-3. Communicate: notify team of rollback
-
-### Database Considerations
-- Migration [X] has a rollback: `npx prisma migrate rollback`
-- Data inserted by new feature: [preserved / cleaned up]
-
-### Time to Rollback
-- Feature flag: < 1 minute
-- Redeploy previous version: < 5 minutes
-- Database rollback: < 15 minutes
-```
-## See Also
-
-- For security pre-launch checks, see `references/security-checklist.md`
-- For performance pre-launch checklist, see `references/performance-checklist.md`
-- For accessibility verification before launch, see `references/accessibility-checklist.md`
+Optional error-reporting code, flag examples, rollout diagrams, and a rollback-plan template are in [Release and migration patterns](../../references/release-patterns.md). They do not replace the gates above.
 
 ## Common Rationalizations
 
@@ -277,7 +164,7 @@ Every deployment needs a rollback plan before it happens:
 |---|---|
 | "It works in staging, it'll work in production" | Production has different data, traffic patterns, and edge cases. Monitor after deploy. |
 | "We don't need feature flags for this" | Every feature benefits from a kill switch. Even "simple" changes can break things. |
-| "Monitoring is overhead" | Not having monitoring means you discover problems from user complaints instead of dashboards. |
+| "Monitoring is overhead" | Without monitoring, problems arrive as user complaints instead of dashboard signals. |
 | "We'll add monitoring later" | Add it before launch. You can't debug what you can't see. |
 | "Rolling back is admitting failure" | Rolling back is responsible engineering. Shipping a broken feature is the failure. |
 
@@ -285,10 +172,10 @@ Every deployment needs a rollback plan before it happens:
 
 - Deploying without a rollback plan
 - No monitoring or error reporting in production
-- Big-bang releases (everything at once, no staging)
+- Big-bang releases with no staging
 - Feature flags with no expiration or owner
 - No one monitoring the deploy for the first hour
-- Production environment configuration done by memory, not code
+- Production environment configuration done from memory, not code
 - "It's Friday afternoon, let's ship it"
 
 ## Verification
