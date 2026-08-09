@@ -43,8 +43,8 @@ project-specific. For example:
 Common rules-file locations include:
 
 - `CLAUDE.md` for Claude Code
-- `.cursor/rules/*.md` or `.cursorrules` for Cursor
-- `.windsurfrules` for Windsurf
+- `.cursor/rules/*.mdc` for Cursor (`.cursorrules` is legacy/deprecated)
+- `.windsurf/rules/*.md` for Windsurf
 - `.github/copilot-instructions.md` for GitHub Copilot
 - `AGENTS.md` for OpenAI Codex
 
