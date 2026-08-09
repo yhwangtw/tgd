@@ -7,215 +7,99 @@ description: Execute implementation plans by dispatching fresh subagents per tas
 
 ## Overview
 
-Execute implementation plans by dispatching **fresh subagents per task** with two-stage review: **spec compliance first, then code quality**.
-
-**Core Principle:** Fresh subagent per task + two-stage review = high quality, fast iteration
-
-**Why Subagents:**
-- Each task gets a clean context window — no pollution from prior tasks
-- Subagents receive precisely crafted instructions — focus and success
-- Your main context is preserved for coordination — you stay in control
-- Quality doesn't degrade as context grows — every task starts fresh
+Execute each planned task with a fresh implementer context followed by two
+independent gates: **spec compliance first, then code quality**. The main agent
+owns coordination and lifecycle artifacts. `/tgd-develop` invokes this skill
+for its multi-task or high-risk execution route.
 
 ## When to Use
 
-- Executing a multi-task implementation plan (TASKS.md)
-- Context is getting long and output quality is degrading
-- Tasks are mostly independent (can be executed sequentially)
-- You want the highest quality output per task
+- TASKS.md has multiple mostly independent tasks
+- Context growth threatens implementation quality
+- Per-task isolation and maximum review quality matter
 
-**When NOT to use:**
-- Single, small changes (use `tgd-develop-incremental` instead)
-- Tasks that are tightly coupled and need constant cross-reference
-- Exploration/prototyping where you don't have a plan yet
+Use `tgd-develop-incremental` for a single small change, tightly coupled work,
+or exploration without an approved plan.
 
-## The Process
+## Mandatory Process
 
-```
-Read TASKS.md
-    │
-    ▼
-┌─ For each task ──────────────────────────────────────┐
-│                                                       │
-│  1. Dispatch implementer subagent                     │
-│     - Provide: task spec, relevant files, context     │
-│     - Subagent implements, tests, commits             │
-│                                                       │
-│  2. Dispatch spec reviewer subagent                   │
-│     - Provide: task spec + subagent's output          │
-│     - Checks: does code match the spec?               │
-│     - If NO → fix round (see Review FAIL loop below)  │
-│                                                       │
-│  3. Dispatch code quality reviewer subagent           │
-│     - Provide: code diff + quality checklist           │
-│     - Checks: readability, patterns, test quality     │
-│     - If NO → fix round (see Review FAIL loop below)  │
-│                                                       │
-│  4. Flip the task's **Status:** line to `complete`    │
-│     in TASKS.md (+ backfill Test: fields)             │
-│                                                       │
-└───────────────────────────────────────────────────────┘
-    │
-    ▼
-Final review of entire implementation
-```
+For every non-complete, non-blocked task in order:
 
-**Review FAIL loop (bounded):** the original implementer subagent is gone —
-fresh context is the point. On FAIL, the orchestrator dispatches a NEW
-implementer subagent with the same task spec PLUS the reviewer's specific
-FAIL list. **Maximum two fix rounds per review stage.** If the third review
-still FAILs, do not keep ping-ponging: set the task's `**Status:** blocked:
-review deadlock — <one-line summary>` in TASKS.md, record the disagreement
-under `## Risks & Mitigations`, and move to the next task. A deadlock usually
-means the spec is ambiguous — that's a human call, not a longer loop.
+1. Dispatch a fresh implementer inside the correct repository worktree with the
+   complete task, AC ids, relevant files, context, scope, and verification
+   commands.
+2. Require TDD, AC-tagged tests, scoped changes, a task commit, AC-id → test-path
+   output, and explicit out-of-scope bug reporting.
+3. Dispatch a fresh spec reviewer against the task contract and resulting diff.
+4. After spec PASS, dispatch a fresh code-quality reviewer against the diff,
+   project conventions, tests, errors, performance, and security.
+5. Backfill every criterion's `Test:` path; record `Spec-Review:` and
+   `Quality-Review:` as `PASS — <one line>` or `FAIL — <one line>`.
+6. Only after tests and both reviews pass, mark the task complete. After all
+   tasks, run the integration review and required gates.
+
+Concrete prompt bodies are optional scaffolding. Load
+[Subagent Prompts](../../references/subagent-prompts.md) when dispatching or
+performing the same stages inline; this skill remains the normative owner.
+
+## Bounded Review FAIL Loop
+
+The original implementer context is discarded after its task. On review FAIL,
+dispatch a **new** implementer with the same task plus the reviewer's exact
+finding list, then rerun that review stage. Allow at most two fix rounds per
+stage. If the third review still fails:
+
+- set `**Status:** blocked: review deadlock — <one-line summary>`;
+- record the disagreement under `## Risks & Mitigations`;
+- continue to the next independent task.
+
+Do not ping-pong indefinitely. A repeated deadlock usually requires a human
+decision about an ambiguous contract.
+
+## Orchestrator Duties
+
+- Keep every read, write, test, and commit in the task's correct worktree.
+- Update TASKS.md outside the worktree: Status, `Test:`, `Spec-Review:`, and
+  `Quality-Review:` fields are orchestrator-owned evidence.
+- Record every out-of-scope bug under Risks & Mitigations or add a new task when
+  it belongs in the current cycle; never let the report disappear.
+- If reviewer delegation is unavailable, execute spec and quality reviews
+  INLINE using the same contracts. Inability to delegate never skips a stage.
+- `/tgd-verify` fails closed when a completed task still has a pending review.
+
+If implementation delegation itself is unavailable, route execution through
+`tgd-develop-incremental`; the two review stages and evidence fields remain
+mandatory.
 
 ## Continuous Execution
 
-**Do not pause to check in between tasks.** Execute all tasks from the plan without stopping.
-
-**Only reasons to stop:**
-- BLOCKED status you cannot resolve
-- Ambiguity that genuinely prevents progress
-- All tasks complete
-
-**Never:** Use "Should I continue?" prompts or progress summaries — waste the user's time.
-
-## Subagent Prompts
-
-### Implementer Prompt Template
-
-```
-You are implementing a single task from an implementation plan.
-
-WORKING DIRECTORY:
-{worktree_path}   ← all reads, writes, and commands happen HERE
-                    (the isolated worktree, not the main checkout;
-                    for a [repo-name]-tagged task this is THAT repo's
-                    worktree — ../project-<feature>-<repo-name>)
-
-TASK:
-{task_description_including_AC_ids}
-
-RELEVANT FILES:
-{file_list}
-
-CONTEXT:
-{relevant_context}
-
-RULES:
-1. Implement exactly what the task specifies — nothing more, nothing less
-2. Write tests before code (TDD Red-Green-Refactor)
-3. Every test verifying a criterion MUST mention its AC-<task>.<n> id in
-   the test name, docstring, or a comment — this is machine-checked later
-4. Commit when the task is complete with a clear commit message
-5. Do NOT modify files outside your task scope
-6. If you encounter ambiguity, state it clearly and stop
-7. If you find a bug OUTSIDE your task scope: do NOT fix it — report it
-   in your output (file, symptom, suspected cause) and keep going. The
-   orchestrator decides whether it becomes a new task.
-
-EXPECTED OUTPUT:
-- Code changes committed
-- Tests written and passing
-- For EACH acceptance criterion: the AC id and the test file path that
-  verifies it (the orchestrator records these in TASKS.md Test: fields)
-- Out-of-scope bugs found, if any (file + symptom + suspected cause)
-- Brief summary of what was done
-```
-
-**Orchestrator duty after each implementer completes:** take the AC-id → test-path
-pairs from the output and backfill the `Test:` fields in
-`$TGD_DIR/<feature-name>/TASKS.md`, then flip that task's `**Status:**` line
-from `in-progress` to `complete`. If the output reports out-of-scope bugs, record
-each under `## Risks & Mitigations` (or add a new task if it must be fixed this
-cycle) — do NOT let the report evaporate. Subagents cannot reliably write
-outside the worktree — the orchestrator owns the artifacts directory.
-
-**Orchestrator duty after each review stage:** record the outcome in the task's
-`Spec-Review:` / `Quality-Review:` fields in TASKS.md — `PASS — <one line>` or
-`FAIL — <one line>` (after a FAIL: implementer fixes, the stage re-runs, then
-flip to PASS). If you cannot dispatch reviewer subagents, run both review
-stages INLINE against their prompt templates — inability to delegate never
-skips a stage — and record the fields the same way. `/tgd-verify` fails closed
-on a completed task whose review fields still read `pending`.
-
-### Spec Reviewer Prompt Template
-
-```
-You are reviewing code for spec compliance.
-
-TASK SPEC:
-{task_description}
-
-CODE CHANGES:
-{diff_or_file_list}
-
-CHECK:
-1. Does the code implement everything the spec requires?
-2. Are there any spec requirements that were missed?
-3. Does the code do anything NOT in the spec? (scope creep)
-4. Are edge cases from the spec handled?
-
-OUTPUT:
-- PASS: Code matches spec
-- FAIL: List specific gaps between spec and implementation
-```
-
-### Code Quality Reviewer Prompt Template
-
-```
-You are reviewing code for quality.
-
-CODE CHANGES:
-{diff_or_file_list}
-
-CHECK:
-1. Readability: Is the code clear and well-structured?
-2. Patterns: Does it follow existing codebase conventions?
-3. Test quality: Are tests meaningful (not just for coverage)?
-4. Error handling: Are failure cases handled?
-5. Performance: Any obvious performance issues?
-6. Security: Any obvious security issues?
-
-OUTPUT:
-- PASS: Code meets quality standards
-- FAIL: List specific issues with severity (critical/important/nit)
-```
-
-## Integration with tGD
-
-This skill is invoked by `/tgd-develop` when executing a task plan. It replaces the default single-session execution with subagent-based execution for higher quality.
-
-**Trigger conditions:**
-- TASKS.md exists with multiple tasks
-- Tasks are mostly independent
-- User wants maximum quality (not maximum speed)
-
-**Fallback:** If subagent delegation is not available, fall back to `tgd-develop-incremental`.
+Do not pause between tasks for “Should I continue?” or progress summaries.
+Continue until all tasks finish, a genuine ambiguity prevents work, or an
+unresolvable blocker is recorded. Work on independent tasks after a blocker.
 
 ## Common Rationalizations
 
 | Rationalization | Reality |
 |---|---|
-| "I'll just do it in this session" | Context pollution degrades quality per task |
-| "Subagents will mess it up" | Fresh context + clear spec = higher quality |
-| "Two-stage review is overkill" | Spec compliance + code quality catch different bugs |
-| "It's faster without review" | Faster now, slower when bugs surface later |
+| "I'll do it in this growing session" | Fresh context protects task quality. |
+| "Subagents will lose context" | Give one precise task and its required evidence. |
+| "Two reviews are overkill" | Spec and quality catch different failures. |
+| "Skipping review is faster" | Unreviewed mistakes move cost downstream. |
 
 ## Red Flags
 
-- Subagent output claims "done" without showing diff or test results
-- Skipping spec review and going straight to code review
-- Modifying files outside the task scope
-- Implementer and reviewer getting the same overly broad context
-- Reviewer passes without listing specific checks performed
+- “Done” without a diff, test result, or commit SHA
+- Quality review before spec review, or either review skipped
+- Work outside the tagged task/repository scope
+- Broad shared context that defeats task/reviewer independence
+- PASS without named checks or evidence
+- Pending review fields on a completed task
 
 ## Verification
 
-- [ ] Each subagent produced verifiable output (diff, test results, or commit SHA)
-- [ ] Spec reviewer confirmed all requirements met (PASS or gaps listed)
-- [ ] Code quality reviewer found no critical issues
-- [ ] Tests are tagged with their `AC-<task>.<n>` ids and TASKS.md `Test:` fields are backfilled
-- [ ] Every task's `**Status:**` line reads `complete` (or `blocked: <ref>` with the blocker recorded — never left `pending`)
-- [ ] Out-of-scope bug reports from implementers were recorded in Risks & Mitigations, not dropped
-- [ ] Final integration test passes
+- [ ] Each implementer produced scoped diff/commit and observed test evidence.
+- [ ] Every AC-tagged test path was backfilled into TASKS.md.
+- [ ] Spec and quality reviews passed or the bounded deadlock was recorded.
+- [ ] Task Status is complete or `blocked: <ref>`, never stale pending.
+- [ ] Out-of-scope bugs were retained in Risks & Mitigations or new tasks.
+- [ ] Final integration tests pass.
