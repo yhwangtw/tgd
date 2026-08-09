@@ -77,6 +77,10 @@ skills/
 
 ### SKILL.md Format
 
+Write canonical `skills/*/SKILL.md` source in English. Labels, prompts, and
+quoted speech acts inside a skill describe structure and intent; at runtime,
+render them in the user's language instead of copying the English literally.
+
 ```markdown
 ---
 name: {skill-name}

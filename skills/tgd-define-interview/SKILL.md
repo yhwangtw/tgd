@@ -50,7 +50,12 @@ The number forces honesty. If you wrote down a high number but can't actually pr
 
 When confidence is below ~70%, append a brief reason on the same line — what's still unresolved or missing. This tells the user exactly what the interview needs to surface, and prevents the number from being a vague signal.
 
-**Labels and speech acts follow the user's language.** Every English label in the templates below — `HYPOTHESIS`, `CONFIDENCE`, `Q`, `GUESS`, and the restate row names (`Outcome`, `User`, `Why now`, `Success`, `Constraint`, `Out of scope`) — and every quoted sentence the skill tells you to say to the user (e.g. the Step 3 probe) is an illustration of structure and intent, not literal output to copy verbatim. Render all of them in the language the user is using. In Traditional Chinese: labels become `假設` / `把握度` / `問` / `推測` / `結果` / `對象` / `為何現在` / `成功` / `限制` / `不在範圍`, and a probe like "if you didn't have to justify this to anyone, what would you actually want?" becomes「如果不用對任何人交代，你真正想要的是什麼？」. The structure matters; the language doesn't.
+**Labels and speech acts follow the user's language.** Every English label in
+the templates below — `HYPOTHESIS`, `CONFIDENCE`, `Q`, `GUESS`, and the restate
+row names — and every quoted sentence are structural examples, never literal
+output to copy. Translate them into the language the user is currently using;
+do not default to English merely because the canonical skill is written in it.
+Preserve the structure and intent, not the example wording.
 
 ### Step 2: Ask one question at a time, each with a guess attached
 
