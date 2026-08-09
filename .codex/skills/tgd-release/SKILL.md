@@ -3,101 +3,90 @@ name: tgd-release
 description: Release to production — faster is safer
 ---
 
-**🛑 Pre-flight: Environment Check**
-- [ ] `$TGD_DIR/CONTEXT.md` exists. No substitutes — `/tgd-map` produces it unconditionally (Tier 1).
-- **If missing:** STOP. Tell user: "Project context not mapped. Please run `/tgd-map` first."
-- **$TGD_DIR:** Check env var `$TGD_DIR` first. If not set, check sibling `../<project-name>-tGD/`. If neither exists: STOP — run `/tgd-map` first.
+## Pre-flight
 
-**🔑 Step 0: Feature Name Resolution**
-1. Scan `$TGD_DIR/` for **feature directories**: subdirectories containing `SPEC.md` or `PRD.md` (e.g., `$TGD_DIR/user-login/`). Infrastructure dirs (`.scans/`, `wiki/`, and any dot-directories) are NOT features — always exclude them.
-2. If none found: 🛑 STOP. "No features defined. Run `/tgd-define` first."
-3. If exactly one found: Lock it as `<feature-name>`.
-4. If multiple found: List them and ask user to specify.
-5. **Verify**: `$TGD_DIR/<feature-name>/SPEC.md` exists (defines scope).
+- [ ] Resolve `$TGD_DIR` from its environment variable, then sibling `../<project-name>-tGD/`; require CONTEXT.md or STOP and run `/tgd-map`.
+- [ ] Select `<feature-name>` from non-infrastructure subdirectories containing PRD.md or SPEC.md. None means STOP and run `/tgd-define`; multiple means ask. Require SPEC.md.
+- [ ] **Review passed**: REVIEW.md exists and every 🔴 finding is `fixed`; feature tests exist in the CONTEXT.md layout and pass.
+- [ ] When PRD UI mode is 1–3, DESIGN.md exists and REVIEW Design Conformance is `✅ Pass` for the released SHA.
 
-**🔒 Pre-flight: Artifact Check**
-- [ ] Review passed — no 🔴 Critical finding left unresolved: every 🔴 row in REVIEW.md's findings table reads `fixed` in its Resolution column (a 🔴 row that is `open`, empty, or `deferred` blocks release).
-- [ ] `$TGD_DIR/<feature>/REVIEW.md` exists.
-- [ ] The feature's tests exist (per the project's layout in `CONTEXT.md`) and pass.
-- [ ] Read PRD `## UI Design`. For modes 1–3, DESIGN.md exists and REVIEW.md `## Design Conformance (if UI)` reads `✅ Pass` with evidence for the commit being released. A missing required DESIGN.md fails closed.
-- **If missing:** STOP. Tell user: "Review or tests incomplete. Please run `/tgd-review` first."
+**If missing:** STOP. Tell user: "Review or tests incomplete. Please run `/tgd-review` first."
 
-**🔏 Pre-flight: Sign-off Gate (HARD GATE)**
-Release is the one phase that blocks on human sign-off (see `tgd-core-rules` → Human Roles & Sign-off Protocol). Check the `## Sign-off` sections — with the scoped greps below, not by eyeballing. The `awk '/^## Sign-off/,0'` prefix restricts the match to the `## Sign-off` section (it sits at the bottom of each artifact): a file-wide grep would be satisfied by approval-shaped text elsewhere in the document — e.g. a PRD §6 metrics N/A sign-off written in the standard role format would pre-approve the release at define time.
-- [ ] `$TGD_DIR/<feature-name>/TEST-REPORT.md` — **QA** approved:
-      `awk '/^## Sign-off/,0' "$TGD_DIR/<feature-name>/TEST-REPORT.md" | grep -qF '[x] **QA**: Approved'`
-- [ ] `$TGD_DIR/<feature-name>/REVIEW.md` — **QA** AND **DEV** approved (run both):
-      `awk '/^## Sign-off/,0' "$TGD_DIR/<feature-name>/REVIEW.md" | grep -qF '[x] **QA**: Approved'`
-      `awk '/^## Sign-off/,0' "$TGD_DIR/<feature-name>/REVIEW.md" | grep -qF '[x] **DEV**: Approved'`
-- [ ] **PM** final approval:
-      `awk '/^## Sign-off/,0' "$TGD_DIR/<feature-name>/PRD.md" | grep -qF '[x] **PM**: Approved'`
-      — or an explicit go-ahead from the user in this session (record it in the CHANGELOG entry).
-      (The approver flips `- [ ] **ROLE**: (pending)` to `- [x] **ROLE**: Approved` — keep that exact spelling; the fixed-string greps are the gate.)
-- [ ] **If PRD UI mode is 1–3**, both design approvals are required:
-      `awk '/^## Sign-off/,0' "$TGD_DIR/<feature-name>/DESIGN.md" | grep -qF '[x] **DESIGN**: Direction Approved'`
-      `awk '/^## Sign-off/,0' "$TGD_DIR/<feature-name>/REVIEW.md" | grep -qF '[x] **DESIGN**: Implementation Approved'`
-- **If any grep exits non-zero** (line unchecked, missing, or `Rejected`): 🛑 STOP. List the pending roles and wait — humans review async. Do NOT proceed "provisionally".
+## Sign-off Gate (HARD GATE)
+
+Release alone blocks for humans. Run these scoped fixed-string checks (never file-wide grep):
+
+```bash
+awk '/^## Sign-off/,0' "$TGD_DIR/<feature-name>/TEST-REPORT.md" | grep -qF '[x] **QA**: Approved'
+awk '/^## Sign-off/,0' "$TGD_DIR/<feature-name>/REVIEW.md" | grep -qF '[x] **QA**: Approved'
+awk '/^## Sign-off/,0' "$TGD_DIR/<feature-name>/REVIEW.md" | grep -qF '[x] **DEV**: Approved'
+awk '/^## Sign-off/,0' "$TGD_DIR/<feature-name>/PRD.md" | grep -qF '[x] **PM**: Approved'
+```
+
+Explicit user PM go-ahead in this session may replace the PRD check only when recorded in CHANGELOG. UI modes 1–3 additionally run the same scoped fixed-string check for DESIGN.md `[x] **DESIGN**: Direction Approved` and REVIEW.md `[x] **DESIGN**: Implementation Approved`.
+
+**If any grep exits non-zero** (line unchecked, missing, or `Rejected`): 🛑 STOP. List the pending roles and wait — humans review async. Do NOT proceed "provisionally".
+
+## Release pipeline
 
 Run the `tgd-release-ship` skill. This is the Release phase. The full pipeline is:
 
-**Core flow:**
-1. `tgd-core-git` — clean commit history, trunk-based development
-2. **🧹 Regression Catalog Audit — BEFORE merging** (MANDATORY if `$TGD_DIR/REGRESSION-CATALOG.md` exists). Run it in the worktree (`../project-<feature-name>`; multi-repo features have one per repo — `../project-<feature-name>-<repo-name>` — audit each), so a failure stops the release before anything lands on `main`:
-   1. Read every entry in `$TGD_DIR/REGRESSION-CATALOG.md` (not just the current feature's).
-   2. **Test file exists?** If the path is broken (file deleted, moved, or renamed): remove the entry. Log the removal in `$TGD_DIR/CHANGELOG.md` under a `## Catalog Cleanup` subsection.
-   3. **Feature deprecated?** If the feature's code was removed or deprecated in this cycle (`tgd-release-migration` ran): remove its entries from the catalog.
-   4. **Every entry still passes?** Run the machine gate — do NOT eyeball it (resolve `$TGD_REPO_ROOT` per `tgd-core-rules` → **Resolving $TGD_REPO_ROOT**):
-      `bash "$TGD_REPO_ROOT/scripts/regression-gate.sh" ../project-<feature-name> "$TGD_DIR"` (multi-repo: once per worktree — `../project-<feature-name>-<repo-name>` as the first arg AND the repo name as the third, so entries tagged `Repo:` for other repos are skipped there instead of failing as missing)
-      Exit 0 = pass. Exit 1 = 🛑 STOP — a shipped behavior regressed; fix before merging. Exit 2 = configuration error — fix the invocation, never treat as pass. Exit 3 = no catalog yet — skip this audit.
-   5. After the audit, the catalog contains ONLY entries whose test files exist and pass. This prevents the catalog from becoming a zombie file full of dead references.
-3. **🌳 Merge & worktree cleanup** — this is where the feature branch lands on `main` (NOT in `/tgd-develop`). Multi-repo features repeat all steps in EACH repo that has a worktree:
-   1. **Clean-worktree check (BEFORE the merge):** `git status --porcelain` in the worktree MUST be empty. Dirty means the sign-offs were taken against a state that the merge will not ship. Modified/untracked files that ARE the verified state (e.g. verify/review edits never committed — an upstream phase violated its own gate): commit them on the feature branch so the merged code is identical to what was signed off. Tool residue (coverage output, lockfiles from gate attempts, `node_modules/`): delete it. Only then merge.
-   2. Merge `feature/<feature-name>` into `main` (or open a PR, per team policy — and WAIT for it to land before any cleanup).
-   3. **AFTER the merge lands**, remove the worktree: `git worktree remove ../project-<feature-name>` (multi-repo: `../project-<feature-name>-<repo-name>`). Not before — if the PR's CI fails, the worktree is where you fix it.
-   4. Then delete the branch: `git branch -d feature/<feature-name>`.
-4. `tgd-release-ship` — pre-launch checklist, staged rollouts, monitoring setup
+1. Run `tgd-core-git` for clean trunk-based history.
+2. Run the pre-merge Regression Catalog Audit below.
+3. Merge and clean up worktrees below.
+4. Run `tgd-release-ship` for its pre-launch checklist, staged rollout, monitoring, and rollback method.
 
-**Conditional (apply when relevant):**
-- CI/CD pipeline work? → `tgd-release-ci`
-- Removing old systems? → `tgd-release-migration`
-- New architecture or API? → `tgd-review-adr`
+Conditional routing:
 
-Faster is safer. Deploy in stages, confirm monitoring, and have a rollback plan.
+- **CI/CD pipeline work? → `tgd-release-ci`**
+- **Removing old systems? → `tgd-release-migration`**
+- New architecture or API → `tgd-review-adr`.
+
+### Regression Catalog Audit
+
+**🧹 Regression Catalog Audit — BEFORE merging** (MANDATORY if `$TGD_DIR/REGRESSION-CATALOG.md` exists). Run it in the worktree (`../project-<feature-name>`; multi-repo features have one per repo — `../project-<feature-name>-<repo-name>` — audit each), so a failure stops the release before anything lands on `main`:
+
+1. Read every catalog entry. Remove entries for missing/moved test files and log them under CHANGELOG `## Catalog Cleanup`; also remove entries deprecated by this migration cycle.
+2. Run `bash "$TGD_REPO_ROOT/scripts/regression-gate.sh" <worktree> "$TGD_DIR" [repo-name]` once per worktree.
+3. Exit 0 passes. Exit 1 blocks for regression repair. Exit 2 is an invocation/configuration failure. Exit 3 means no catalog yet.
+4. Continue only with a catalog containing existing, passing tests.
+
+### Merge and cleanup
+
+Repeat per repo with tasks:
+
+1. Require empty `git status --porcelain` in the feature worktree. Commit verified-state changes; delete only tool residue.
+2. Merge `feature/<feature-name>` into `main`, or open a PR per team policy and wait for it to land.
+3. **AFTER the merge lands**, remove the worktree: `git worktree remove ../project-<feature-name>` (multi-repo: `../project-<feature-name>-<repo-name>`). Not before — if the PR's CI fails, the worktree is where you fix it.
+4. Delete the landed branch with `git branch -d feature/<feature-name>`.
+
+## Release artifacts
+
+### CHANGELOG
 
 After releasing, update `$TGD_DIR/CHANGELOG.md` (create if it doesn't exist) with:
-- Version (CalVer: `vYYYY.MM.DD`; if that version already exists in the CHANGELOG, append a micro number — `vYYYY.MM.DD.2`, `.3`, … — for additional releases on the same day)
-- Feature name and summary
-- Date shipped
-- Key changes
-- Use `$TGD_REPO_ROOT/templates/CHANGELOG.md.tmpl` as the skeleton when creating a new changelog.
 
-**📊 METRICS.md — Metrics Handoff**
-Skip this step entirely if PRD §6 is `N/A` (with its PM sign-off) — do NOT generate an empty sheet.
-Otherwise, create `$TGD_DIR/<feature-name>/METRICS.md` from the PRD §6 table:
+- CalVer: `vYYYY.MM.DD`, adding `.2`, `.3`, and so on for same-day releases.
+- Feature name/summary, ship date, and key changes.
+- Use `$TGD_REPO_ROOT/templates/CHANGELOG.md.tmpl` when creating it.
 
-> Canonical template: `$TGD_REPO_ROOT/templates/METRICS.md.tmpl`.
-- Copy every §6 row verbatim; leave **Actual** and **Filled on** blank. This sheet is a **handoff** — whoever owns the data (PM, analyst) fills it in their own rituals (weekly review, dashboard check). tGD's job ends at making the sheet accurate; do NOT chase the numbers, do NOT schedule follow-ups.
-- In `$TGD_DIR/TRACKING-PLAN.md`, flip this feature's event entries from `Status: planned` to `Status: live since vYYYY.MM.DD`.
+### Metrics handoff
 
-**📦 Regression Catalog Update**
-After releasing, scan `$TGD_DIR/<feature-name>/TASKS.md` for Acceptance Criteria marked `[R]` (Regression). For EACH `[R]` criterion:
-1. Extract the BDD criterion (Given/When/Then) and its AC id.
-2. Take the test file from the criterion's `Test:` field in TASKS.md — recorded during `/tgd-develop` and already validated by `ac-trace.py` during `/tgd-verify`. Do NOT guess the file from directory listings.
-3. Append entries to `$TGD_DIR/REGRESSION-CATALOG.md` (create if it doesn't exist):
-   If creating for the first time, start with this header:
-   > Canonical template: `$TGD_REPO_ROOT/templates/REGRESSION-CATALOG.md.tmpl`.
-   Then append each `[R]` criterion as an entry:
-   Use the `### [<feature-name>] ...` entry shape from that template.
-This catalog is cumulative — every shipped feature's `[R]` tests are preserved for future regression checks. Future features will re-run ALL catalog entries during `/tgd-verify` (and again in this command's pre-merge audit).
+**Skip this step entirely if PRD §6 is `N/A` (with its PM sign-off) — do NOT generate an empty sheet.** Otherwise create METRICS.md from the canonical template and copy every PRD §6 row verbatim, leaving Actual and Filled on blank. Do not chase or schedule data collection. In TRACKING-PLAN.md change this feature's entries from **`Status: planned` to `Status: live`**, recorded as `Status: live since vYYYY.MM.DD`.
 
-**Verification Gate:**
-- [ ] Sign-off Gate passed — all required role lines are `[x] Approved`
-- [ ] If PRD UI mode is 1–3: Direction Approved and Implementation Approved design sign-offs passed, and REVIEW.md design conformance evidence matches the released commit
-- [ ] Regression Catalog Audit ran BEFORE the merge — `regression-gate.sh` exit 0 (or 3), all entries point to existing, passing test files
-- [ ] Git commit created with clean history
-- [ ] `feature/<feature-name>` merged to `main` (or PR opened), worktree removed, branch deleted
-- [ ] `$TGD_DIR/CHANGELOG.md` exists and is updated
-- [ ] `$TGD_DIR/<feature-name>/METRICS.md` created from PRD §6 with Actual left blank (skipped only for signed-off N/A); TRACKING-PLAN entries flipped to `live`
-- [ ] `$TGD_DIR/REGRESSION-CATALOG.md` updated with new `[R]` entries (if any)
+### Regression catalog update
+
+After release, for every TASKS.md Acceptance Criteria marked `[R]`, copy its AC id/BDD criterion and its already-validated `Test:` path into REGRESSION-CATALOG.md using `$TGD_REPO_ROOT/templates/REGRESSION-CATALOG.md.tmpl` and that template's entry shape. Do not infer test paths.
+
+**This catalog is cumulative — every shipped feature's `[R]` tests are preserved for future regression checks. Future features will re-run ALL catalog entries during `/tgd-verify` (and again in this command's pre-merge audit).**
+
+## Verification Gate
+
+- [ ] All role/design sign-offs passed.
+- [ ] Pre-merge regression audit passed in every repo.
+- [ ] Git commit created with clean history.
+- [ ] `feature/<feature-name>` merged to `main` (or PR opened), worktree removed, branch deleted.
+- [ ] CHANGELOG is updated; METRICS/TRACKING-PLAN handling matches signed-off PRD §6.
+- [ ] Every new `[R]` AC is represented in the cumulative catalog.
 
 End with the closing report per `tgd-core-rules` → **Command Closing Report**: 📦 產出 (released version + CHANGELOG/METRICS/REGRESSION-CATALOG updates) · 🔎 檢查 (gate as one line) · ➡️ 下一步 確認 monitoring 已啟動、rollback plan 有記錄（發布是終點,不接下一個命令）. Don't paste the raw checklist above.

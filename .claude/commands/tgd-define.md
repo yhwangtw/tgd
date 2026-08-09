@@ -2,93 +2,80 @@
 description: Start spec-driven development — write a structured specification before writing code
 ---
 
-**🛑 Pre-flight: Environment Check**
-- [ ] `$TGD_DIR/CONTEXT.md` exists. No substitutes — `/tgd-map` produces it unconditionally (Tier 1), and this phase depends on its repo list, Build/Test/Run, and Conventions.
-- **If missing:** STOP. Tell user: "Project context not mapped. Please run `/tgd-map` first."
-- **$TGD_DIR:** Check env var `$TGD_DIR` first. If not set, check sibling `../<project-name>-tGD/`. If neither exists: STOP — run `/tgd-map` first.
+## Pre-flight
 
-**📊 FYI (non-blocking):** If any `$TGD_DIR/*/METRICS.md` still has a blank Actual column, mention it in ONE line ("N features shipped with metrics not yet filled in — the sheets are ready for whoever owns the data") and move on. Do NOT stop, do NOT ask, do NOT start filling them — reviewing metrics belongs to the team's own rituals, not to this command.
+- [ ] `$TGD_DIR/CONTEXT.md` exists. If missing, STOP: `Project context not mapped. Please run /tgd-map first.`
+- Resolve `$TGD_DIR` from its environment variable, then sibling `../<project-name>-tGD/`. **If neither exists: STOP — run `/tgd-map` first.**
+- If any `$TGD_DIR/*/METRICS.md` has a blank Actual column, mention the count in one non-blocking line. Do not ask, stop, or fill it.
 
-Run the `tgd-define-spec` skill. Define the product first, resolve the design direction when the feature has UI, then write the technical specification. No code is written in this phase.
+This is DEFINE: product intent first, approved UI direction when applicable, then the technical contract. Run no code work.
 
-This is the DEFINE phase. The full pipeline is:
-1. `tgd-define-interview` — if the ask is underspecified, extract what the user actually wants
-2. `tgd-define-ideate` — if the concept is vague, stress-test and expand options
-3. **Existing-feature check (do this BEFORE proposing names).** Scan `$TGD_DIR/` for feature directories (subdirs containing `PRD.md` or `SPEC.md`; `.scans/` and dot-dirs are not features). If any exist AND the current ask plausibly relates to one, ask (Selection Protocol):
+## Pipeline
 
-   > 📂 發現既有 feature：`<name>`（PRD: yes/no · SPEC: yes/no）
-   >
-   > 1. 修改/續寫這個 feature 的 spec
-   > 2. 開一個新 feature
-   >
-   > Choose one (default 1 if the ask clearly amends it):
+1. Run `tgd-define-interview` for an underspecified ask and `tgd-define-ideate` for a vague concept.
+2. **Existing-feature check (do this BEFORE proposing names).** Scan non-infrastructure subdirectories containing PRD.md or SPEC.md. If the ask plausibly relates to one, use the Selection Protocol to ask whether to update it (default when clearly related) or create a new feature. Updating means revising PRD/SPEC sections in place. **Never silently create a second directory for what is the same feature under a new name.**
+3. For a new feature, propose 3 distinct kebab-case `<feature-name>` options that directly reflect the user's intent: literal, action-focused, and domain-specific where applicable. **Wait for the user to select one by number or provide their own before proceeding.** Once locked, create `$TGD_DIR/<feature-name>/`.
+4. Run `tgd-define-spec` to write PRD.md from validated product intent.
+5. Run UI Design Routing below.
+6. Run `tgd-define-spec` again to write/finalize SPEC.md from CONTEXT.md, PRD.md, and approved DESIGN.md when applicable.
 
-   - **Choice 1** → skip name resolution; work IN `$TGD_DIR/<existing-name>/`, updating PRD/SPEC in place (revise sections, don't blindly append). The Verification Gate below applies to the updated files.
-   - **Choice 2 (or no related feature exists)** → continue to step 4.
-   Never silently create a second directory for what is the same feature under a new name.
-4. **Feature Name Resolution** (Selection Protocol) — analyze the request and extract the core action + object (e.g., "user login" → action: login, object: user). Then propose 3 distinct kebab-case `<feature-name>` options that **directly reflect the user's intent**:
-   - Option 1: Most literal/direct (e.g., `user-login`)
-   - Option 2: Action-focused (e.g., `authenticate-user`)
-   - Option 3: Domain-specific if applicable (e.g., `auth-flow`)
-   
-   **Wait for the user to select one by number or provide their own before proceeding.** Once locked, create `$TGD_DIR/<feature-name>/`.
-5. `tgd-define-spec` — **write PRD.md** from the validated product intent
-6. **UI Design Routing** — after PRD.md and before SPEC.md; see below. UI work uses `CONTEXT.md` to locate the real design-system source files, then uses those files plus PRD.md as its inputs.
-7. `tgd-define-spec` — **write/finalize SPEC.md** from CONTEXT.md + PRD.md + approved DESIGN.md (when UI), so the technical contract reflects the selected interaction, states, components, and data needs
+### Resume within Define
 
-**Resume inside DEFINE — role hand-offs do not create a new lifecycle phase:**
-- PRD.md missing → start with product definition.
-- PRD.md exists and its `## UI Design` status is `pending`, or the required DESIGN.md is missing → resume at UI Design Routing; do not rewrite the approved PRD.
-- DESIGN.md has `[x] **DESIGN**: Direction Approved` and SPEC.md is missing/incomplete → resume at SPEC finalization.
-- PRD.md + required DESIGN.md + SPEC.md already pass their gates → run verification only; do not regenerate artifacts.
-- A resumed run must update sections in place. Never append a duplicate PRD, DESIGN, or SPEC template.
+- PRD.md missing: start at product definition.
+- **PRD.md exists and its `## UI Design` status is `pending`, or the required DESIGN.md is missing → resume at UI Design Routing; do not rewrite the approved PRD.**
+- DESIGN.md approved but SPEC.md missing/incomplete: resume at SPEC finalization.
+- All required artifacts pass: verify only; do not regenerate them.
 
-**📊 §6 Success Metrics rule** (see the filling rules in `tgd-define-spec`): every metric's Measurement Method must be one of — (a) a concrete query in an existing tool, (b) a named tracking event (registered in `$TGD_DIR/TRACKING-PLAN.md` by `/tgd-plan`, which also creates the instrumentation tasks), or (c) `N/A — no user-measurable outcome` with a named PM sign-off line. "Check analytics" is a placeholder, not a source. Do not invent filler metrics for refactors — an honest N/A beats a fabricated KPI.
+Always update in place. Do not append duplicate artifact templates.
 
-**🌿 No git operations in this phase.** PRD/SPEC live in `$TGD_DIR` (outside the code repo) — there is nothing to commit yet. The `feature/<feature-name>` branch is created by `/tgd-develop`'s worktree step (`git worktree add -b`). Creating AND checking out the branch here would make that mandatory worktree step fail: git refuses to check out a branch that is already checked out in another worktree (`fatal: '<branch>' is already used by worktree …`).
+### Product and repository rules
 
-**Multi-Repo Tagging:** If CONTEXT.md lists multiple repos, SPEC.md MUST be tagged by repo:
-```markdown
-## Backend (my-project-backend)
-### API Contracts
-- POST /api/auth/login → ...
+- PRD §6 Measurement Method must be a concrete existing-tool query, a named tracking event for `/tgd-plan` to register, or `N/A — no user-measurable outcome` with named PM sign-off. Do not fabricate metrics.
+- **🌿 No git operations in this phase.** PRD/SPEC live in `$TGD_DIR` (outside the code repo) — there is nothing to commit yet. The `feature/<feature-name>` **branch is created by `/tgd-develop`'s worktree step**, not here.
+- If CONTEXT.md lists multiple repos, tag SPEC sections by repo. Preserve this
+  existing example:
 
-## Frontend (my-project-frontend)
-### Components
-- LoginForm.tsx → ...
-```
-Each section header uses `## <repo-name>` so tasks can be traced to their target repo.
+  ```markdown
+  ## Backend (my-project-backend)
+  ### API Contracts
+  - POST /api/auth/login → ...
 
-**Step 6: UI Design Routing (MANDATORY CHECK via Selection Protocol)**
+  ## Frontend (my-project-frontend)
+  ### Components
+  - LoginForm.tsx → ...
+  ```
+
+  Each section header uses `## <repo-name>` so downstream tasks route to the
+  correct repo.
+
+## UI Design Routing
+
 After PRD.md is written and before SPEC.md is finalized, ask which route matches the feature:
 
-1. **Existing approved design** — use a versioned Figma frame, screenshot/PDF, or other approved source; generate **0 variants**.
-2. **Extend existing product UI** — inspect the design system and representative components named by CONTEXT.md, then use `tgd-define-sketch` to generate **2 variants** (`conservative/` and `strong-fit/`).
-3. **Explore a new experience** — inspect the same real source files, then use `tgd-define-sketch` to generate **3 variants** (`conservative/`, `strong-fit/`, and `divergent/`).
-4. **No user-facing UI** — skip DESIGN.md and prototypes, then finalize SPEC.md.
+1. Existing approved design — use its versioned source; generate **0 variants**.
+2. Extend existing product UI — use `tgd-define-sketch`; generate **2 variants**: `conservative/`, `strong-fit/`.
+3. Explore a new experience — use `tgd-define-sketch`; generate **3 variants**: those two plus `divergent/`.
+4. **No user-facing UI** — omit DESIGN.md/prototypes and finalize SPEC.md.
 
-Record the choice in PRD.md under `## UI Design` with `Mode`, `Owner`, `Existing system`, and `Status`. Use `pending` initially for modes 1–3 and `not-applicable` for mode 4. Do not infer "backend only" silently; the user chooses. For modes 1-3:
+Do not infer the choice. Record `Mode`, `Owner`, `Existing system`, and `Status` in PRD `## UI Design`; modes 1–3 start `pending`; record `not-applicable` for mode 4.
 
-1. Read `$TGD_DIR/CONTEXT.md` to locate UI sources, then open the actual token, component, global-style, responsive, and external-design sources. CONTEXT.md is a map, not visual truth. If a frontend exists but its UI Landscape is missing (legacy/stale context), STOP and refresh `/tgd-map` instead of guessing.
-2. Use PRD.md for the target user, problem, core action, and success criteria. Do not wait for a completed SPEC.md to invent the user experience.
-3. Produce or extract the selected direction according to the chosen mode. Present a head-to-head table only when variants exist.
-4. Write DESIGN.md, including the source revision, existing design-system mapping, user flow, state matrix, responsive behavior, content/copy, accessibility, and justified new tokens.
-5. Present the direction to the Design owner. DESIGN.md remains pending until its `## Sign-off` contains `[x] **DESIGN**: Direction Approved`; then update PRD `## UI Design` Status to `direction-approved`.
-6. Only after direction approval, write/finalize SPEC.md and reconcile its components, API/data contracts, states, events, and testing strategy against DESIGN.md.
+For modes 1–3, use CONTEXT.md to locate and then read the actual design-system sources. A frontend with missing UI Landscape requires a refreshed `/tgd-map`; do not guess. For mode 1, do not run `tgd-define-sketch`: extract the selected approved source into DESIGN.md and generate no variants. For modes 2–3, give PRD.md and the real sources to `tgd-define-sketch`, which owns direction generation and DESIGN.md authoring. Present variants when they exist.
 
-After completing the spec, verify the outputs. The gate scripts live in the tGD clone — resolve `$TGD_REPO_ROOT` per `tgd-core-rules` → **Resolving $TGD_REPO_ROOT**.
+**DESIGN.md remains pending until its `## Sign-off` contains `[x] **DESIGN**: Direction Approved`; then update PRD `## UI Design` Status to `direction-approved`.**
 
-**Verification Gate:**
-- [ ] `$TGD_DIR/` directory exists
-- [ ] `$TGD_DIR/<feature-name>/PRD.md` exists and is non-empty
-- [ ] `$TGD_DIR/<feature-name>/SPEC.md` exists and is non-empty
-- [ ] `python3 "$TGD_REPO_ROOT/scripts/check-doc-sections.py" PRD "$TGD_DIR/<feature-name>/PRD.md"` exits 0 — every required PRD section is present (`(if applicable)` sections are not forced; missing ones are listed)
-- [ ] `python3 "$TGD_REPO_ROOT/scripts/check-doc-sections.py" SPEC "$TGD_DIR/<feature-name>/SPEC.md"` exits 0 — every required SPEC section is present
-- [ ] PRD §6 Success Metrics: at least one row names a real data source (concrete tool query or named event) — OR the section is `N/A` with a named PM sign-off line. Placeholder rows (`[Metric 1]`, "check analytics") fail this gate.
-- [ ] No feature branch was created or checked out (that happens in `/tgd-develop`)
-- [ ] PRD.md records one UI Design mode and status: modes 1–3 = `direction-approved`; mode 4 = `not-applicable` and is the only route that omits DESIGN.md
-- [ ] If UI mode 1-3: `python3 "$TGD_REPO_ROOT/scripts/check-doc-sections.py" DESIGN "$TGD_DIR/<feature-name>/DESIGN.md"` exits 0 and the DESIGN Sign-off contains `[x] **DESIGN**: Direction Approved`
-- [ ] Variant count matches the recorded mode: mode 1 = 0; mode 2 = `conservative/` + `strong-fit/`; mode 3 = those two + `divergent/`; every required variant has `index.html` + `README.md`
-- [ ] If UI mode 1-3: SPEC.md was written or reconciled after direction approval and references DESIGN.md for UI decisions
+**Only after direction approval, write/finalize SPEC.md and reconcile its components, API/data contracts, states, events, and testing strategy against DESIGN.md.**
+
+## Verification Gate
+
+After completing the spec, verify the outputs. Resolve `$TGD_REPO_ROOT` per `tgd-core-rules`.
+
+- [ ] `$TGD_DIR/<feature-name>/PRD.md` and SPEC.md exist and are non-empty.
+- [ ] `python3 "$TGD_REPO_ROOT/scripts/check-doc-sections.py" PRD "$TGD_DIR/<feature-name>/PRD.md"` exits 0.
+- [ ] `python3 "$TGD_REPO_ROOT/scripts/check-doc-sections.py" SPEC "$TGD_DIR/<feature-name>/SPEC.md"` exits 0.
+- [ ] PRD §6 has a real source or signed-off N/A; no placeholders.
+- [ ] No feature branch was created or checked out.
+- [ ] PRD records exactly one UI mode: modes 1–3 are `direction-approved`; mode 4 is `not-applicable` and alone omits DESIGN.md.
+- [ ] For modes 1–3, `python3 "$TGD_REPO_ROOT/scripts/check-doc-sections.py" DESIGN "$TGD_DIR/<feature-name>/DESIGN.md"` exits 0 and `[x] **DESIGN**: Direction Approved` is present.
+- [ ] Variant count matches the mode; each required variant contains `index.html` and README.md. SPEC references approved DESIGN.md decisions.
 
 End with the closing report per `tgd-core-rules` → **Command Closing Report**: 📦 產出 (PRD.md + SPEC.md, and DESIGN.md/prototype if UI) · 🔎 檢查 (gate as one line) · ➡️ 下一步 `/tgd-plan` — 拆解成任務. Don't paste the raw checklist above.

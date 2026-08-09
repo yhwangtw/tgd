@@ -4,225 +4,139 @@ description: Map — scan and understand the existing project context before mak
 
 **⚠️ Closing requirement — read this FIRST:** the run's LAST message MUST be the **Step 8 Final Report** (exact format at the end of this command). Plan for it from the start — a run that ends with a free-form summary instead fails the Verification Gate.
 
-**🔑 Step 0: $TGD_DIR Resolution**
+## Step 0: Resolve `$TGD_DIR`
 
 $TGD_DIR is where ALL tGD artifacts live. It is a **sibling directory** outside your code repo.
 
-**Step 0a: Resolve candidate path** (in order):
-1. If env var `$TGD_DIR` is set → candidate = `$TGD_DIR`
-2. Otherwise → candidate = `../<project-name>-tGD/`
+Resolve the candidate in order: the `$TGD_DIR` environment variable, then `../<project-name>-tGD/`.
 
-**Step 0b: Confirm $TGD_DIR with user:**
-
-- **$TGD_DIR already set (env var)** → Inform user: "📂 Using $TGD_DIR: `$TGD_DIR`" and proceed. No need to block.
+- If the environment variable is set, report `📂 Using $TGD_DIR: <path>` and proceed.
 - **No env var → MUST ask. Always.** This is not only for first-time setup — an env var does not persist between sessions, so ask at the start of every `/tgd-map` run that has no env var. **The candidate directory already existing is NOT permission to skip the question** — an existing dir changes the wording, not the requirement:
 
-  If `<candidate path>` does **not** exist yet:
+  ```text
+  📂 <"tGD artifacts will be stored at" or "Found existing tGD artifacts at">: <candidate>
+  1. <"Use this path" or "Reuse it"> (Enter)
+  2. Use a different path (enter an absolute path)
 
-  > 📂 tGD artifacts will be stored at: `<candidate path>`
-  >
-  > 1. Use this path (Enter)
-  > 2. Use a different path (enter an absolute path)
-  >
-  > Choose one (default 1):
+  Choose one (default 1):
+  ```
 
-  If `<candidate path>` **already exists** (from a previous run):
+  For an existing directory also show `CONTEXT.md: yes/no · features: N`. Choice 1 uses the candidate; choice 2 requires an absolute user-provided path. Then `mkdir -p "$TGD_DIR"` and export it.
+- Non-interactive mode, where asking is impossible, may use the candidate without confirmation and must log `📂 Using $TGD_DIR: <candidate> (non-interactive)`.
 
-  > 📂 Found existing tGD artifacts at: `<candidate path>` (CONTEXT.md: yes/no · features: N)
-  >
-  > 1. Reuse it (Enter)
-  > 2. Use a different path (enter an absolute path)
-  >
-  > Choose one (default 1):
+All later commands use this resolved `$TGD_DIR`.
 
-  - **Choice 1 (or Enter)** → `mkdir -p "$TGD_DIR" && export TGD_DIR="$TGD_DIR"`
-  - **Choice 2** →
-    ```
-    TGD_DIR="<user-provided-path>"
-    mkdir -p "$TGD_DIR"
-    export TGD_DIR="$TGD_DIR"
-    ```
-
-- **Non-interactive mode** (CI, subagent delegation, no TTY) → Skip confirmation, proceed with candidate. Log: "📂 Using $TGD_DIR: `<candidate path>` (non-interactive)". This branch is for environments where asking is *impossible* — an interactive session with an existing dir does not qualify.
-
-Result:
-```
-~/my-project/              ← your code (current dir)
-├── src/
-
-~/my-project-tGD/          ← $TGD_DIR (all artifacts here)
-├── CONTEXT.md
-├── .scans/
-└── <feature>/
-```
-
-After this step, ALL subsequent commands use `$TGD_DIR` env var.
-
----
-
-**🔍 Step 0.5: Dependency Check & Tier Resolution**
+## Step 0.5: Probe dependencies and resolve tiers
 
 Probe the environment BEFORE starting, and decide which tiers run. Do this explicitly — steps must never be silently skipped:
 
 ```bash
 command -v codegraph && echo "codegraph: OK" || echo "codegraph: MISSING"
 command -v node && command -v npm && echo "node/npm: OK" || echo "node/npm: MISSING"
-# understand skill — loadable iff EITHER holds; otherwise it is MISSING:
-#   (a) `understand` appears in this session's available-skills list, or
-#   (b) the tGD install location exists: [ -d ~/.understand-anything/repo ]
+# understand is loadable when it appears in available skills or
+# ~/.understand-anything/repo exists.
 ```
 
-| Tier | Steps | Runs when | Output |
-|------|-------|-----------|--------|
-| **Tier 1 — Core** (always) | 1, 2, 6, 7 | Every `/tgd-map` run, no dependencies | `CONTEXT.md` |
-| **Tier 2 — Deep scan + dashboards** | 3, 4, 5 | Per-step, each with its own skip condition: Step 3 needs the `codegraph` CLI; Step 4 needs the `understand` skill; Step 5 needs Step 4's knowledge graph AND `node`/`npm`. One tool present + one missing = run the step you can, skip-and-log the other | `.scans/<repo>/` symbol index + knowledge graph + domain graph + one live localhost dashboard per repo |
+| Tier | Steps | Condition | Output |
+|---|---|---|---|
+| **Tier 1 — Core** | 1, 2, 6, 7 | Always | `CONTEXT.md` |
+| **Tier 2 — Deep scan + dashboards** | 3, 4, 5 | Step 3 needs `codegraph`; Step 4 needs `understand`; Step 5 needs Step 4 output plus node/npm. Run every available step independently. | symbol index, knowledge/domain graphs, dashboard per repo |
 
-**Degradation rule:** If a tier cannot run, you MUST record it in `CONTEXT.md` under `## Degraded Mode` — which steps were skipped, why (missing tool), and how to enable them later. A skipped step that is not logged is a verification failure. Silent skipping is the failure mode this rule exists to prevent.
+If a tier cannot run, you MUST record it in `CONTEXT.md` under `## Degraded Mode` — which steps were skipped, why (missing tool), and how to enable them later. A skipped step that is not logged is a verification failure. **Silent skipping is the failure mode** this rule exists to prevent. Do not suggest installations beyond that one-line note.
 
-**Do not** suggest installing missing tools unprompted beyond the one-line Degraded Mode note.
-
----
-
-## Step 1: Context Discovery
+## Step 1: Select repositories
 
 Before analyzing anything, **ask the user — on every `/tgd-map` run**. An existing CONTEXT.md changes the wording of the question, never the requirement to ask (same rule as Step 0b):
 
-If no `$TGD_DIR/CONTEXT.md` exists yet (first map):
+- First map: `除了當前 repo，還有其他需要參考的 repo 嗎？（local path 或 git URL）`
+- Re-map: show the previous primary/additional repo list, then ask:
 
-> "除了當前 repo，還有其他需要參考的 repo 嗎？（local path 或 git URL）"
+  ```text
+  1. 沿用這份清單 (Enter)
+  2. 增加/移除 repo（輸入 local path 或 git URL，或要移除的名稱）
 
-If `$TGD_DIR/CONTEXT.md` **already exists** with a repo list (re-map):
+  Choose one (default 1):
+  ```
 
-> 📚 上次 map 的 repo 清單：`<primary>` + `<additional repos, or "無">`
->
-> 1. 沿用這份清單 (Enter)
-> 2. 增加/移除 repo（輸入 local path 或 git URL，或要移除的名稱）
->
-> Choose one (default 1):
+Accept local paths (resolve them to absolute paths) and git URLs (clone to `/tmp/tgd-context/<repo-name>`). An empty/no answer means the primary repo only. Store the selection in CONTEXT.md. The downstream no-re-ask rule in `tgd-core-context` does not apply here; Map owns this question.
 
-- Accept **local paths** (e.g. `~/Projects/wayflow`) — resolve to absolute path
-- Accept **git URLs** (e.g. `github.com/CopilotKit/CopilotKit`) — clone to `/tmp/tgd-context/<repo-name>`
-- If user says "no" or provides nothing, proceed with primary repo only
-- Store results for CONTEXT.md (see structure below)
+## Step 2: Map core context
 
-Note: `tgd-core-context`'s "read CONTEXT.md's repo list instead of re-asking" rule applies to **downstream** commands (`/tgd-develop`, `/tgd-verify`, …) — it does NOT apply to `/tgd-map` itself. Map owns this question; downstream consumes the answer.
+Run `tgd-core-context` across every selected repo for stack, architecture, dependencies, organization, patterns, and UI landscape. **If Tier 2 is available (see Step 0.5), you MUST continue to Step 3 (CodeGraph) and Step 4 (Understand-Anything) before producing CONTEXT.md. If Tier 2 is unavailable, proceed to Step 6** and log the skips under `## Degraded Mode`.
 
-## Step 2: Context Engineering
+## Step 3: Build the CodeGraph index when available
 
-Run the `tgd-core-context` skill. Analyze the current project: tech stack, architecture, dependencies, code organization, and existing patterns.
+For each repo, if `codegraph` exists:
 
-**⚠️ This is only Step 2. If Tier 2 is available (see Step 0.5), you MUST continue to Step 3 (CodeGraph) and Step 4 (Understand-Anything) before producing CONTEXT.md. If Tier 2 is unavailable, proceed to Step 6 and log the skips under `## Degraded Mode`.**
+1. Create `$TGD_DIR/.scans/<repo-name>/.codegraph` before linking it.
+2. Replace `<repo-path>/.codegraph` with a symlink to that directory.
+3. Run `codegraph init -i` from the repo.
 
-## Step 3: CodeGraph Setup (Tier 2 — requires `codegraph` CLI)
-
-**Skip condition:** `codegraph` not on PATH → skip, log in `## Degraded Mode`, continue.
-
-For each repo to map (primary + all additional repos from Step 1):
-
-1. Ensure the symlink TARGET exists: `mkdir -p $TGD_DIR/.scans/<repo-name>/.codegraph` — the leaf dir included. A symlink to a not-yet-existing target is dangling: the tool's own `mkdir` fails with "File exists" (the symlink) while writes fail with "No such file or directory" (the missing target) — it dies both ways.
-2. Create symlink: `rm -rf <repo-path>/.codegraph && ln -s $TGD_DIR/.scans/<repo-name>/.codegraph <repo-path>/.codegraph`
-3. cd into the repo and run: `codegraph init -i`
+If unavailable, skip and log it. Never create a dangling scan symlink.
 
 ## Step 4: Understand-Anything (Tier 2 — requires the `understand` skill)
 
-**Skip condition (the ONLY one):** the `understand` skill is not loadable in this session → skip, log in `## Degraded Mode`, continue. Nothing else qualifies.
-
-When the skill IS available, this step is **required**, not optional.
-
-**Subagents are an optional optimization, never a prerequisite.** If context is getting long you MAY spawn a fresh subagent per repo to run the `understand` skill. But if you cannot spawn one — the platform doesn't support subagents, or you are yourself a subagent and cannot nest (Claude Code forbids nested subagents) — **run the `understand` skill inline in this context instead.**
-
-> 🚫 **"I can't launch a subagent" is NOT a skip reason.** It is a rationalization the tGD rules exist to catch. The deliverable is the knowledge graph; it gets built inline just as well as in a subagent — delegation only moves *where* the work runs, never *whether* it runs. Skipping UA because delegation is unavailable is a verification failure, not a degraded mode.
-
-For each repo to map (primary + all additional repos from Step 1):
-
-1. Ensure the symlink TARGET exists first: `mkdir -p $TGD_DIR/.scans/<repo-name>/.understand-anything` (a dangling symlink kills the tool's writes — same trap as Step 3). Then create the symlink: `rm -rf <repo-path>/.understand-anything && ln -s $TGD_DIR/.scans/<repo-name>/.understand-anything <repo-path>/.understand-anything`
-2. load and execute the `understand` skill to build a full knowledge graph
-3. This produces `$TGD_DIR/.scans/<repo-name>/.understand-anything/knowledge-graph.json`
-4. If unfamiliar with any repo, load the `understand-onboard` skill for a guided tour
-5. **Derive the domain graph (idempotent).** If `domain-graph.json` is missing OR older than `knowledge-graph.json`: load and execute the `understand-domain` skill — it derives business domains/flows from the just-built knowledge graph (its Path 2; no re-scan). If it already exists and is newer, skip — a re-map must not re-pay the analysis.
-   - The skill validates its own output (schema pipeline). If the run fails or validation rejects everything, **delete any partial `domain-graph.json`**, log the failure in `## Degraded Mode`, and continue — a broken domain file must not reach the dashboard.
-   - Output: `$TGD_DIR/.scans/<repo-name>/.understand-anything/domain-graph.json`. When present, the Step 5 dashboard gains a **Domain / Structural** toggle (the default view stays Structural — verified against the dashboard source).
-
-## Step 5: Launch Dashboards (Tier 2 — auto-launch, one per repo, requires `node`/`npm`)
-
-**Skip condition:** `node`/`npm` not on PATH, OR Step 4 produced no knowledge graph → skip, log in `## Degraded Mode`, continue. This is **not** opt-in — when its dependencies are present, the dashboard launches automatically.
-
-The live dashboard serves **humans**, not the agent — `CONTEXT.md` and the knowledge graph are what downstream `/tgd-*` commands consume. Launch **one dashboard per repo** (primary + every additional repo from Step 1); each repo's knowledge graph gets its own dashboard on its own port.
+**Skip condition (the ONLY one):** `understand` is not loadable. When it is
+available, this step is **required**, not optional. Delegation is optional; if
+unavailable, run inline.
 
 For each repo:
 
-1. Load the `understand-dashboard` skill and launch **in the background** — it must not block the rest of `/tgd-map`.
-2. **The launch MUST set `GRAPH_DIR` to the repo's absolute path.** The dev server looks for the knowledge graph ONLY at `$GRAPH_DIR/.understand-anything/` (plus two cwd-relative fallbacks that never match in the tGD layout). Without `GRAPH_DIR`, Vite serves only its own `/public` assets and the graph fetch 404s — the dashboard opens but shows nothing. The exact launch shape (from the `understand-dashboard` skill):
-   ```
-   cd <ua-plugin-root>/packages/dashboard
-   GRAPH_DIR=<absolute-repo-path> npx vite --host 127.0.0.1
-   ```
-   One instance per repo, each with its own `GRAPH_DIR`; Vite auto-picks the next free port. `<ua-plugin-root>` resolves the same way the `understand` skill resolves it (tGD installs it at `~/.understand-anything/repo`). The repo's `.understand-anything` is a symlink into `$TGD_DIR/.scans/` — that's fine, the server follows it.
-3. Capture the localhost URL from the output. If it did not come up, log the failure in `## Degraded Mode` and continue with the other repos.
-4. **Open it in the browser** — best-effort, per-OS: `open <url>` (macOS) · `xdg-open <url>` (Linux) · `start "" <url>` (Windows). If no display is available (headless / remote / CI session), skip the open silently — the URL is still captured and reported.
+1. Create `$TGD_DIR/.scans/<repo-name>/.understand-anything` before replacing `<repo-path>/.understand-anything` with a symlink to it.
+2. Run `understand`; use `understand-onboard` when unfamiliar.
+3. If `domain-graph.json` is absent or older than `knowledge-graph.json`, run `understand-domain`. If validation fails, delete the partial domain graph and log the failure. Keep a newer domain graph unchanged.
 
-Record every dashboard URL for the final report and the CONTEXT.md `## See Also` section.
+The required outputs are `knowledge-graph.json` and, unless its derivation was logged as failed, `domain-graph.json`. Inability to launch a subagent is not degraded mode.
+
+## Step 5: Launch dashboards when available
+
+If Step 4 produced a knowledge graph and node/npm exist, launch `understand-dashboard` automatically, in the background, once per repo. Follow that skill's launch method, setting `GRAPH_DIR` to the repo's absolute path; capture each localhost URL and best-effort open it. Failure or headless inability to launch must not block other repos, but launch failures must be logged. The dashboard is for humans; downstream commands consume CONTEXT.md and graphs.
 
 ## Step 6: Produce CONTEXT.md
 
-**Outputs (all under `$TGD_DIR/`):**
-- `CONTEXT.md` — project structure analysis (MUST reference CodeGraph/UA data)
-- `.scans/<repo>/.codegraph/codegraph.db` — symbol index (via symlink)
-- `.scans/<repo>/.understand-anything/knowledge-graph.json` — full knowledge graph (via symlink)
-- `.scans/<repo>/.understand-anything/config.json` — UA configuration
-- **Interactive dashboards** — one per repo, launched via the `understand-dashboard` skill (localhost); present only when `node`/`npm` are available (else logged under `## Degraded Mode`)
+Write `$TGD_DIR/CONTEXT.md` from `$TGD_REPO_ROOT/templates/CONTEXT.md.tmpl`; scan artifacts stay under `$TGD_DIR/.scans/<repo>/` and include applicable `codegraph.db`, `knowledge-graph.json`, `domain-graph.json`, and UA `config.json` outputs.
 
-**Authoring rules — read before writing (this is the ONE `/tgd-map` deliverable, so its quality is the whole point):**
+- Ground every claim in a graph/index or a file actually read. If Tier 2 was skipped, say so rather than guessing.
+- **No blank sections, no placeholder text left in.** Every heading below gets real content. Use an explicit `not detected`/`none found` where appropriate.
+- Point changing commands and conventions to their source files; CONTEXT.md is a snapshot, not a higher source of truth.
+- Keep it navigational: name important locations and why they matter; link graph detail rather than copying it.
+- Record dashboard URLs under `## See Also` and every skipped step under `## Degraded Mode`.
 
-1. **Ground every claim in evidence.** Structure/Summary/Entry Points come from the CodeGraph symbol index and the UA knowledge graph, or from files you actually opened — never from a guess at what a repo "probably" contains. If Tier 2 was skipped, say so per section rather than inventing.
-2. **No blank sections, no placeholder text left in.** Every heading below gets real content. If a section genuinely has none (e.g. no CI, no rules file), write one line stating that fact (`No CI config found`) — an empty section or a leftover `<...>` placeholder is a verification failure.
-3. **Pointer over copy for anything that changes.** For build/test/run commands and conventions, cite *where you found it* (`package.json` scripts, `Makefile`, `CLAUDE.md`) so a reader can re-verify. CONTEXT.md is a point-in-time snapshot, not a source of truth that outranks the repo — when in doubt it says "verify against `<file>`", it does not silently assert a stale value.
-4. **Altitude-appropriate.** A navigational map, not a re-dump of the code. Name the important dirs/files/entry points and *why they matter*; link the detail to the knowledge graph rather than pasting it.
+## Step 7: Verification Gate
 
+Tier 1, always:
 
-> Canonical template: `$TGD_REPO_ROOT/templates/CONTEXT.md.tmpl`.
+- [ ] CONTEXT.md exists, is non-empty, has no blank section or placeholder, and conforms to `$TGD_REPO_ROOT/templates/CONTEXT.md.tmpl`.
+- [ ] Build/Test/Run gives sourced real commands or `not detected`; Conventions lists rules/test locations; frontend repos name real UI source paths or explicit absences.
+- [ ] Every repo has `Analysis Coverage`: a real file count or `not analyzed — understand skill unavailable (see ## Degraded Mode)`.
+- [ ] Every repo has `Business Flows`: a real domain-graph table or `not analyzed — see ## Degraded Mode`.
+- [ ] Additional repos are represented and all skipped steps appear in `## Degraded Mode`.
+- [ ] The run ends with the Step 8 report, with no silent field.
 
-## Step 7: Verification Gate (tier-conditional)
+Tier 2, only where Step 0.5 proved dependencies available:
 
-**Tier 1 (always required):**
-- [ ] `$TGD_DIR/CONTEXT.md` exists and is non-empty
-- [ ] **No section is blank and no `<...>` placeholder survives** — every heading has real content or an explicit "not detected" / "none found" line (Authoring rule 2)
-- [ ] `## 2. Build / Test / Run` names build, test, lint, and run — each a real command with its source, or "not detected"
-- [ ] `## 3. Conventions & Rules` lists any rules files (or "none found") and where tests live
-- [ ] If any mapped repo has a frontend surface: its `### UI Landscape` names the real design-system, token, global-style, representative-component, and responsive source paths (or explicitly says "not detected" / "none found")
-- [ ] `### Analysis Coverage` is present for every repo — either a real file count from the UA run or the exact string "not analyzed — understand skill unavailable (see ## Degraded Mode)"
-- [ ] `### Business Flows` is present for every repo — either a real table extracted from `domain-graph.json` or the exact string "not analyzed — see ## Degraded Mode"
-- [ ] If any Tier 2 step was skipped: `## Degraded Mode` section in CONTEXT.md lists every skip with its reason
-- [ ] If additional repos were provided, their summaries appear in CONTEXT.md
-- [ ] The run ends with the **Step 8 Final Report** — every line a real value or an explicit `skipped — <reason>`; a run that ends without it fails this gate
+- [ ] Each applicable repo has the required scan symlinks and `knowledge-graph.json`.
+- [ ] UA-backed coverage is a real file count; domain graph exists or its derivation failure is logged and no partial file remains.
+- [ ] With node/npm, every repo has a recorded dashboard URL or a logged launch failure.
 
-**Tier 2 (required if the tools were available — cross-check against Step 0.5 probe):**
-- [ ] `$TGD_DIR/.scans/<repo>/.codegraph` symlink exists
-- [ ] `$TGD_DIR/.scans/<repo>/.understand-anything` symlink exists
-- [ ] `$TGD_DIR/.scans/<repo>/.understand-anything/knowledge-graph.json` exists
-- [ ] Because UA ran, each repo's `### Analysis Coverage` states a **real file count** (the whole-repo scan happened) — NOT "not analyzed"
-- [ ] `$TGD_DIR/.scans/<repo>/.understand-anything/domain-graph.json` exists for each repo (or the domain derivation failure is logged in `## Degraded Mode` — a partial/invalid file must have been deleted, never left behind)
-- [ ] If `node`/`npm` present: a dashboard was launched for **each** repo and its localhost URL is recorded in `## See Also` (or the skip/failure is logged in `## Degraded Mode`)
+An unavailable Tier 2 check is N/A only with probe evidence plus its Degraded Mode entry.
 
-**Gate integrity rule:** a Tier 2 checkbox may only be marked N/A if Step 0.5 proved the tool missing AND the skip is logged in Degraded Mode. "Tool probably missing" is not evidence — show the `command -v` output.
+## Step 8: Final Report
 
-## Step 8: Final Report (MANDATORY — the run's LAST message)
+The run's last message must use this filled format. Every line is a real value or `skipped — <reason from Degraded Mode>`.
 
-The LAST message of every `/tgd-map` run MUST be this report, fully filled in. Links recorded mid-run don't count — the user reads the end, not the middle. A run that finishes without this report fails the gate. **Every line must be either a real value or `skipped — <reason from Degraded Mode>`. Silence is not an option for any line.**
-
-```
+```text
 ✅ /tgd-map 完成
 
 📂 $TGD_DIR: <path>
 📚 Repos mapped: <primary> (+ <additional>, or 無)
 📊 Dashboards:
    - <repo-name>: http://localhost:<port>
-   - <repo-name>: http://localhost:<port>
-   or: skipped — <reason, e.g. "node/npm missing (Degraded Mode)">
+   or: skipped — <reason from Degraded Mode>
 🧭 Domain: <N domains / M flows — 開 dashboard 的 Domain 視角確認一眼；覺得不對就刪 domain-graph.json 即回復>
    or: skipped — <reason from Degraded Mode>
 🔍 繼續探索: /understand-chat <問題> · /understand-explain <檔案> · dashboard Domain 視角
-⚠️ Degraded Mode: <none / one line per skipped step with its reason>
+⚠️ Degraded Mode: <none / one line per skipped step with reason>
 
 Next: /tgd-define
 ```
