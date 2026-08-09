@@ -12,230 +12,147 @@ metadata:
 ---
 
 # Sketch
+
 ## Overview
 
-Generate 2-3 disposable HTML mockups to compare design directions before committing to implementation. Each variant is a self-contained HTML file with realistic content, inline CSS, and basic interactivity. The goal is visual comparison, not production code.
-
-Use this skill when the user wants to **see a design direction before committing** to one — exploring a UI/UX idea as disposable HTML mockups. The point is to generate 2-3 interactive variants so the user can compare visual directions side-by-side, not to produce shippable code.
+Build disposable, interactive HTML variants so a user can compare genuinely
+different UI directions before committing. These are visual decision tools,
+not production components.
 
 ## When to Use
 
-- User wants to explore UI/UX directions before building
-- User says "sketch this screen", "show me what X could look like", "compare layout A vs B"
-- User wants 2-3 takes on a UI to compare visual directions
-- User wants a quick mockup before committing to design
-- Early-stage design exploration where speed matters more than polish
+- The user wants to see, compare, or mock up 2–3 UI directions
+- Early design exploration benefits from visual evidence before implementation
 
-**Trigger phrases:** "sketch this screen", "show me what X could look like", "compare layout A vs B", "give me 2-3 takes on this UI", "let me see some variants", "mockup this before I build".
+Do not use for an approved direction. Production components or polished HTML
+belong to `claude-design`; diagrams belong to `excalidraw`.
 
-## Common Rationalizations
+## Variant Location and Count
 
-- **"I'll just build one version"** — Without comparison, you're guessing at the best direction. Two variants take 2x effort but eliminate 80% of redesign risk.
-- **"I'll skip the README"** — The README captures *why* each variant makes its choices. Without it, you're comparing pixels, not principles.
-- **"One variant is enough"** — One variant is a prototype, not a comparison. The skill's value is in the head-to-head evaluation.
+Inside `/tgd-define`, write only under
+`$TGD_DIR/<feature-name>/prototype/` and obey the recorded mode:
 
-## Red Flags
+- Existing approved design: **0 variants**; do not run this skill.
+- Extend existing UI: **2 variants**, `conservative/` and `strong-fit/`.
+- New experience: **3 variants**, adding `divergent/`.
 
-- Variants that differ only in color/accent — these aren't real alternatives, just recolors
-- No interactivity — a static screenshot is worse than a wireframe you can click
-- Skipping the intake questions — generating without understanding feel/references/core action produces generic output
-- More than 3 variants — diminishing returns; the user can't compare meaningfully
-- Production-quality code — sketches are disposable; don't over-invest
+Ad-hoc sketching produces 2–3 stance-named variants at a user-selected scratch
+location. Never write sketches into the code repository root.
 
-## Verification
+Outside tGD only, an installed `gsd-sketch` may provide persistent state and
+audits. Inside Define, always use this skill because lifecycle gates inspect the
+tGD prototype directory.
 
-- Open each variant in a browser and verify it renders correctly
-- Check that each variant has a different design stance (not just different colors)
-- Verify basic interactivity works (clicks, hovers, state transitions)
-- Confirm the comparison table is opinionated — state which variant is strongest and why
-- Ensure READMEs explain the trade-offs, not just list features
+## Core Method
 
-## When NOT to use this
+`intake → variants → head-to-head → pick or iterate`
 
-- User wants a production component — use `claude-design` or build it properly
-- User wants a polished one-off HTML artifact (landing page, deck) — `claude-design`
-- User wants a diagram — `excalidraw`, `architecture-diagram`
-- The design is already locked — just build it
+### 1. Context-Grounded Intake
 
-## Where variants live
+Inside tGD, read CONTEXT.md first, then follow `UI Landscape` paths to the real
+design-system components, tokens, global styles, responsive definitions, and
+approved external source. **CONTEXT.md is navigation, not the visual source of truth.** Read PRD.md
+for the primary user, problem, and core action. Never invent a replacement
+theme when the product already has one.
 
-- **Inside the tGD lifecycle** (called from `/tgd-define`'s UI Design Routing): save variants to `$TGD_DIR/<feature-name>/prototype/` — this is the directory the define gate checks. The recorded PRD mode controls the count: existing approved design = **0 variants** and this skill is not run; extend existing product UI = **2 variants** (`conservative/`, `strong-fit/`); explore a new experience = **3 variants** (add `divergent/`).
-- **Ad-hoc sketching** (user just wants mockups, no feature in flight): ask where to put them, defaulting to a scratch location. **Never write into the code repo root** — sketches are throwaway artifacts, not source.
+Unless already answered, ask **one question at a time**, briefly reflecting
+each answer:
 
-## If the user has the full GSD system installed
+1. Desired feel: concrete adjectives, emotions, or vibe.
+2. Real product/site references for that feel.
+3. The screen's single most important user action.
 
-Outside the tGD lifecycle only: if `gsd-sketch` is installed (`npx get-shit-done-cc`), it offers persistent sketch state, MANIFEST, and consistency audits. Inside `/tgd-define`, always use THIS skill — the gates check `$TGD_DIR/<feature-name>/prototype/`, not GSD's `.planning/sketches/`.
+### 2. Build Distinct Stances
 
-## Core method
+Obey lifecycle count exactly; ad-hoc work gets 2–3. Build complete HTML rather
+than describing options. Variants differ in a meaningful stance—density,
+emphasis, aesthetic, layout, or grounding—not only color or pixel values.
 
-```
-intake  →  variants  →  head-to-head  →  pick winner (or iterate)
-```
+`conservative` stays closest to the product, `strong-fit` is the recommended
+evolution, and `divergent` appears only in three-variant exploration. Ad-hoc
+names describe the stance, never a number.
 
-### 1. Intake (skip if the user already gave you enough)
+### 3. Make Each Variant Real
 
-Inside tGD, read `$TGD_DIR/CONTEXT.md` before asking aesthetic questions. **CONTEXT.md is navigation, not the visual source of truth.** Follow its `UI Landscape` paths and inspect the actual design-system components, token files, global styles, responsive definitions, and approved external design source. Then read PRD.md for the primary user, problem, and core action. Never invent a new theme when an established product system exists.
+Each stance contains `index.html` and README.md. HTML is self-contained with
+inline CSS, no build step, realistic content, clickable affordances, hover, and
+at least one meaningful state transition. System fonts, one linked Google Font,
+or Tailwind CDN are acceptable for a throwaway mockup.
 
-Before generating variants, get three things — one question at a time, not all at once:
+Open every file with `tgd-verify-browser` or platform browser tooling over
+`file://`, capture and inspect a screenshot, fix visible failures, and re-check.
+Source inspection is not visual evidence.
 
-1. **Feel.** "What should this feel like? Adjectives, emotions, a vibe." — *"calm, editorial, like Linear"* tells you more than *"minimal"*.
-2. **References.** "What apps, sites, or products capture the feel you're imagining?" — actual references beat abstract descriptions.
-3. **Core action.** "What's the single most important thing a user does on this screen?" — the variants should all serve this well; if they don't, they're just decoration.
+### 4. Explain and Compare
 
-Reflect each answer briefly before the next question. If the user already gave you all three upfront, skip straight to variants.
+Each README names its design stance, key layout/type/color/interaction choices,
+tradeoffs, strengths/weaknesses, and best-fit audience/use case.
 
-### 2. Variants (0/2/3 by lifecycle mode; 2-3 ad hoc)
+After building all variants, show an opinionated head-to-head table across
+meaningful dimensions, state which direction is strongest and why, identify the
+weakest, then let the user pick, combine, or request another round.
 
-For tGD lifecycle work, obey the recorded mode exactly: **0 variants** for an existing approved design, **2 variants** for an extension, and **3 variants** for a new experience. For ad-hoc work, produce 2-3. Each generated variant is a complete, standalone HTML file. Don't describe variants — build them. The point is comparison.
+Copyable folder, HTML reset, README, comparison, and token examples are
+optional. Load [Sketch Patterns](../../references/sketch-patterns.md) only when
+a concrete shape helps; this skill remains the normative owner.
 
-Each variant should take a **different design stance**, not different pixel values. Three good variant axes:
+## Theming
 
-- **Density:** compact / airy / ultra-dense (pick two contrasting poles)
-- **Emphasis:** content-first / action-first / tool-first
-- **Aesthetic:** editorial / utilitarian / playful
-- **Layout:** single-column / sidebar / split-pane
-- **Grounding:** card-based / bare-content / document-style
+When a visual identity exists, place a minimal shared token file at
+`prototype/themes/tokens.css` and import it from variants. Preserve existing
+product tokens; do not over-tokenize disposable work—roughly three colors and
+one font is usually enough.
 
-Pick one axis and pull apart from it. Two variants that differ only in accent color are wasted effort — the user can't distinguish them.
+## Interactivity Bar
 
-**Variant naming:** in the tGD lifecycle, `conservative` stays closest to the current product, `strong-fit` is the recommended evolution, and `divergent` exists only in 3-variant exploration. Ad-hoc variants describe the stance, not the number.
+A valid sketch lets the user:
 
-```
-$TGD_DIR/<feature-name>/prototype/
-├── conservative/
-│   ├── index.html
-│   └── README.md
-├── strong-fit/
-│   ├── index.html
-│   └── README.md
-└── divergent/
-    ├── index.html
-    └── README.md
-```
+1. click a primary action and see a visible result;
+2. exercise one meaningful transition such as filter/toggle/open-close;
+3. hover recognizable buttons, rows, or tabs.
 
-### 3. Make them real HTML
+More is over-engineering; less is effectively a screenshot.
 
-Each variant is a **single self-contained HTML file**:
+## Frontier Mode
 
-- Inline `<style>` — no build step, no external CSS
-- System fonts or one Google Font via `<link>`
-- Tailwind via CDN (`<script src="https://cdn.tailwindcss.com"></script>`) is fine
-- Realistic fake content — actual sentences, actual names, not "Lorem ipsum"
-- **Interactive**: links clickable, hovers real, at least one state transition (open/close, filter, toggle). A frozen static image is a worse spike than a sloppy animated one.
-
-Open it in a browser. If it looks broken, fix it before showing the user.
-
-**Verify variants visually — use the `tgd-verify-browser` skill** (or your platform's browser tooling). Don't just write HTML and hope it renders; open each variant over `file://`, take a screenshot, and look at it. This catches layout bugs that pure source inspection misses (a font import that silently failed, a flex container that collapsed). Fix and re-check until each variant looks right.
-
-**Default CSS reset + system font stack** for fast starts:
-
-```html
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-                 "Helvetica Neue", Arial, sans-serif;
-    -webkit-font-smoothing: antialiased;
-    color: #1a1a1a;
-    background: #fafafa;
-    line-height: 1.5;
-  }
-</style>
-```
-
-### 4. Variant README
-
-Each variant's `README.md` answers:
-
-```markdown
-## Variant: {stance name}
-
-### Design stance
-One sentence on the principle driving this variant.
-
-### Key choices
-- Layout: ...
-- Typography: ...
-- Color: ...
-- Interaction: ...
-
-### Trade-offs
-- Strong at: ...
-- Weak at: ...
-
-### Best for
-- The kind of user or use case this variant actually serves
-```
-
-### 5. Head-to-head
-
-After all variants are built, present them as a comparison. Don't just list — **opinionate**:
-
-```markdown
-## Three takes on the home screen
-
-| Dimension | Calm editorial | Utilitarian dense | Playful split |
-|-----------|----------------|-------------------|---------------|
-| Density   | Low            | High              | Medium        |
-| Primary action visibility | Low | High | Medium |
-| Scan-ability | High | Medium | Low |
-| Feel | Calm, trusted | Sharp, tool-like | Inviting, energetic |
-
-**My take:** Utilitarian dense for power users, calm editorial for content-forward audiences. Playful split is weakest — tries to do both and commits to neither.
-```
-
-Let the user pick a winner, or combine two into a hybrid, or ask for another round.
-
-## Theming (when the project has a visual identity)
-
-If the user has an existing theme (colors, fonts, tokens), put shared tokens in `prototype/themes/tokens.css` and `@import` them in each variant. Keep tokens minimal:
-
-```css
-/* prototype/themes/tokens.css */
-:root {
-  --color-bg: #fafafa;
-  --color-fg: #1a1a1a;
-  --color-accent: #0066ff;
-  --color-muted: #666;
-  --radius: 8px;
-  --font-display: "Inter", sans-serif;
-  --font-body: -apple-system, BlinkMacSystemFont, sans-serif;
-}
-```
-
-Don't over-tokenize a throwaway sketch — three colors and one font is usually enough.
-
-## Interactivity bar
-
-A sketch is interactive enough when the user can:
-
-1. **Click a primary action** and something visible happens (state change, modal, toast, navigation feint)
-2. **See one meaningful state transition** (filter a list, toggle a mode, open/close a panel)
-3. **Hover recognizable affordances** (buttons, rows, tabs)
-
-More than that is over-engineering a throwaway. Less than that is a screenshot.
-
-## Frontier mode (picking what to sketch next)
-
-If sketches already exist and the user says "what should I sketch next?":
-
-- **Consistency gaps** — two winning variants from different sketches made independent choices that haven't been composed together yet
-- **Unsketched screens** — referenced but never explored
-- **State coverage** — happy path sketched, but not empty / loading / error / 1000-items
-- **Responsive gaps** — validated at one viewport; does it hold at mobile / ultrawide?
-- **Interaction patterns** — static layouts exist; transitions, drag, scroll behavior don't
-
-Propose 2-4 named candidates. Let the user pick.
+When asked what to sketch next, inspect existing work for consistency gaps,
+unsketched referenced screens, missing empty/loading/error/large-data states,
+responsive gaps, and untested interaction patterns. Propose 2–4 named
+candidates and let the user choose.
 
 ## Output
 
-- In the tGD lifecycle: variants under `$TGD_DIR/<feature-name>/prototype/` (see "Where variants live" above). Ad-hoc: the location the user chose — never the code repo root.
-- One subdir per variant: `<stance>/index.html` + `README.md`
-- Tell the user how to open them: `open .../prototype/conservative/index.html` on macOS, `xdg-open` on Linux, `start` on Windows
-- Keep variants disposable — a sketch that you felt the need to preserve should be promoted into real project code, not curated as an asset
+- One stance directory with `index.html` and README.md per required variant.
+- tGD output under the feature prototype path; ad-hoc output at the selected
+  scratch path, never repository root.
+- Give the platform command for opening each file (`open`, `xdg-open`, or
+  `start`) and present screenshots/comparison.
+- Keep sketches disposable. Promote a chosen direction into real project code
+  rather than curating the prototype as production source.
 
-**Typical sequence for one variant:** create the variant directory, write `index.html` and `README.md`, open the file in a browser via the `tgd-verify-browser` skill, screenshot, fix anything visibly broken. Repeat for each variant, then present the comparison table.
+## Common Rationalizations
+
+- **“Build one version.”** One version is a prototype, not a comparison.
+- **“Skip README.”** Without rationale, the user compares pixels, not choices.
+- **“More variants are safer.”** More than three prevents meaningful comparison.
+
+## Red Flags
+
+- Recolors presented as alternatives
+- Static or visibly unverified HTML
+- Intake skipped despite missing feel, references, or core action
+- More than three variants or production-quality overinvestment
+- Output outside the required prototype/scratch boundary
+
+## Verification
+
+- [ ] Variant count and names match the lifecycle/ad-hoc mode.
+- [ ] Every stance is materially different and grounded in real UI sources.
+- [ ] Browser screenshots prove rendering and required interactivity.
+- [ ] Each README explains choices and tradeoffs.
+- [ ] Comparison is opinionated and recommends a direction.
 
 ## Attribution
 
-Adapted from the GSD (Get Shit Done) project's `/gsd-sketch` workflow — MIT © 2025 Lex Christopherson ([gsd-build/get-shit-done](https://github.com/gsd-build/get-shit-done)). The full GSD system ships persistent sketch state, theme/variant pattern references, and consistency-audit workflows; install with `npx get-shit-done-cc --hermes --global`.
+Adapted from GSD `/gsd-sketch`, MIT © 2025 Lex Christopherson
+([gsd-build/get-shit-done](https://github.com/gsd-build/get-shit-done)).
