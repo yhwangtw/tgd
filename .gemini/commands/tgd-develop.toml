@@ -46,21 +46,21 @@ Each task's two-stage review (spec-compliance first, then code-quality — run b
 
 Conditional skills: unfamiliar code → `understand`; UI → `tgd-develop-ui`; API design → `tgd-define-api`; high-stakes decision → `tgd-core-doubt`.
 
-Blocked by a bug you can't fix within the task's scope? → `tgd-verify-debug` → **Blocked Task Handling**: set the task's `**Status:** blocked: <issue-ref>`, file the bug, continue with non-blocked tasks. A blocked AC still fails Verify until `/tgd-plan` explicitly defers it.
+Blocked by a bug you can't fix within the task's scope? → `tgd-verify-debug` → **Blocked Task Handling**: set the task's `**Status:** blocked: <issue-ref>`, file the bug, and continue only with independent non-blocked tasks. A blocked task is recorded progress, never a passing Develop gate: do not hand off to Verify while any in-scope task remains blocked. Resolve it, or return to `/tgd-plan` for an explicit scope deferral, then rerun Develop.
 
 At each TASKS.md checkpoint, execute every listed command; continue only when all pass. Do not pause between tasks unless blocked.
 
 ## Hand-off
 
-After every task passes, commit all work on each feature branch and keep its worktree for Verify/Review. **Do NOT merge to `main` here.** Merging happens in `/tgd-release`, after verify and review pass. Use safe-default feature flags for incomplete features.
+After every in-scope task is complete and none is blocked, commit all work on each feature branch and keep its worktree for Verify/Review. **Do NOT merge to `main` here.** Merging happens in `/tgd-release`, after verify and review pass. Use safe-default feature flags for incomplete features.
 
 ## Verification Gate
 
 - [ ] `git diff main...feature/<feature-name> --stat` is non-empty in each repo with tasks.
-- [ ] New-logic tests pass and trace their AC ids; all criteria Test fields and task Status values are complete or explicitly blocked.
+- [ ] New-logic tests pass and trace their AC ids; all criteria Test fields are filled and every in-scope task Status is `complete` — `blocked` is a failed gate, not a pass.
 - [ ] Every completed task has both review fields at PASS.
 - [ ] **Each worktree is clean: `git status --porcelain` is empty — everything the gates above certified is committed on the feature branch.**
 - [ ] Verification output was observed, not assumed.
 
-End with the closing report per `tgd-core-rules` → **Command Closing Report**: 📦 Output (implemented task count + file summary; worktree retained, not merged) · 🔎 Checks (gate as one line) · ➡️ Next `/tgd-verify` — prove it works. Don't paste the raw checklist above.
+On a passing gate, end with the closing report per `tgd-core-rules` → **Command Closing Report**: 📦 Output (implemented task count + file summary; worktree retained, not merged) · 🔎 Checks (gate as one line) · ➡️ Next `/tgd-verify` — prove it works. If any task is blocked, report the failed gate and omit Next. Don't paste the raw checklist above.
 """

@@ -6,7 +6,7 @@ description: Release to production — faster is safer
 
 - [ ] Resolve `$TGD_DIR` from its environment variable, then sibling `../<project-name>-tGD/`; require CONTEXT.md or STOP and run `/tgd-map`.
 - [ ] Select `<feature-name>` from non-infrastructure subdirectories containing PRD.md or SPEC.md. None means STOP and run `/tgd-define`; multiple means ask. Require SPEC.md.
-- [ ] **Review passed**: REVIEW.md exists and every 🔴 finding is `fixed`; feature tests exist in the CONTEXT.md layout and pass.
+- [ ] **Review passed**: REVIEW.md exists and every 🔴 finding is `fixed`; TEST-REPORT contains passing executable-test/coverage evidence or explicit documentation-only N/A fields with passing AC trace and documentation checks.
 - [ ] When PRD UI mode is 1–3, DESIGN.md exists and REVIEW Design Conformance is `✅ Pass` for the released SHA.
 
 **If missing:** STOP. Tell user: "Review or tests incomplete. Please run `/tgd-review` first."
@@ -75,7 +75,7 @@ After releasing, update `$TGD_DIR/CHANGELOG.md` (create if it doesn't exist) wit
 
 ### Regression catalog update
 
-After release, for every TASKS.md Acceptance Criteria marked `[R]`, copy its AC id/BDD criterion and its already-validated `Test:` path into REGRESSION-CATALOG.md using `$TGD_REPO_ROOT/templates/REGRESSION-CATALOG.md.tmpl` and that template's entry shape. Do not infer test paths.
+After release, ensure REGRESSION-CATALOG.md exists. If absent, seed it from `$TGD_REPO_ROOT/templates/REGRESSION-CATALOG.md.tmpl`, set the audit date, and remove the placeholder entry. Then, for every TASKS.md Acceptance Criteria marked `[R]`, copy its AC id/BDD criterion and its already-validated `Test:` path using the template's entry shape. Do not infer test paths. A release with no `[R]` criteria still leaves the empty seeded catalog so a later missing file cannot masquerade as a first release.
 
 **This catalog is cumulative — every shipped feature's `[R]` tests are preserved for future regression checks. Future features will re-run ALL catalog entries during `/tgd-verify` (and again in this command's pre-merge audit).**
 
@@ -86,6 +86,6 @@ After release, for every TASKS.md Acceptance Criteria marked `[R]`, copy its AC 
 - [ ] Git commit created with clean history.
 - [ ] `feature/<feature-name>` merged to `main` (or PR opened), worktree removed, branch deleted.
 - [ ] CHANGELOG is updated; METRICS/TRACKING-PLAN handling matches signed-off PRD §6.
-- [ ] Every new `[R]` AC is represented in the cumulative catalog.
+- [ ] REGRESSION-CATALOG.md exists; every new `[R]` AC is represented in it.
 
 End with the closing report per `tgd-core-rules` → **Command Closing Report**: 📦 Output (released version + CHANGELOG/METRICS/REGRESSION-CATALOG updates) · 🔎 Checks (gate as one line) · ➡️ Next confirm monitoring is active and the rollback plan is recorded (Release is terminal; there is no next command). Don't paste the raw checklist above.

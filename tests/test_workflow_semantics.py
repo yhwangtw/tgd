@@ -31,9 +31,18 @@ SCENARIOS = {
         "delegation-available", "delegation-unavailable-inline", "dirty-worktree",
         "blocked-task", "resume", "two-stage-reviews",
     },
-    "tgd-verify": {"test-failure", "missing-ac", "missing-ui-evidence", "regression", "success"},
-    "tgd-review": {"general", "conditional-security", "conditional-performance", "conditional-adr", "blocking-finding"},
-    "tgd-release": {"signoffs", "regression", "metrics", "merge", "release", "migration", "successful-deploy"},
+    "tgd-verify": {
+        "test-failure", "documentation-only", "missing-ac", "missing-ui-evidence",
+        "regression", "success",
+    },
+    "tgd-review": {
+        "general", "documentation-only", "conditional-security",
+        "conditional-performance", "conditional-adr", "blocking-finding",
+    },
+    "tgd-release": {
+        "signoffs", "documentation-only", "regression", "metrics", "merge",
+        "release", "migration", "successful-deploy",
+    },
 }
 ALLOWED_ARTIFACT_ROLES = {"consumed", "produced", "conditional", "mutated"}
 ALLOWED_BEHAVIOR_TYPES = {"boundary", "gate", "handoff", "routing", "selection"}
