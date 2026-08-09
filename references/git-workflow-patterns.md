@@ -25,24 +25,34 @@ refactor/auth-module
 ## Increment and Save-Point Shape
 
 ```text
-Implement slice → Test → Verify → Commit → Next slice
+Implement slice → Test → Verify → Authorized commit → Next slice
 ```
 
 ```text
 Agent starts work
     │
     ├── Makes a change
-    │   ├── Test passes? → Commit → Continue
-    │   └── Test fails? → Revert to last commit → Investigate
+    │   ├── Test passes? → Authorized commit → Continue
+    │   └── Test fails? → Inspect and preserve → Repair exact slice
     │
-    └── Feature complete → All commits form a clean history
+    └── Feature complete → Verified commits form a clean history
 ```
 
-If an agent goes off the rails, return to the last successful state with:
+Before discarding any failed work, resolve the exact scope:
 
 ```bash
-git reset --hard HEAD
+agent_owned_path='src/example.ts' # Replace with the exact authorized path.
+git status --short --branch
+git diff --name-status -- "$agent_owned_path"
+git diff --staged --name-status -- "$agent_owned_path"
 ```
+
+Preserve unrelated staged, unstaged, and untracked changes. Prefer repairing
+the failed slice manually. If discarding an exact tracked path is authorized,
+use a path-scoped restore only after recording or backing up anything that must
+remain recoverable; move exact untracked paths to a recovery location rather
+than deleting them. Before inspecting patch contents, follow the same secret
+scanner or explicitly owner-confirmed non-logged review gate as a commit.
 
 ## Atomic History and Messages
 
@@ -75,6 +85,9 @@ Avoid messages that merely restate a filename, such as `update auth.ts`.
 
 Separate concerns in history:
 
+After the active lifecycle step or user authorizes the commits and the full
+pre-commit gate passes:
+
 ```bash
 git commit -m "refactor: extract validation logic to shared utility"
 git commit -m "feat: add phone number validation to registration"
@@ -99,17 +112,24 @@ POTENTIAL CONCERNS:
 - Added zod as a dependency (72KB gzipped) — already in package.json
 ```
 
-## Existing Node-Oriented Pre-Commit Example
+## Node-Oriented Pre-Commit Example
 
 This is the existing cookbook for a Node repository. Prefer the actual commands
 documented by the target repository when they differ.
 
 ```bash
-# Inspect the exact staged patch.
-git diff --staged
+# Inspect staged scope without printing its contents.
+git diff --staged --name-status
 
-# Existing secret-string check.
-git diff --staged | grep -i "password\|secret\|api_key\|token"
+# Run the repository-configured secret scanner here. Keep matching values out
+# of terminal and agent logs. Without one, require an explicitly identified
+# user or local repository owner to inspect and confirm the patch in a
+# non-logged local context; stop if that confirmation is unavailable.
+
+# After the scanner passes, or as the owner-confirmed fallback review, inspect
+# the exact patch in an authorized local context that does not copy possible
+# secrets into agent or shared logs.
+git diff --staged
 
 # Project gates used by the example stack.
 npm test
@@ -135,7 +155,8 @@ Find the commit that introduced a bug:
 ```bash
 git bisect start
 git bisect bad HEAD
-git bisect good <known-good-commit>
+known_good_commit='abc1234' # Replace with the verified known-good commit.
+git bisect good "$known_good_commit"
 ```
 
 Inspect recent changes and ownership:

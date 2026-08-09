@@ -12,7 +12,9 @@ reviewable, and reversible; let history explain intent rather than hide it.
 
 ## When to Use
 
-Always. Every code change flows through git.
+Always. Every code change flows through git. This skill defines safe Git
+practice; it does not itself authorize creating a commit. Commit only when the
+active lifecycle step or the user explicitly authorizes it.
 
 ## Workflow Contract
 
@@ -34,7 +36,7 @@ Delete merged short-lived branches unless repository policy says otherwise.
 
 ### Commit Discipline
 
-For each successful increment:
+For each successful increment whose commit is authorized:
 
 1. Implement one coherent slice.
 2. Run the relevant verification.
@@ -76,7 +78,9 @@ second worktree procedure here.
 ### Save Points and Reporting
 
 Commits are known-good save points: change, test, verify, commit, then continue.
-If an increment fails, return to the last successful state and investigate.
+If an increment fails, inspect and preserve the full worktree first. Repair or
+discard only the exact agent-owned and explicitly authorized slice; never erase
+unrelated staged, unstaged, or untracked work to return to a save point.
 After any modification, provide a structured change summary that identifies
 what changed, what was intentionally left untouched, and potential concerns.
 This makes scope decisions and unintended changes visible to reviewers.
@@ -90,11 +94,20 @@ illustrate this contract; this skill remains the normative owner.
 
 Before every commit:
 
-1. Inspect `git diff --staged` and confirm every staged path is authorized.
-2. Check the staged diff for secrets or credentials.
-3. Run the repository's required tests.
-4. Run required linting and type checks.
-5. Read the results and commit only when the relevant gates pass.
+1. Confirm the active lifecycle step or user authorizes a commit.
+2. Inspect `git diff --staged --name-status` and confirm every staged path is
+   authorized without printing staged content.
+3. Run the repository-configured secret scanner without printing matched secret
+   values. If no trusted scanner exists, an explicitly identified user or local
+   repository owner must inspect the full patch in a non-logged local context
+   and confirm that it contains no secrets. If that confirmation is unavailable,
+   stop and do not commit.
+4. After the scanner passes, or as the owner-confirmed fallback review, inspect
+   the full staged patch in an authorized local context that does not echo
+   possible secrets into agent or shared logs.
+5. Run the repository's required tests.
+6. Run required linting and type checks.
+7. Read the results and commit only when the relevant gates pass.
 
 The reference retains the existing Node-oriented command and Husky examples;
 use repository-specific commands when the project defines them.
@@ -127,11 +140,14 @@ use repository-specific commands when the project defines them.
 - Committing dependency directories, `.env` files, or build artifacts
 - Long-lived branches diverging significantly from `main`
 - Force-pushing to shared branches
+- Discarding a broad worktree scope to recover one failed increment
+- Treating a raw grep of staged content as a safe secret scan
 
 ## Verification
 
 For every commit:
 
+- [ ] The commit was authorized by the active lifecycle step or the user.
 - [ ] The commit does one logical thing.
 - [ ] The message explains why and follows the repository's type convention.
 - [ ] Required tests pass before committing.
